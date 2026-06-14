@@ -587,13 +587,20 @@ function rememberToolbarBounds() {
   }
 }
 
-function applyToolbarWindowMode(options = {}) {
-  if (mainWindowMode === 'editor') rememberEditorBounds();
-  mainWindowMode = 'toolbar';
+function applyToolbarWindowChrome() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
   if (process.platform === 'darwin') {
     try { mainWindow.setWindowButtonVisibility(false); } catch (_) {}
     try { mainWindow.setVibrancy(null); } catch (_) {}
   }
+  try { mainWindow.setBackgroundColor('#00000000'); } catch (_) {}
+  try { mainWindow.setHasShadow(false); } catch (_) {}
+}
+
+function applyToolbarWindowMode(options = {}) {
+  if (mainWindowMode === 'editor') rememberEditorBounds();
+  mainWindowMode = 'toolbar';
+  applyToolbarWindowChrome();
 
   if (mainWindow.isFullScreen()) mainWindow.setFullScreen(false);
   if (mainWindow.isMaximized()) mainWindow.unmaximize();
@@ -603,7 +610,6 @@ function applyToolbarWindowMode(options = {}) {
   if (typeof mainWindow.setFullScreenable === 'function') mainWindow.setFullScreenable(false);
   mainWindow.setContentProtection(false);
   mainWindow.setSkipTaskbar(process.platform === 'darwin');
-  try { mainWindow.setHasShadow(false); } catch (_) {}
   try { mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'floating' : 'normal'); } catch (_) { mainWindow.setAlwaysOnTop(true); }
   if (process.platform === 'darwin') {
     try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch (_) {}
@@ -1950,6 +1956,7 @@ function showAboutDialog() {
 function createMainWindow(focusOnReady = false) {
   if (mainWindow && !mainWindow.isDestroyed()) return;
   const pkg = require(path.join(__dirname, '..', 'package.json'));
+  mainWindowMode = 'toolbar';
   const toolbarBounds = getToolbarWindowBounds();
   mainWindow = new BrowserWindow({
     ...toolbarBounds,
@@ -1987,9 +1994,7 @@ function createMainWindow(focusOnReady = false) {
   // handled there instead of by shielding the normal UI from screen capture.
   mainWindow.setContentProtection(false);
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-  if (process.platform === 'darwin') {
-    try { mainWindow.setWindowButtonVisibility(false); } catch (_) {}
-  }
+  applyToolbarWindowChrome();
   mainWindow.once('ready-to-show', () => {
     showMainWindowForCurrentMode();
     if (focusOnReady) {
@@ -2020,6 +2025,7 @@ function createMainWindow(focusOnReady = false) {
     allowMainWindowCloseAfterRendererCleanup = false;
     pendingRecordingWindowClose = false;
     pendingAppWindowClose = false;
+    mainWindowMode = 'toolbar';
     mainWindow = null;
   });
 }

@@ -647,6 +647,12 @@ test('Recording Features', () => {
     'native macOS window capture must clear renderer capture mode so pillbar auto-hide resumes',
   );
 
+  assert.ok(
+    /function applyToolbarWindowChrome\(\)[\s\S]*setWindowButtonVisibility\(false\)[\s\S]*setVibrancy\(null\)[\s\S]*setBackgroundColor\('#00000000'\)[\s\S]*setHasShadow\(false\)/.test(mainSource) &&
+    /function createMainWindow\(focusOnReady = false\) \{[\s\S]*mainWindowMode = 'toolbar';[\s\S]*applyToolbarWindowChrome\(\);[\s\S]*mainWindow\.on\('closed', \(\) => \{[\s\S]*mainWindowMode = 'toolbar';/.test(mainSource),
+    'main window must always recreate as a transparent frameless toolbar after being closed from editor mode',
+  );
+
   const codeSurfaces = [
     ['src/preload.js', preloadSource],
     ['src/renderer/renderer.js', rendererSource],
