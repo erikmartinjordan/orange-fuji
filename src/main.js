@@ -289,7 +289,12 @@ async function hasUsageEntitlement() {
 
 function configuredDefaultSaveDirectory() {
   const settings = readSettings();
-  if (settings.defaultSavePath && fs.existsSync(settings.defaultSavePath)) return settings.defaultSavePath;
+  if (!settings.defaultSavePath) return '';
+  try {
+    if (fs.statSync(settings.defaultSavePath).isDirectory()) return settings.defaultSavePath;
+  } catch (_) {
+    return '';
+  }
   return '';
 }
 
@@ -299,6 +304,55 @@ function defaultSaveDirectory(fallbackName) {
 
 function defaultSavePath(fallbackName, filename) {
   return path.join(defaultSaveDirectory(fallbackName), filename);
+}
+
+function uniqueSavePath(directory, filename) {
+  const parsed = path.parse(filename);
+  let candidate = path.join(directory, filename);
+  let suffix = 1;
+  while (fs.existsSync(candidate)) {
+    candidate = path.join(directory, `${parsed.name}-${suffix}${parsed.ext}`);
+    suffix += 1;
+  }
+  return candidate;
+}
+
+function configuredDefaultSavePath(filename) {
+  const directory = configuredDefaultSaveDirectory();
+  if (!directory) return '';
+  return uniqueSavePath(directory, filename);
+}
+
+function dataUrlToImageBuffer(dataUrl) {
+  const base64Data = String(dataUrl || '').replace(/^data:image\/\w+;base64,/, '');
+  return Buffer.from(base64Data, 'base64');
+}
+
+function autoSaveCaptureDataUrl(dataUrl, captureMode = 'screenshot', timestamp = Date.now(), suffix = '') {
+  try {
+    const outputPath = configuredDefaultSavePath(`orange-fuji-${captureMode}-${timestamp}${suffix}.png`);
+    if (!outputPath) return '';
+    fs.writeFileSync(outputPath, dataUrlToImageBuffer(dataUrl));
+    return outputPath;
+  } catch (error) {
+    console.error('[orange-fuji][capture] failed to save capture automatically:', error.message);
+    return '';
+  }
+}
+
+function autoSaveCaptureData(captureData, captureMode = 'screenshot') {
+  if (!configuredDefaultSaveDirectory() || !captureData) return [];
+  const timestamp = Date.now();
+  if (captureData.type === 'single') {
+    return [autoSaveCaptureDataUrl(captureData.dataUrl, captureMode, timestamp)].filter(Boolean);
+  }
+  const orderedScreens = [...(captureData.screens || [])].sort((a, b) => {
+    if (a.bounds.y !== b.bounds.y) return a.bounds.y - b.bounds.y;
+    return a.bounds.x - b.bounds.x;
+  });
+  return orderedScreens
+    .map((screenData, index) => autoSaveCaptureDataUrl(screenData.dataUrl, captureMode, timestamp, `-${index + 1}`))
+    .filter(Boolean);
 }
 
 function sourceTypesForRecordingSourceId(sourceId) {
@@ -995,6 +1049,7 @@ async function captureNativeMacWindow() {
     }
     const dataUrl = readImageFileAsDataUrl(filePath);
     copyDataUrlToClipboard(dataUrl);
+    autoSaveCaptureDataUrl(dataUrl, 'window');
     if (mainWindow) {
       applyToolbarWindowMode({ show: true });
       triggerPreviewToast({
@@ -2431,6 +2486,7 @@ async function captureFullscreen(options = {}) {
     }
     const captureData = await withHiddenDesktopIcons(options, async () => captureAllScreens());
     copyCaptureDataToClipboard(captureData);
+    autoSaveCaptureData(captureData, 'fullscreen');
     if (mainWindow) {
       notifyRendererCaptureFinished();
       applyToolbarWindowMode({ show: true });
@@ -2471,6 +2527,7 @@ ipcMain.on('window-overlay-select', async (event, windowName) => {
       const dataUrl = selected.thumbnail.toDataURL();
       windowPickerSources = [];
       copyDataUrlToClipboard(dataUrl);
+      autoSaveCaptureDataUrl(dataUrl, 'window');
       if (mainWindow) {
         notifyRendererCaptureFinished();
         applyToolbarWindowMode({ show: true });
@@ -2493,6 +2550,7 @@ ipcMain.on('capture-complete', (event, imageDataUrl) => {
   const returnMode = pendingCaptureReturnMode;
   pendingCaptureReturnMode = null;
   copyDataUrlToClipboard(imageDataUrl);
+  autoSaveCaptureDataUrl(imageDataUrl, 'region');
   if (mainWindow) {
     notifyRendererCaptureFinished();
     if (returnMode === 'editor') applyEditorWindowMode({ show: true });
@@ -2631,15 +2689,21 @@ ipcMain.handle('open-file', async () => {
 });
 
 ipcMain.handle('save-file', async (event, dataUrl) => {
-  const result = await dialog.showSaveDialog(mainWindow, {
-    defaultPath: defaultSavePath('pictures', `screenshot-${Date.now()}.png`),
-    filters: [{ name: 'PNG Image', extensions: ['png'] }, { name: 'JPEG Image', extensions: ['jpg'] }],
-  });
-  if (result.canceled || !result.filePath) return { success: false };
+  const filename = `orange-fuji-screenshot-${Date.now()}.png`;
+  let outputPath = configuredDefaultSavePath(filename);
+
+  if (!outputPath) {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      defaultPath: defaultSavePath('pictures', filename),
+      filters: [{ name: 'PNG Image', extensions: ['png'] }, { name: 'JPEG Image', extensions: ['jpg'] }],
+    });
+    if (result.canceled || !result.filePath) return { success: false };
+    outputPath = result.filePath;
+  }
+
   try {
-    const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
-    fs.writeFileSync(result.filePath, Buffer.from(base64Data, 'base64'));
-    return { success: true, path: result.filePath };
+    fs.writeFileSync(outputPath, dataUrlToImageBuffer(dataUrl));
+    return { success: true, path: outputPath };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -2866,8 +2930,7 @@ ipcMain.handle('pro-save-recording', async (event, payload) => {
   const trimEnd = Number.isFinite(payload?.trimEnd) && payload.trimEnd > trimStart ? payload.trimEnd : 0;
   const muted = payload?.muted === true;
   const filename = `orange-fuji-recording-${Date.now()}.${extension}`;
-  const configuredSaveDirectory = configuredDefaultSaveDirectory();
-  let outputPath = configuredSaveDirectory ? path.join(configuredSaveDirectory, filename) : '';
+  let outputPath = configuredDefaultSavePath(filename);
 
   if (!outputPath) {
     const saveResult = await dialog.showSaveDialog(mainWindow, {

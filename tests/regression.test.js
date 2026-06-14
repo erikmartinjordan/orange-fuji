@@ -260,6 +260,30 @@ function createStreamWithCursorSetting(cursor) {
     'recording save must show the native save dialog when no default save directory is configured',
   );
   assert.ok(
+    /function configuredDefaultSaveDirectory\(\)[\s\S]*fs\.statSync\(settings\.defaultSavePath\)\.isDirectory\(\)/.test(mainSource),
+    'configured save paths must only be used when the preference points to an existing directory',
+  );
+  assert.ok(
+    /function uniqueSavePath\(directory, filename\)[\s\S]*while \(fs\.existsSync\(candidate\)\)/.test(mainSource),
+    'automatic capture saves must avoid overwriting an existing file in the configured folder',
+  );
+  assert.ok(
+    /ipcMain\.handle\('save-file'[\s\S]*let outputPath = configuredDefaultSavePath\(filename\);[\s\S]*if \(!outputPath\) \{[\s\S]*dialog\.showSaveDialog/.test(mainSource),
+    'screenshots must save directly into the configured preferences folder before falling back to the native save dialog',
+  );
+  assert.ok(
+    /ipcMain\.handle\('pro-save-recording'[\s\S]*let outputPath = configuredDefaultSavePath\(filename\);[\s\S]*if \(!outputPath\) \{[\s\S]*Save screen recording/.test(mainSource),
+    'screen recordings must save directly into the configured preferences folder before falling back to the native save dialog',
+  );
+  assert.ok(
+    /function autoSaveCaptureDataUrl\(dataUrl, captureMode = 'screenshot'[\s\S]*configuredDefaultSavePath\(`orange-fuji-\$\{captureMode\}-\$\{timestamp\}\$\{suffix\}\.png`\)[\s\S]*fs\.writeFileSync\(outputPath, dataUrlToImageBuffer\(dataUrl\)\)/.test(mainSource),
+    'capture actions must be able to save PNG screenshots directly into the configured preferences folder',
+  );
+  assert.ok(
+    /function autoSaveCaptureData\(captureData, captureMode = 'screenshot'\)[\s\S]*captureData\.type === 'single'[\s\S]*orderedScreens[\s\S]*autoSaveCaptureDataUrl\(screenData\.dataUrl, captureMode, timestamp, `-\$\{index \+ 1\}`\)/.test(mainSource),
+    'fullscreen capture autosave must support both single-screen and multi-screen capture data',
+  );
+  assert.ok(
     /setWindowMode: \(mode, options = \{\}\) => ipcRenderer\.invoke\('window-set-mode', mode, options\)/.test(preloadSource),
     'window mode changes must support forcing the hidden recording window visible for preview',
   );
@@ -581,6 +605,19 @@ test('Recording Features', () => {
     /ipcMain\.handle\('start-capture-fullscreen', async \(event, options = \{\}\) => captureFullscreen\(options\)\)/.test(mainSource) &&
     /captureFullscreen\(\{[\s\S]*showToolbar: false[\s\S]*\}\)/.test(mainSource),
     'global fullscreen capture shortcut must use the main-process capture path without activating the renderer window',
+  );
+  assert.ok(
+    /async function captureFullscreen\(options = \{\}\)[\s\S]*copyCaptureDataToClipboard\(captureData\);[\s\S]*autoSaveCaptureData\(captureData, 'fullscreen'\);[\s\S]*triggerPreviewToast\(captureData\)/.test(mainSource),
+    'fullscreen capture actions must autosave to the configured preferences folder after executing',
+  );
+  assert.ok(
+    /ipcMain\.on\('capture-complete'[\s\S]*copyDataUrlToClipboard\(imageDataUrl\);[\s\S]*autoSaveCaptureDataUrl\(imageDataUrl, 'region'\);[\s\S]*triggerPreviewToast\(\{ dataUrl: imageDataUrl, captureMode: 'region' \}\)/.test(mainSource),
+    'region capture actions must autosave to the configured preferences folder after executing',
+  );
+  assert.ok(
+    /async function captureNativeMacWindow\(\)[\s\S]*copyDataUrlToClipboard\(dataUrl\);[\s\S]*autoSaveCaptureDataUrl\(dataUrl, 'window'\);[\s\S]*triggerPreviewToast\(\{[\s\S]*captureMode: 'window'/.test(mainSource) &&
+    /ipcMain\.on\('window-overlay-select'[\s\S]*copyDataUrlToClipboard\(dataUrl\);[\s\S]*autoSaveCaptureDataUrl\(dataUrl, 'window'\);[\s\S]*triggerPreviewToast\(\{ dataUrl, captureMode: 'window' \}\)/.test(mainSource),
+    'window capture actions must autosave to the configured preferences folder after executing',
   );
   assert.ok(
     !/\{ \.\.\.TRAY_CAPTURE_SHORTCUTS\.captureWindow, run: \(\) => sendShortcutTriggerToRenderer\('trigger-capture-window'\) \}/.test(mainSource) &&
