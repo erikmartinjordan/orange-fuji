@@ -10,51 +10,107 @@
 <body class="preferences-window">
   <form class="preferences-panel" id="preferences-form" aria-label="Preferences">
     <div class="preferences-titlebar" aria-hidden="true"></div>
+
     <header class="preferences-header">
-      <img src="../assets/icons/macos/256x256.png" alt="" width="48" height="48">
       <div>
-        <h1>Orange Fuji</h1>
-        <p>Preferences</p>
+        <h1>Settings</h1>
+        <p>Orange Fuji</p>
       </div>
     </header>
 
-    <section class="preferences-group" aria-label="Recording">
-      <label>Recording format
-        <select id="recording-format-setting"><option value="mp4">MP4</option><option value="gif">GIF</option></select>
-      </label>
-      <label><span>Autozoom on region recording</span><input type="checkbox" id="recording-autozoom-setting" checked></label>
-      <label><span>Hide desktop icons while capturing</span><input type="checkbox" id="hide-desktop-icons-setting" checked></label>
-      <label><span>Capture Orange&nbsp;Fuji elements</span><input type="checkbox" id="capture-orangefuji-setting"></label>
-      <label class="range-row"><span>Auto-hide toolbar</span><span class="range-unit"><span class="slider-ui"><input type="range" id="auto-hide-delay-setting" min="0" max="7" step="1" value="0"><span class="slider-ticks" aria-hidden="true"></span>        <span class="slider-labels" aria-hidden="true"><span>0.5s</span><span></span><span></span><span></span><span></span><span></span><span></span><span>∞</span></span></span><output id="auto-hide-delay-setting-value">2s</output></span></label>
-    </section>
+    <nav class="preferences-tabs" aria-label="Settings sections">
+      <button type="button" class="active" data-preferences-tab="general" aria-selected="true">General</button>
+      <button type="button" data-preferences-tab="capture" aria-selected="false">Capture</button>
+      <button type="button" data-preferences-tab="license" aria-selected="false">License</button>
+    </nav>
 
-    <section class="preferences-group preferences-field preferences-field--path" aria-label="Saving">
-      <div>
-        <label for="default-save-path-setting">Default save path</label>
-        <p>Choose the folder used first when saving screenshots and recordings.</p>
-      </div>
-      <div class="path-picker">
-        <input type="text" id="default-save-path-setting" placeholder="System default" readonly>
-        <div class="path-picker-actions">
-          <button type="button" id="choose-default-save-path-setting">Choose...</button>
-          <button type="button" id="clear-default-save-path-setting" class="secondary">Clear</button>
+    <main class="preferences-content">
+      <section class="preferences-section active" data-preferences-section="general" aria-label="General">
+        <div class="preferences-group" aria-label="General">
+          <label class="odometer-row">
+            <span class="preferences-copy">
+              <span class="preference-title">Auto-hide toolbar</span>
+              <span class="preference-description">Delay before hiding the capture toolbar.</span>
+            </span>
+            <span class="odometer-control" role="group" aria-label="Auto-hide toolbar delay">
+              <button type="button" class="odometer-button" id="auto-hide-delay-decrement" aria-label="Decrease auto-hide delay">−</button>
+              <input type="hidden" id="auto-hide-delay-setting" value="0">
+              <output class="odometer-value" id="auto-hide-delay-setting-value" for="auto-hide-delay-setting" aria-live="polite">
+                <span class="odometer-digit">0.5s</span>
+              </output>
+              <button type="button" class="odometer-button" id="auto-hide-delay-increment" aria-label="Increase auto-hide delay">+</button>
+            </span>
+          </label>
         </div>
-      </div>
-    </section>
 
-    <section class="preferences-group preferences-field preferences-field--license" aria-label="License">
-      <div>
-        <label for="license-email-setting">License</label>
-        <p id="license-status-setting">Checking license status...</p>
-      </div>
-      <div class="license-settings-activation">
-        <input type="email" id="license-email-setting" placeholder="you@example.com" autocomplete="email">
-        <div class="license-settings-actions">
-          <button type="button" id="buy-license-setting">Buy</button>
-          <button type="button" id="activate-license-setting" class="secondary">Activate</button>
+        <div class="preferences-group preferences-field preferences-field--path" aria-label="Saving">
+          <div class="preferences-copy">
+            <label for="default-save-path-setting">Default save path</label>
+            <p>Choose the folder used first when saving screenshots and recordings.</p>
+          </div>
+          <div class="path-picker">
+            <input type="text" id="default-save-path-setting" placeholder="System default" readonly>
+            <div class="path-picker-actions">
+              <button type="button" id="choose-default-save-path-setting">Choose</button>
+              <button type="button" id="clear-default-save-path-setting" class="secondary">Clear</button>
+            </div>
+          </div>
         </div>
-      </div>
-    </section>
+
+      </section>
+
+      <section class="preferences-section" data-preferences-section="capture" aria-label="Capture">
+        <div class="preferences-group" aria-label="Recording">
+          <label>
+            <span class="preferences-copy">
+              <span class="preference-title">Recording format</span>
+              <span class="preference-description">Choose the format used for screen recordings.</span>
+            </span>
+            <select id="recording-format-setting">
+              <option value="mp4">MP4</option>
+              <option value="gif">GIF</option>
+            </select>
+          </label>
+          <label>
+            <span class="preferences-copy">
+              <span class="preference-title">Region autozoom</span>
+              <span class="preference-description">Smoothly zoom into region recordings.</span>
+            </span>
+            <input type="checkbox" id="recording-autozoom-setting" checked>
+          </label>
+          <label>
+            <span class="preferences-copy">
+              <span class="preference-title">Hide desktop icons</span>
+              <span class="preference-description">Keep the desktop clean while capturing.</span>
+            </span>
+            <input type="checkbox" id="hide-desktop-icons-setting" checked>
+          </label>
+          <label>
+            <span class="preferences-copy">
+              <span class="preference-title">Capture Orange Fuji</span>
+              <span class="preference-description">Include the app interface in captures.</span>
+            </span>
+            <input type="checkbox" id="capture-orangefuji-setting">
+          </label>
+        </div>
+      </section>
+
+      <section class="preferences-section" data-preferences-section="license" aria-label="License">
+        <div class="preferences-group preferences-field preferences-field--license" aria-label="License">
+          <div class="preferences-copy">
+            <label for="license-email-setting">License</label>
+            <p id="license-status-setting">Checking license status...</p>
+          </div>
+          <div class="license-settings-activation">
+            <input type="email" id="license-email-setting" placeholder="you@example.com" autocomplete="email">
+            <div class="license-settings-actions">
+              <button type="button" id="buy-license-setting">Buy</button>
+              <button type="button" id="activate-license-setting" class="secondary">Activate</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   </form>
 
   <script src="preferences.js"></script>

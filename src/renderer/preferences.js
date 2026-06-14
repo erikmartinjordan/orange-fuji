@@ -11,7 +11,8 @@ const hideDesktopIconsSetting = document.querySelector('#hide-desktop-icons-sett
 const captureOrangeFujiSetting = document.querySelector('#capture-orangefuji-setting');
 const autoHideDelaySetting = document.querySelector('#auto-hide-delay-setting');
 const autoHideDelaySettingValue = document.querySelector('#auto-hide-delay-setting-value');
-const autoHideSliderUi = autoHideDelaySetting?.closest('.slider-ui');
+const autoHideDelayDecrement = document.querySelector('#auto-hide-delay-decrement');
+const autoHideDelayIncrement = document.querySelector('#auto-hide-delay-increment');
 const defaultSavePathSetting = document.querySelector('#default-save-path-setting');
 const chooseDefaultSavePathSetting = document.querySelector('#choose-default-save-path-setting');
 const clearDefaultSavePathSetting = document.querySelector('#clear-default-save-path-setting');
@@ -19,6 +20,8 @@ const licenseStatusSetting = document.querySelector('#license-status-setting');
 const licenseEmailSetting = document.querySelector('#license-email-setting');
 const buyLicenseSetting = document.querySelector('#buy-license-setting');
 const activateLicenseSetting = document.querySelector('#activate-license-setting');
+const preferencesTabs = Array.from(document.querySelectorAll('[data-preferences-tab]'));
+const preferencesSections = Array.from(document.querySelectorAll('[data-preferences-section]'));
 
 
 const settings = {
@@ -34,6 +37,47 @@ const RECORDING_SETTINGS_KEY = 'orangefuji-recording-settings';
 // Legacy key retained for one-time migration from builds branded as Pico.
 const LEGACY_RECORDING_SETTINGS_KEY = 'pico-recording-settings';
 
+function activatePreferencesTab(tabName = 'general') {
+  preferencesTabs.forEach((tab) => {
+    const isActive = tab.dataset.preferencesTab === tabName;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+  });
+
+  preferencesSections.forEach((section) => {
+    section.classList.toggle('active', section.dataset.preferencesSection === tabName);
+  });
+
+  renderAutoHideDelay();
+}
+
+function clampAutoHideDelay(value) {
+  return Math.min(Math.max(Math.round(Number(value) || 0), 0), DISPLAY_LABELS.length - 1);
+}
+
+function renderAutoHideDelay(previousValue = settings.autoHideDelay) {
+  if (!autoHideDelaySetting || !autoHideDelaySettingValue) return;
+  const nextValue = clampAutoHideDelay(settings.autoHideDelay);
+  const previous = clampAutoHideDelay(previousValue);
+  settings.autoHideDelay = nextValue;
+  autoHideDelaySetting.value = String(nextValue);
+  autoHideDelaySettingValue.innerHTML = `<span class="odometer-digit">${sliderValueToLabel(nextValue)}</span>`;
+  autoHideDelaySettingValue.classList.toggle('output-infinity', sliderValueToLabel(nextValue) === '∞');
+  autoHideDelaySettingValue.classList.remove('is-increasing', 'is-decreasing');
+  if (nextValue !== previous) {
+    autoHideDelaySettingValue.classList.add(nextValue > previous ? 'is-increasing' : 'is-decreasing');
+  }
+  if (autoHideDelayDecrement) autoHideDelayDecrement.disabled = nextValue === 0;
+  if (autoHideDelayIncrement) autoHideDelayIncrement.disabled = nextValue === DISPLAY_LABELS.length - 1;
+}
+
+function setAutoHideDelay(value, shouldSave = true) {
+  const previousValue = settings.autoHideDelay;
+  settings.autoHideDelay = clampAutoHideDelay(value);
+  renderAutoHideDelay(previousValue);
+  if (shouldSave && settings.autoHideDelay !== previousValue) saveSettings();
+}
+
 async function loadSettings() {
   try {
     const raw = localStorage.getItem(RECORDING_SETTINGS_KEY) || localStorage.getItem(LEGACY_RECORDING_SETTINGS_KEY);
@@ -43,7 +87,7 @@ async function loadSettings() {
       settings.autoZoom = parsed?.autoZoom !== false;
       settings.hideDesktopIcons = parsed?.hideDesktopIcons !== false;
       settings.captureOrangeFuji = parsed?.captureOrangeFuji === true;
-      settings.autoHideDelay = typeof parsed?.autoHideDelay === 'number' ? Math.min(Math.max(Math.round(parsed.autoHideDelay), 0), 7) : 0;
+      settings.autoHideDelay = typeof parsed?.autoHideDelay === 'number' ? clampAutoHideDelay(parsed.autoHideDelay) : 0;
     }
   } catch (_) {}
 
@@ -56,11 +100,7 @@ async function loadSettings() {
   recordingAutozoomSetting.checked = settings.autoZoom;
   hideDesktopIconsSetting.checked = settings.hideDesktopIcons;
   captureOrangeFujiSetting.checked = settings.captureOrangeFuji;
-  autoHideDelaySetting.value = settings.autoHideDelay;
-  autoHideDelaySettingValue.textContent = sliderValueToLabel(settings.autoHideDelay);
-  autoHideDelaySettingValue.classList.toggle('output-infinity', autoHideDelaySettingValue.textContent === '∞');
-  if (autoHideSliderUi) autoHideSliderUi.style.setProperty('--track-fill', (settings.autoHideDelay / 7 * 100) + '%');
-  positionOutput();
+  renderAutoHideDelay();
   defaultSavePathSetting.value = settings.defaultSavePath;
 }
 
@@ -131,30 +171,21 @@ captureOrangeFujiSetting.addEventListener('change', () => {
   saveSettings();
 });
 
-function positionOutput() {
-  if (!autoHideDelaySetting || !autoHideSliderUi || !autoHideDelaySettingValue) return;
-  const pct = parseInt(autoHideDelaySetting.value, 10) / 7;
-  const trackWidth = autoHideSliderUi.offsetWidth;
-  const thumbSize = 40;
-  const left = pct * (trackWidth - thumbSize) + thumbSize / 2;
-  autoHideDelaySettingValue.style.left = left + 'px';
-}
-
-autoHideDelaySetting.addEventListener('input', () => {
-  const idx = parseInt(autoHideDelaySetting.value, 10);
-  autoHideDelaySettingValue.textContent = sliderValueToLabel(idx);
-  autoHideDelaySettingValue.classList.toggle('output-infinity', autoHideDelaySettingValue.textContent === '∞');
-  if (autoHideSliderUi) autoHideSliderUi.style.setProperty('--track-fill', (idx / 7 * 100) + '%');
-  positionOutput();
+autoHideDelayDecrement?.addEventListener('click', () => {
+  setAutoHideDelay(settings.autoHideDelay - 1);
 });
 
-autoHideDelaySetting.addEventListener('change', () => {
-  settings.autoHideDelay = parseFloat(autoHideDelaySetting.value);
-  saveSettings();
+autoHideDelayIncrement?.addEventListener('click', () => {
+  setAutoHideDelay(settings.autoHideDelay + 1);
 });
 
 document.addEventListener('DOMContentLoaded', loadSettings);
 document.addEventListener('DOMContentLoaded', loadLicenseState);
+document.addEventListener('DOMContentLoaded', () => activatePreferencesTab('general'));
+
+preferencesTabs.forEach((tab) => {
+  tab.addEventListener('click', () => activatePreferencesTab(tab.dataset.preferencesTab));
+});
 
 chooseDefaultSavePathSetting.addEventListener('click', async () => {
   const result = await window.pico.chooseDefaultSavePath(settings.defaultSavePath);

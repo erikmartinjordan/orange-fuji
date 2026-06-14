@@ -817,10 +817,10 @@ function openPreferencesWindow() {
   }
 
   preferencesWindow = new BrowserWindow({
-    width: 520,
-    height: 605,
-    minWidth: 480,
-    minHeight: 605,
+    width: 760,
+    height: 520,
+    minWidth: 640,
+    minHeight: 460,
     resizable: true,
     minimizable: false,
     maximizable: false,
@@ -831,7 +831,7 @@ function openPreferencesWindow() {
     vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
     visualEffectState: 'active',
     transparent: process.platform === 'darwin',
-    backgroundColor: process.platform === 'darwin' ? '#00000000' : '#f5f1ec',
+    backgroundColor: process.platform === 'darwin' ? '#00000000' : '#252525',
     autoHideMenuBar: true,
     title: 'Orange Fuji Preferences',
     webPreferences: getAppWebPreferences(),

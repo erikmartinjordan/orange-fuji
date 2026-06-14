@@ -1312,6 +1312,648 @@ body.has-content .toolbar-group.capture-modes + .toolbar-separator {
   }
 }
 
+body.preferences-window {
+  --prefs-text: rgba(248, 248, 246, 0.92);
+  --prefs-muted: rgba(248, 248, 246, 0.50);
+  --prefs-dim: rgba(248, 248, 246, 0.30);
+  --prefs-line: rgba(255, 255, 255, 0.065);
+  --prefs-glass: rgba(28, 28, 31, 0.54);
+  --prefs-control: rgba(255, 255, 255, 0.075);
+  --prefs-control-strong: rgba(255, 255, 255, 0.12);
+  --prefs-accent: #f97316;
+  --prefs-accent-soft: rgba(249, 115, 22, 0.22);
+  align-items: stretch;
+  justify-content: stretch;
+  min-width: 100vw;
+  min-height: 100vh;
+  background: transparent;
+  color: var(--prefs-text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+body.preferences-window .preferences-panel {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 48px 36px 32px;
+  gap: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.045), transparent 34%),
+    var(--prefs-glass);
+  color: var(--prefs-text);
+  box-shadow: none;
+  backdrop-filter: blur(44px) saturate(170%) brightness(0.92);
+  -webkit-backdrop-filter: blur(44px) saturate(170%) brightness(0.92);
+}
+
+body.preferences-window .preferences-titlebar {
+  height: 44px;
+}
+
+body.preferences-window .preferences-header {
+  margin: 0 0 18px;
+  -webkit-app-region: drag;
+}
+
+body.preferences-window .preferences-header h1 {
+  color: var(--prefs-text);
+  font-size: 20px;
+  font-weight: 720;
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+body.preferences-window .preferences-header p {
+  display: none;
+}
+
+body.preferences-window .preferences-tabs {
+  width: min(360px, 100%);
+  height: 34px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 12px 26px rgba(0, 0, 0, 0.10) inset;
+  -webkit-app-region: no-drag;
+}
+
+body.preferences-window .preferences-tabs button {
+  min-width: 0;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(248, 248, 246, 0.52);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 680;
+  letter-spacing: 0;
+  cursor: default;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+body.preferences-window .preferences-tabs button.active {
+  background: rgba(255, 255, 255, 0.90);
+  color: rgba(12, 13, 14, 0.95);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.80) inset;
+}
+
+body.preferences-window .preferences-content {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+body.preferences-window .preferences-section {
+  display: none;
+}
+
+body.preferences-window .preferences-section.active {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+body.preferences-window .preferences-group {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+body.preferences-window .preferences-group + .preferences-group {
+  border-top: 1px solid var(--prefs-line);
+}
+
+body.preferences-window .preferences-group > label,
+body.preferences-window .preferences-group > label.range-row,
+body.preferences-window .preferences-field {
+  min-height: 54px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--prefs-line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(132px, auto);
+  align-items: center;
+  gap: 22px;
+}
+
+body.preferences-window .preferences-group > label:last-child,
+body.preferences-window .preferences-group > label.range-row:last-child {
+  border-bottom: 1px solid var(--prefs-line);
+}
+
+body.preferences-window .preferences-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+body.preferences-window .preferences-panel label,
+body.preferences-window .preferences-field label,
+body.preferences-window .preference-title {
+  color: var(--prefs-text);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+body.preferences-window .preferences-field p,
+body.preferences-window .preference-description {
+  color: var(--prefs-muted);
+  font-size: 11px;
+  font-weight: 520;
+  line-height: 1.26;
+  letter-spacing: 0;
+}
+
+body.preferences-window .preferences-panel select {
+  min-width: 92px;
+  height: 26px;
+  border: 1px solid rgba(249, 115, 22, 0.26);
+  border-radius: 7px;
+  padding: 0 8px;
+  background: rgba(249, 115, 22, 0.14);
+  color: var(--prefs-accent);
+  font-size: 11.5px;
+  font-weight: 650;
+  appearance: auto;
+  outline: none;
+}
+
+body.preferences-window .preferences-panel input[type="checkbox"] {
+  justify-self: end;
+  width: 42px;
+  height: 22px;
+  flex: 0 0 42px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    inset 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+body.preferences-window .preferences-panel input[type="checkbox"]::before {
+  top: 3px;
+  left: 3px;
+  width: 23px;
+  height: 16px;
+  background: rgba(245, 246, 244, 0.94);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.30),
+    0 1px 0 rgba(255, 255, 255, 0.48) inset;
+}
+
+body.preferences-window .preferences-panel input[type="checkbox"]:checked {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.84), rgba(249, 115, 22, 0.56));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 16px rgba(249, 115, 22, 0.22);
+}
+
+body.preferences-window .preferences-panel input[type="checkbox"]:checked::before {
+  transform: translateX(13px);
+}
+
+body.preferences-window .preferences-panel input[type="checkbox"]:focus-visible,
+body.preferences-window .preferences-panel select:focus-visible,
+body.preferences-window .path-picker button:focus-visible,
+body.preferences-window .odometer-button:focus-visible,
+body.preferences-window .license-settings-actions button:focus-visible,
+body.preferences-window .license-settings-activation input:focus-visible,
+body.preferences-window .path-picker input:focus-visible,
+body.preferences-window .preferences-tabs button:focus-visible {
+  outline: 2px solid rgba(249, 115, 22, 0.62);
+  outline-offset: 3px;
+}
+
+body.preferences-window .preferences-panel .range-unit {
+  width: min(190px, 35vw);
+  flex: 0 0 auto;
+  justify-self: end;
+  gap: 10px;
+}
+
+body.preferences-window .preferences-panel .slider-ui {
+  height: 28px;
+}
+
+body.preferences-window .preferences-panel .slider-ui input[type="range"]::-webkit-slider-thumb {
+  width: 32px;
+  height: 18px;
+  margin-top: -7px;
+}
+
+body.preferences-window .preferences-panel .slider-ui::before,
+body.preferences-window .preferences-panel .slider-ui::after {
+  top: 13px;
+  height: 4px;
+  border-radius: 999px;
+}
+
+body.preferences-window .preferences-panel .slider-ui::before {
+  background: linear-gradient(to right, var(--prefs-accent) var(--track-fill, 0%), transparent var(--track-fill, 0%));
+}
+
+body.preferences-window .preferences-panel .slider-ui::after {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body.preferences-window .preferences-panel .slider-ticks {
+  top: 13px;
+  height: 4px;
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.22) 0,
+    rgba(255, 255, 255, 0.22) 1px,
+    transparent 1px,
+    transparent calc(100% / 7)
+  );
+}
+
+body.preferences-window .preferences-panel .slider-labels {
+  bottom: -2px;
+  color: var(--prefs-dim);
+  font-size: 7.5px;
+  letter-spacing: 0;
+}
+
+body.preferences-window .preferences-panel .range-unit output {
+  width: 32px;
+  line-height: 18px;
+  color: var(--prefs-accent);
+  font-size: 9.5px;
+}
+
+body.preferences-window .odometer-control {
+  justify-self: end;
+  display: grid;
+  grid-template-columns: 24px minmax(56px, auto) 24px;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 2px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.075);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 6px 14px rgba(0, 0, 0, 0.10) inset;
+  -webkit-app-region: no-drag;
+}
+
+body.preferences-window .odometer-button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(248, 248, 246, 0.54);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1;
+  cursor: default;
+}
+
+body.preferences-window .odometer-button:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(248, 248, 246, 0.86);
+}
+
+body.preferences-window .odometer-button:disabled {
+  opacity: 0.28;
+}
+
+body.preferences-window .odometer-value {
+  position: relative;
+  min-width: 56px;
+  height: 24px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: rgba(249, 115, 22, 0.14);
+  color: var(--prefs-accent);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 24px;
+  text-align: center;
+  box-shadow:
+    0 0 0 1px rgba(249, 115, 22, 0.18) inset,
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+body.preferences-window .odometer-digit {
+  display: block;
+  animation: odometerSettle 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body.preferences-window .odometer-value.is-increasing .odometer-digit {
+  animation-name: odometerIncrease;
+}
+
+body.preferences-window .odometer-value.is-decreasing .odometer-digit {
+  animation-name: odometerDecrease;
+}
+
+@keyframes odometerIncrease {
+  from { opacity: 0; transform: translateY(65%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes odometerDecrease {
+  from { opacity: 0; transform: translateY(-65%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes odometerSettle {
+  from { opacity: 0.76; transform: translateY(18%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+body.preferences-window .path-picker,
+body.preferences-window .license-settings-activation {
+  min-width: min(280px, 42vw);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+body.preferences-window .path-picker input,
+body.preferences-window .license-settings-activation input {
+  min-width: 0;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(248, 248, 246, 0.88);
+  font-size: 10.5px;
+  font-weight: 560;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+
+body.preferences-window .path-picker-actions,
+body.preferences-window .license-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+body.preferences-window .path-picker button,
+body.preferences-window .license-settings-actions button,
+body.preferences-window .license-settings-activation button {
+  min-width: 58px;
+  height: 26px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 10px;
+  background: rgba(249, 115, 22, 0.16);
+  color: var(--prefs-accent);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+
+body.preferences-window .path-picker button.secondary,
+body.preferences-window .license-settings-actions button.secondary {
+  min-width: 48px;
+  color: rgba(248, 248, 246, 0.62);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.preferences-window .path-picker button:hover,
+body.preferences-window .license-settings-actions button:hover,
+body.preferences-window .license-settings-activation button:hover {
+  background: rgba(249, 115, 22, 0.24);
+  color: #ffb066;
+}
+
+body.preferences-window .path-picker button.secondary:hover,
+body.preferences-window .license-settings-actions button.secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(248, 248, 246, 0.84);
+}
+
+body.preferences-window .preferences-field p.error {
+  color: #ffb4ad;
+}
+
+body.preferences-window .preferences-field p.success {
+  color: var(--prefs-accent);
+}
+
+@media (prefers-color-scheme: light) {
+  body.preferences-window {
+    --prefs-text: rgba(28, 28, 30, 0.92);
+    --prefs-muted: rgba(60, 60, 67, 0.58);
+    --prefs-dim: rgba(60, 60, 67, 0.34);
+    --prefs-line: rgba(60, 60, 67, 0.13);
+    --prefs-glass: rgba(246, 244, 240, 0.58);
+    --prefs-control: rgba(255, 255, 255, 0.42);
+    --prefs-control-strong: rgba(255, 255, 255, 0.72);
+  }
+
+  body.preferences-window .preferences-panel {
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.46), transparent 36%),
+      var(--prefs-glass);
+    backdrop-filter: blur(44px) saturate(180%) brightness(1.04);
+    -webkit-backdrop-filter: blur(44px) saturate(180%) brightness(1.04);
+  }
+
+  body.preferences-window .preferences-tabs {
+    background: rgba(60, 60, 67, 0.08);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.45) inset,
+      0 8px 20px rgba(60, 60, 67, 0.06) inset;
+  }
+
+  body.preferences-window .preferences-tabs button {
+    color: rgba(60, 60, 67, 0.56);
+  }
+
+  body.preferences-window .preferences-tabs button.active {
+    background: rgba(255, 255, 255, 0.88);
+    color: rgba(28, 28, 30, 0.92);
+    box-shadow:
+      0 5px 14px rgba(60, 60, 67, 0.14),
+      0 1px 0 rgba(255, 255, 255, 0.86) inset;
+  }
+
+  body.preferences-window .preferences-panel select,
+  body.preferences-window .odometer-value,
+  body.preferences-window .path-picker button,
+  body.preferences-window .license-settings-actions button,
+  body.preferences-window .license-settings-activation button {
+    background: rgba(249, 115, 22, 0.12);
+    color: #c2410c;
+  }
+
+  body.preferences-window .preferences-panel select {
+    border-color: rgba(249, 115, 22, 0.24);
+  }
+
+  body.preferences-window .preferences-panel input[type="checkbox"] {
+    background: rgba(120, 120, 128, 0.20);
+    box-shadow:
+      inset 0 0 0 1px rgba(60, 60, 67, 0.10),
+      inset 0 1px 2px rgba(60, 60, 67, 0.08);
+  }
+
+  body.preferences-window .preferences-panel input[type="checkbox"]::before {
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow:
+      0 1px 4px rgba(60, 60, 67, 0.24),
+      0 1px 0 rgba(255, 255, 255, 0.80) inset;
+  }
+
+  body.preferences-window .preferences-panel input[type="checkbox"]:checked {
+    background: linear-gradient(90deg, rgba(249, 115, 22, 0.86), rgba(249, 115, 22, 0.62));
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+      0 0 12px rgba(249, 115, 22, 0.16);
+  }
+
+  body.preferences-window .odometer-control {
+    background: rgba(60, 60, 67, 0.08);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.46) inset,
+      0 6px 14px rgba(60, 60, 67, 0.06) inset;
+  }
+
+  body.preferences-window .odometer-button {
+    color: rgba(60, 60, 67, 0.58);
+  }
+
+  body.preferences-window .odometer-button:not(:disabled):hover {
+    background: rgba(60, 60, 67, 0.08);
+    color: rgba(28, 28, 30, 0.86);
+  }
+
+  body.preferences-window .odometer-value {
+    box-shadow:
+      0 0 0 1px rgba(249, 115, 22, 0.15) inset,
+      0 1px 0 rgba(255, 255, 255, 0.55) inset;
+  }
+
+  body.preferences-window .path-picker input,
+  body.preferences-window .license-settings-activation input {
+    border-color: rgba(60, 60, 67, 0.12);
+    background: rgba(255, 255, 255, 0.38);
+    color: rgba(28, 28, 30, 0.84);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.46) inset;
+  }
+
+  body.preferences-window .path-picker button.secondary,
+  body.preferences-window .license-settings-actions button.secondary {
+    color: rgba(60, 60, 67, 0.64);
+    background: rgba(60, 60, 67, 0.08);
+  }
+
+  body.preferences-window .path-picker button:hover,
+  body.preferences-window .license-settings-actions button:hover,
+  body.preferences-window .license-settings-activation button:hover {
+    background: rgba(249, 115, 22, 0.18);
+    color: #9a3412;
+  }
+
+  body.preferences-window .path-picker button.secondary:hover,
+  body.preferences-window .license-settings-actions button.secondary:hover {
+    background: rgba(60, 60, 67, 0.12);
+    color: rgba(28, 28, 30, 0.82);
+  }
+
+  body.preferences-window .preferences-field p.error {
+    color: #b42318;
+  }
+}
+
+@media (max-width: 680px) {
+  body.preferences-window .preferences-panel {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 44px 22px 26px;
+    border-radius: 0;
+  }
+
+  body.preferences-window .preferences-header {
+    margin-bottom: 24px;
+  }
+
+  body.preferences-window .preferences-header h1 {
+    font-size: 19px;
+  }
+
+  body.preferences-window .preferences-tabs {
+    height: 34px;
+    margin-bottom: 16px;
+  }
+
+  body.preferences-window .preferences-tabs button {
+    height: 26px;
+    font-size: 11.5px;
+  }
+
+  body.preferences-window .preferences-group > label,
+  body.preferences-window .preferences-group > label.range-row,
+  body.preferences-window .preferences-field {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  body.preferences-window .preferences-panel label,
+  body.preferences-window .preferences-field label,
+  body.preferences-window .preference-title {
+    font-size: 12.5px;
+  }
+
+  body.preferences-window .preferences-field p,
+  body.preferences-window .preference-description {
+    font-size: 10.5px;
+  }
+
+  body.preferences-window .preferences-panel select,
+  body.preferences-window .preferences-panel input[type="checkbox"],
+  body.preferences-window .preferences-panel .range-unit,
+  body.preferences-window .odometer-control {
+    justify-self: start;
+  }
+
+  body.preferences-window .preferences-panel .range-unit,
+  body.preferences-window .path-picker,
+  body.preferences-window .license-settings-activation {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.preferences-window .path-picker,
+  body.preferences-window .license-settings-activation {
+    grid-template-columns: 1fr;
+  }
+}
+
 .license-dialog {
   border: 0;
   padding: 0;
