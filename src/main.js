@@ -3064,15 +3064,27 @@ function setupTray() {
   tray = new Tray(trayIcon);
   tray.setToolTip('Orange Fuji');
 
+  const traySendToRenderer = (channel) => {
+    const wasMissing = !mainWindow || mainWindow.isDestroyed();
+    if (wasMissing) createMainWindow();
+    const send = () => mainWindow?.webContents?.send(channel);
+    if (wasMissing || mainWindow?.webContents?.isLoading()) {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      mainWindow.once('ready-to-show', send);
+      return;
+    }
+    send();
+  };
+
   const trayMenu = Menu.buildFromTemplate([
     { label: 'Open', click: () => { if (!mainWindow || mainWindow.isDestroyed()) { createMainWindow(true); } else { applyToolbarWindowMode({ show: true }); mainWindow.show(); mainWindow.focus(); } mainWindow?.webContents?.send('toolbar-open-requested'); } },
     { type: 'separator' },
     { label: 'Preferences...', click: () => openPreferencesWindow() },
     { type: 'separator' },
-    { label: 'Capture Region', accelerator: TRAY_CAPTURE_SHORTCUTS.captureRegion.accelerator, icon: trayIcons.captureRegion, click: () => mainWindow?.webContents.send('trigger-capture') },
-    { label: 'Capture Window', accelerator: TRAY_CAPTURE_SHORTCUTS.captureWindow.accelerator, icon: trayIcons.captureWindow, click: () => mainWindow?.webContents.send('trigger-capture-window') },
-    { label: 'Capture Fullscreen', accelerator: TRAY_CAPTURE_SHORTCUTS.captureFullscreen.accelerator, icon: trayIcons.captureFullscreen, click: () => mainWindow?.webContents.send('trigger-capture-fullscreen') },
-    { label: 'Record Screen', accelerator: TRAY_CAPTURE_SHORTCUTS.recordScreen.accelerator, icon: trayIcons.recordScreen, click: () => mainWindow?.webContents.send('trigger-record-screen') },
+    { label: 'Capture Region', accelerator: TRAY_CAPTURE_SHORTCUTS.captureRegion.accelerator, icon: trayIcons.captureRegion, click: () => traySendToRenderer('trigger-capture') },
+    { label: 'Capture Window', accelerator: TRAY_CAPTURE_SHORTCUTS.captureWindow.accelerator, icon: trayIcons.captureWindow, click: () => traySendToRenderer('trigger-capture-window') },
+    { label: 'Capture Fullscreen', accelerator: TRAY_CAPTURE_SHORTCUTS.captureFullscreen.accelerator, icon: trayIcons.captureFullscreen, click: () => traySendToRenderer('trigger-capture-fullscreen') },
+    { label: 'Record Screen', accelerator: TRAY_CAPTURE_SHORTCUTS.recordScreen.accelerator, icon: trayIcons.recordScreen, click: () => traySendToRenderer('trigger-record-screen') },
     { type: 'separator' },
     { label: 'About', click: showAboutDialog },
     { type: 'separator' },
