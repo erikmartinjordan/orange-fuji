@@ -59,6 +59,12 @@ const state = {
   recordingPreview: null,
   recordingSettings: { format: 'mp4', autoZoom: true, autoHideDelay: 0, captureOrangeFuji: false },
   captureSettings: { hideDesktopIcons: true },
+  magicWand: null,
+  magicWandActive: false,
+  imageModified: false,
+  _queueStatusUpdate: false,
+  _marchingPhase: 0,
+  _marchingRAF: null,
 };
 
 const AUTO_HIDE_DELAYS = [500, 1000, 2000, 5000, 10000, 15000, 30000, Infinity];
@@ -536,6 +542,7 @@ function bindKeyboard() {
     if (cmdOrCtrl && e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); redo(); return; }
     if (cmdOrCtrl && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace' || e.key === 'Del' || e.key === 'Suppr') {
+      if (state.currentTool === 'magic-wand') return;
       const selected = state.annotations[state.selectedAnnotationIndex];
       const canDelete = state.selectedAnnotationIndex >= 0 && (state.currentTool === 'select' || selected?.type === 'text');
       if (canDelete) {
@@ -551,10 +558,28 @@ function bindKeyboard() {
       case 'a': selectTool('arrow'); break;
       case 'l': selectTool('line'); break;
       case 't': selectTool('text'); break;
+      case 'm': selectTool('magic-wand'); break;
       case '=': case '+': setZoom(state.zoom * 1.25); break;
       case '-': setZoom(state.zoom / 1.25); break;
       case '0': fitToWindow(); break;
       case 'w': applyWindowContainer(); break;
+      case 'escape':
+        if (state.magicWand) {
+          stopMarchingAnts();
+          state.magicWand = null;
+          state.magicWandActive = false;
+          render();
+        }
+        break;
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Delete' || e.key === 'Backspace' || e.key === 'Del' || e.key === 'Suppr') {
+      if (state.magicWand?.selectionMask && state.currentTool === 'magic-wand') {
+        e.preventDefault();
+        applyMagicWandRemoval();
+      }
     }
   });
 }
@@ -2029,10 +2054,15 @@ const DRAWING_TOOLS = ['rect', 'ellipse', 'arrow', 'line', 'text', 'pixelate'];
 function selectTool(tool) {
   if (state.isEditingText) commitInlineText();
   if (state.cropActive) cancelCrop();
+  if (state.magicWandActive) {
+    state.magicWandActive = false;
+    state.magicWand = null;
+    stopMarchingAnts();
+  }
   state.currentTool = tool;
   elements.toolBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tool === tool));
   elements.container.className = tool ? `canvas-container tool-${tool}` : 'canvas-container';
-  elements.canvas.style.cursor = !tool ? 'default' : (tool === 'text' ? 'text' : (tool === 'select' ? 'default' : 'crosshair'));
+  elements.canvas.style.cursor = !tool ? 'default' : (tool === 'text' ? 'text' : (tool === 'select' || tool === 'magic-wand' ? 'default' : 'crosshair'));
   if (DRAWING_TOOLS.includes(tool)) {
     selectColor(state.currentColor || '#f97316');
   }
@@ -2341,6 +2371,11 @@ function onCanvasMouseDown(e) {
     return;
   }
   
+  if (state.currentTool === 'magic-wand') {
+    startMagicWandSelection(coords.x, coords.y);
+    return;
+  }
+
   state.isDrawing = true;
   state.startX = coords.x;
   state.startY = coords.y;
@@ -2385,6 +2420,14 @@ function onCanvasMouseMove(e) {
     elements.canvas.style.cursor = findTextAnnotationAt(coords) >= 0 ? 'grab' : 'text';
   }
   
+  if (state.magicWandActive) {
+    const coords = getCanvasCoords(e);
+    state.magicWand.currentX = coords.x;
+    state.magicWand.currentY = coords.y;
+    updateMagicWand();
+    return;
+  }
+
   if (!state.isDrawing) return;
   const coords = getCanvasCoords(e);
   render();
@@ -2425,6 +2468,14 @@ function onCanvasMouseUp(e) {
     return;
   }
   
+  if (state.magicWandActive) {
+    state.magicWandActive = false;
+    queueUpdateStatus();
+    render();
+    startMarchingAnts();
+    return;
+  }
+
   if (!state.isDrawing || !state.image) return;
   const coords = getCanvasCoords(e);
   state.isDrawing = false;
@@ -2532,19 +2583,62 @@ function addAnnotation(annotation) {
 function undo() {
   if (state.cropActive) cancelCrop();
   if (state.historyIndex < 0) return;
-  state.historyIndex--;
-  state.annotations = state.historyIndex >= 0 ? [...state.history[state.historyIndex].map(a => ({...a}))] : [];
-  if (state.selectedAnnotationIndex >= state.annotations.length) state.selectedAnnotationIndex = -1;
-  render(); updateStatus(); updateToolbarState();
+
+  const entry = state.history[state.historyIndex];
+
+  if (entry && entry.image) {
+    state.history[state.historyIndex] = { image: getImageDataUrl(), annotations: [...state.annotations.map(a => ({...a}))] };
+    state.historyIndex--;
+    const img = new Image();
+    img.onload = () => {
+      state.image = img;
+      state.annotations = entry.annotations ? [...entry.annotations.map(a => ({...a}))] : [];
+      state.selectedAnnotationIndex = -1;
+      state.magicWand = null;
+      state.magicWandActive = false;
+      render();
+      updateStatus();
+      updateToolbarState();
+    };
+    img.src = entry.image;
+  } else {
+    state.historyIndex--;
+    state.annotations = state.historyIndex >= 0 ? [...state.history[state.historyIndex].map(a => ({...a}))] : [];
+    if (state.selectedAnnotationIndex >= state.annotations.length) state.selectedAnnotationIndex = -1;
+    render();
+    updateStatus();
+    updateToolbarState();
+  }
 }
 
 function redo() {
   if (state.cropActive) cancelCrop();
   if (state.historyIndex >= state.history.length - 1) return;
+
   state.historyIndex++;
-  state.annotations = [...state.history[state.historyIndex].map(a => ({...a}))];
-  if (state.selectedAnnotationIndex >= state.annotations.length) state.selectedAnnotationIndex = -1;
-  render(); updateStatus(); updateToolbarState();
+  const entry = state.history[state.historyIndex];
+
+  if (entry && entry.image) {
+    state.history[state.historyIndex] = { image: getImageDataUrl(), annotations: [...state.annotations.map(a => ({...a}))] };
+    const img = new Image();
+    img.onload = () => {
+      state.image = img;
+      state.annotations = entry.annotations ? [...entry.annotations.map(a => ({...a}))] : [];
+      state.selectedAnnotationIndex = -1;
+      state.magicWand = null;
+      state.magicWandActive = false;
+      render();
+      updateStatus();
+      updateToolbarState();
+    };
+    img.src = entry.image;
+  } else {
+    state.annotations = [...entry.map(a => ({...a}))];
+    if (state.selectedAnnotationIndex >= state.annotations.length) state.selectedAnnotationIndex = -1;
+    render();
+    updateStatus();
+    updateToolbarState();
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2558,6 +2652,7 @@ function render() {
   ctx.drawImage(state.image, 0, 0);
   state.annotations.forEach(drawAnnotation);
   drawSelectionHandles();
+  if (state.magicWand?.selectionMask) drawMagicWandOverlay(ctx);
 }
 
 function drawPreview(x1, y1, x2, y2) {
@@ -2806,7 +2901,7 @@ function getCompositeImage() {
 }
 
 function updateStatus() {
-  const names = { select: 'Select', rect: 'Rectangle', ellipse: 'Ellipse', arrow: 'Arrow', line: 'Line', text: 'Text', highlight: 'Highlight', blur: 'Blur', pixelate: 'Pixelate' };
+  const names = { select: 'Select', rect: 'Rectangle', ellipse: 'Ellipse', arrow: 'Arrow', line: 'Line', text: 'Text', highlight: 'Highlight', blur: 'Blur', pixelate: 'Pixelate', 'magic-wand': 'Magic Wand' };
   elements.statusTool.textContent = state.cropActive ? 'Crop' : (names[state.currentTool] || 'Ready');
   elements.statusZoom.textContent = `${Math.round(state.zoom * 100)}%`;
 }
@@ -2831,10 +2926,228 @@ function updateToolbarState() {
 
 function showToast() {}
 
+function queueUpdateStatus() {
+  if (!state._queueStatusUpdate) {
+    state._queueStatusUpdate = true;
+    requestAnimationFrame(() => { state._queueStatusUpdate = false; updateStatus(); });
+  }
+}
+
+function getImageDataUrl() {
+  const c = document.createElement('canvas');
+  c.width = state.imageWidth;
+  c.height = state.imageHeight;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(state.image, 0, 0);
+  return c.toDataURL('image/png');
+}
+
+function replaceImage(dataUrl, cb) {
+  const img = new Image();
+  img.onload = () => {
+    state.image = img;
+    if (cb) cb();
+    render();
+    updateStatus();
+    updateToolbarState();
+  };
+  img.src = dataUrl;
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Window Container (macOS-style chrome) — Toggle on/off
+// Magic Wand (remove background)
 // ══════════════════════════════════════════════════════════════════════════════
+
+function floodFill(imageData, sx, sy, tolerance) {
+  const w = imageData.width, h = imageData.height;
+  const pixels = imageData.data;
+  const visited = new Uint8Array(w * h);
+  const mask = new Uint8Array(w * h);
+
+  const idx = (sy * w + sx) * 4;
+  const tr = pixels[idx];
+  const tg = pixels[idx + 1];
+  const tb = pixels[idx + 2];
+
+  const stack = [sx, sy];
+  while (stack.length > 0) {
+    const y = stack.pop();
+    const x = stack.pop();
+    const pos = y * w + x;
+    if (visited[pos]) continue;
+    visited[pos] = 1;
+
+    const pi = pos * 4;
+    const dr = pixels[pi] - tr;
+    const dg = pixels[pi + 1] - tg;
+    const db = pixels[pi + 2] - tb;
+    if (dr * dr + dg * dg + db * db > tolerance) continue;
+    if (pixels[pi + 3] < 128) continue;
+
+    mask[pos] = 1;
+    if (x > 0) { stack.push(x - 1, y); }
+    if (x < w - 1) { stack.push(x + 1, y); }
+    if (y > 0) { stack.push(x, y - 1); }
+    if (y < h - 1) { stack.push(x, y + 1); }
+  }
+  return mask;
+}
+
+function startMagicWandSelection(cx, cy) {
+  stopMarchingAnts();
+  state.magicWand = null;
+  state.magicWandActive = false;
+
+  const sx = Math.round(Math.max(0, Math.min(state.imageWidth - 1, cx)));
+  const sy = Math.round(Math.max(0, Math.min(state.imageHeight - 1, cy)));
+
+  const oc = document.createElement('canvas');
+  oc.width = state.imageWidth;
+  oc.height = state.imageHeight;
+  const octx = oc.getContext('2d');
+  octx.drawImage(state.image, 0, 0);
+  const imageData = octx.getImageData(0, 0, state.imageWidth, state.imageHeight);
+
+  const pi = (sy * state.imageWidth + sx) * 4;
+  state.magicWand = {
+    selectionMask: null,
+    overlayCanvas: document.createElement('canvas'),
+    startX: sx,
+    startY: sy,
+    currentX: sx,
+    currentY: sy,
+    targetR: imageData.data[pi],
+    targetG: imageData.data[pi + 1],
+    targetB: imageData.data[pi + 2],
+    tolerance: 0,
+    imageData: imageData,
+  };
+  state.magicWand.overlayCanvas.width = state.imageWidth;
+  state.magicWand.overlayCanvas.height = state.imageHeight;
+  state.magicWandActive = true;
+
+  state.magicWand.selectionMask = floodFill(imageData, sx, sy, 0);
+  render();
+}
+
+function updateMagicWand() {
+  if (!state.magicWand || !state.magicWandActive) return;
+  const dx = state.magicWand.currentX - state.magicWand.startX;
+  const dy = state.magicWand.currentY - state.magicWand.startY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const newTol = Math.min(Math.round(distance * 20), 5000);
+  if (Math.abs(newTol - state.magicWand.tolerance) > 5) {
+    state.magicWand.tolerance = newTol;
+    computeMagicWandMask();
+    render();
+  }
+}
+
+function computeMagicWandMask() {
+  if (!state.magicWand) return;
+  state.magicWand.selectionMask = floodFill(
+    state.magicWand.imageData,
+    state.magicWand.startX,
+    state.magicWand.startY,
+    state.magicWand.tolerance
+  );
+}
+
+function drawMagicWandOverlay(ctx) {
+  if (!state.magicWand?.selectionMask) return;
+  const w = state.imageWidth;
+  const h = state.imageHeight;
+  const mask = state.magicWand.selectionMask;
+  const overlayCtx = state.magicWand.overlayCanvas.getContext('2d');
+  const imageData = overlayCtx.createImageData(w, h);
+  const pixels = imageData.data;
+  const phase = state._marchingPhase || 0;
+
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i]) {
+      pixels[i * 4] = 255;
+      pixels[i * 4 + 1] = 50;
+      pixels[i * 4 + 2] = 50;
+      pixels[i * 4 + 3] = 100;
+    }
+  }
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const pos = y * w + x;
+      if (!mask[pos]) continue;
+      const isBoundary = (x === 0 || !mask[pos - 1]) ||
+                         (x === w - 1 || !mask[pos + 1]) ||
+                         (y === 0 || !mask[pos - w]) ||
+                         (y === h - 1 || !mask[pos + w]);
+      if (!isBoundary) continue;
+      if ((x + y + phase) % 6 >= 3) continue;
+      const pi = pos * 4;
+      pixels[pi] = 255; pixels[pi + 1] = 255; pixels[pi + 2] = 255; pixels[pi + 3] = 255;
+      if (x + 1 < w) {
+        const rpi = (pos + 1) * 4;
+        pixels[rpi] = 255; pixels[rpi + 1] = 255; pixels[rpi + 2] = 255; pixels[rpi + 3] = 255;
+      }
+      if (y + 1 < h) {
+        const bpi = (pos + w) * 4;
+        pixels[bpi] = 255; pixels[bpi + 1] = 255; pixels[bpi + 2] = 255; pixels[bpi + 3] = 255;
+      }
+    }
+  }
+
+  overlayCtx.putImageData(imageData, 0, 0);
+  ctx.drawImage(state.magicWand.overlayCanvas, 0, 0);
+}
+
+function stopMarchingAnts() {
+  if (state._marchingRAF != null) {
+    clearTimeout(state._marchingRAF);
+    state._marchingRAF = null;
+  }
+}
+
+function startMarchingAnts() {
+  stopMarchingAnts();
+  state._marchingPhase = 0;
+  (function march() {
+    if (!state.magicWand?.selectionMask) return;
+    state._marchingPhase = (state._marchingPhase + 1) % 6;
+    render();
+    state._marchingRAF = setTimeout(march, 150);
+  })();
+}
+
+function applyMagicWandRemoval() {
+  if (!state.magicWand?.selectionMask) return;
+
+  const beforeImage = getImageDataUrl();
+  const beforeAnnotations = [...state.annotations.map(a => ({...a}))];
+
+  const tc = document.createElement('canvas');
+  tc.width = state.imageWidth;
+  tc.height = state.imageHeight;
+  const tctx = tc.getContext('2d');
+  tctx.drawImage(state.image, 0, 0);
+  const id = tctx.getImageData(0, 0, state.imageWidth, state.imageHeight);
+  const mask = state.magicWand.selectionMask;
+  const px = id.data;
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i]) px[i * 4 + 3] = 0;
+  }
+  tctx.putImageData(id, 0, 0);
+
+  stopMarchingAnts();
+  state.magicWand = null;
+  state.magicWandActive = false;
+  state.imageModified = true;
+
+  state.history = state.history.slice(0, state.historyIndex + 1);
+  state.history.push({ image: beforeImage, annotations: beforeAnnotations });
+  state.historyIndex = state.history.length - 1;
+  updateToolbarState();
+
+  replaceImage(tc.toDataURL('image/png'));
+}
 
 function applyWindowContainer() {
   if (!state.image) return;
