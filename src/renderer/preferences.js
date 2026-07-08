@@ -23,6 +23,10 @@ const activateLicenseSetting = document.querySelector('#activate-license-setting
 const licenseActiveState = document.querySelector('#license-active-state');
 const licenseActivationForm = document.querySelector('#license-activation-form');
 const licenseActiveEmail = document.querySelector('#license-active-email');
+const licensePurchasedAt = document.querySelector('#license-purchased-at');
+const licenseKeyDisplay = document.querySelector('#license-key-display');
+const licenseDevicesDisplay = document.querySelector('#license-devices-display');
+const licenseDeactivateBtn = document.querySelector('#license-deactivate-btn');
 const preferencesTabs = Array.from(document.querySelectorAll('[data-preferences-tab]'));
 const preferencesSections = Array.from(document.querySelectorAll('[data-preferences-section]'));
 
@@ -120,12 +124,27 @@ function renderLicenseState(state) {
 
   if (state.licensed) {
     setLicenseMessage('License active.', 'success');
-    if (licenseActiveState) licenseActiveState.style.display = 'flex';
+    if (licenseActiveState) licenseActiveState.style.display = '';
     if (licenseActivationForm) licenseActivationForm.style.display = 'none';
     if (licenseActiveEmail && state.email) {
       licenseActiveEmail.textContent = state.email;
     } else if (licenseActiveEmail) {
       licenseActiveEmail.textContent = 'License active';
+    }
+    if (licensePurchasedAt) {
+      const d = state.purchasedAt ? new Date(state.purchasedAt) : null;
+      licensePurchasedAt.textContent = d && Number.isFinite(d.getTime())
+        ? d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        : '—';
+    }
+    if (licenseKeyDisplay) {
+      const key = state.licenseKey || '';
+      licenseKeyDisplay.textContent = key || '—';
+    }
+    if (licenseDevicesDisplay) {
+      const used = state.devicesUsed ?? 0;
+      const total = state.devicesTotal ?? 2;
+      licenseDevicesDisplay.textContent = `${used}/${total}`;
     }
     return;
   }
@@ -235,5 +254,17 @@ activateLicenseSetting?.addEventListener('click', async () => {
     setLicenseMessage(readable, 'error');
   } finally {
     activateLicenseSetting.disabled = false;
+  }
+});
+
+licenseDeactivateBtn?.addEventListener('click', async () => {
+  if (!confirm('Deactivate the license on this device? You can activate it again later.')) return;
+  licenseDeactivateBtn.disabled = true;
+  try {
+    renderLicenseState(await window.pico.deactivateLicense());
+  } catch (error) {
+    setLicenseMessage(error?.message || 'Deactivation failed.', 'error');
+  } finally {
+    licenseDeactivateBtn.disabled = false;
   }
 });

@@ -973,12 +973,18 @@ body.has-content .toolbar-group.capture-modes + .toolbar-separator {
 
 .license-settings-active {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .license-settings-active[hidden] {
   display: none;
+}
+
+.license-active-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .license-settings-active-icon {
@@ -1004,6 +1010,61 @@ body.has-content .toolbar-group.capture-modes + .toolbar-separator {
   font-size: 11px;
   color: rgba(60, 60, 67, 0.58);
   margin: 0;
+}
+
+.license-active-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(60, 60, 67, 0.13);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.license-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(60, 60, 67, 0.08);
+}
+
+.license-row:last-child {
+  border-bottom: none;
+}
+
+.license-row-label {
+  font-size: 11.5px;
+  color: rgba(60, 60, 67, 0.68);
+}
+
+.license-row-value {
+  font-size: 11.5px;
+  font-weight: 560;
+  color: #1d1d1f;
+  text-align: right;
+}
+
+.license-deactivate-btn {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid rgba(60, 60, 67, 0.16);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  color: rgba(60, 60, 67, 0.72);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.license-deactivate-btn:hover {
+  background: rgba(60, 60, 67, 0.08);
+  color: #c62828;
+  border-color: rgba(198, 40, 40, 0.2);
+}
+
+.license-deactivate-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .license-settings-activation {
@@ -1328,6 +1389,33 @@ body.has-content .toolbar-group.capture-modes + .toolbar-separator {
 
   .license-settings-active-thanks {
     color: rgba(220, 215, 210, 0.5);
+  }
+
+  .license-active-table {
+    border-color: rgba(255, 255, 255, 0.11);
+  }
+
+  .license-row {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .license-row-label {
+    color: rgba(220, 215, 210, 0.55);
+  }
+
+  .license-row-value {
+    color: #f0ede8;
+  }
+
+  .license-deactivate-btn {
+    border-color: rgba(255, 255, 255, 0.14);
+    color: rgba(220, 215, 210, 0.6);
+  }
+
+  .license-deactivate-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ef9a9a;
+    border-color: rgba(239, 154, 154, 0.2);
   }
 
   .preferences-field p.error {
@@ -1809,6 +1897,10 @@ body.preferences-window .preferences-field p.success {
 }
 
 body.preferences-window .license-settings-active {
+  gap: 14px;
+}
+
+body.preferences-window .license-active-header {
   gap: 12px;
 }
 
@@ -1816,6 +1908,50 @@ body.preferences-window .license-settings-active-icon {
   width: 40px;
   height: 40px;
   border-radius: 8px;
+}
+
+body.preferences-window .license-active-table {
+  border-color: var(--prefs-line);
+  border-radius: 8px;
+}
+
+body.preferences-window .license-row {
+  border-bottom-color: var(--prefs-line);
+  padding: 7px 12px;
+}
+
+body.preferences-window .license-row-label {
+  font-size: 11.5px;
+  color: var(--prefs-dim);
+}
+
+body.preferences-window .license-row-value {
+  font-size: 12px;
+  font-weight: 560;
+  color: var(--prefs-text);
+  font-variant-numeric: tabular-nums;
+}
+
+body.preferences-window .license-deactivate-btn {
+  border-color: var(--prefs-line);
+  color: var(--prefs-muted);
+  font-size: 11px;
+  border-radius: 6px;
+  padding: 5px 12px;
+  background: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+body.preferences-window .license-deactivate-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.25);
+}
+
+body.preferences-window .license-deactivate-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 body.preferences-window .license-settings-email {
@@ -1955,6 +2091,16 @@ body.preferences-window .license-settings-active-thanks {
     color: #b42318;
   }
 
+  body.preferences-window .license-deactivate-btn {
+    border-color: rgba(60, 60, 67, 0.16);
+    color: rgba(60, 60, 67, 0.72);
+  }
+
+  body.preferences-window .license-deactivate-btn:hover {
+    background: rgba(60, 60, 67, 0.08);
+    color: #c62828;
+    border-color: rgba(198, 40, 40, 0.2);
+  }
 }
 
 @media (max-width: 680px) {

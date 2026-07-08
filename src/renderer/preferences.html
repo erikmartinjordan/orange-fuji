@@ -102,11 +102,32 @@
             <p id="license-status-setting">Checking license status...</p>
           </div>
           <div class="license-settings-active" id="license-active-state" hidden>
-            <img class="license-settings-active-icon" src="../assets/icons/macos/256x256.png" alt="">
-            <div class="license-settings-active-text">
-              <span class="license-settings-email" id="license-active-email"></span>
-              <span class="license-settings-active-thanks">Thank you for your support!</span>
+            <div class="license-active-header">
+              <img class="license-settings-active-icon" src="../assets/icons/macos/256x256.png" alt="">
+              <div class="license-settings-active-text">
+                <span class="license-settings-email" id="license-active-email"></span>
+                <span class="license-settings-active-thanks">Thank you for your support!</span>
+              </div>
             </div>
+            <div class="license-active-table" id="license-active-table">
+              <div class="license-row">
+                <span class="license-row-label">Plan</span>
+                <span class="license-row-value">Lifetime access</span>
+              </div>
+              <div class="license-row">
+                <span class="license-row-label">Purchased</span>
+                <span class="license-row-value" id="license-purchased-at"></span>
+              </div>
+              <div class="license-row">
+                <span class="license-row-label">License key</span>
+                <span class="license-row-value" id="license-key-display"></span>
+              </div>
+              <div class="license-row">
+                <span class="license-row-label">Devices</span>
+                <span class="license-row-value" id="license-devices-display"></span>
+              </div>
+            </div>
+            <button type="button" class="license-deactivate-btn" id="license-deactivate-btn">Deactivate this device</button>
           </div>
           <div class="license-settings-activation" id="license-activation-form">
             <input type="email" id="license-email-setting" placeholder="you@example.com" autocomplete="email">
