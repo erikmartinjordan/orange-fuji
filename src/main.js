@@ -2731,9 +2731,6 @@ ipcMain.handle('activate-license', async (event, email) => {
 ipcMain.handle('deactivate-license', async () => {
   try {
     const state = await deactivateLicense();
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('license-status-changed');
-    }
     return { ok: true, state };
   } catch (error) {
     return { ok: false, error: error?.message || 'Deactivation failed.' };

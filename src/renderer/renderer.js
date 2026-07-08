@@ -235,10 +235,6 @@ let _cachedLicenseState = null;
 function updateLicenseDialog(licenseState) {
   if (!licenseState) return;
   _cachedLicenseState = licenseState;
-  const trial = licenseState.trial || {};
-  if (trial.expired && !licenseState.licensed) {
-    window.pico.openLicenseWindow();
-  }
 }
 
 async function refreshLicenseState() {
