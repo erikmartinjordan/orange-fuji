@@ -101,12 +101,6 @@ const elements = {
   recordingFormatMenu: $('#recording-format-menu'),
   recordingSaveProgress: $('#recording-save-progress'),
   preferencesDialog: $('#preferences-dialog'),
-  licenseDialog: $('#license-dialog'),
-  licenseStatusCopy: $('#license-status-copy'),
-  licenseEmailInput: $('#license-email-input'),
-  licenseMessage: $('#license-message'),
-  licenseBuy: $('#license-buy'),
-  licenseActivate: $('#license-activate'),
   recordingFormatSetting: $('#recording-format-setting'),
   recordingAutozoomSetting: $('#recording-autozoom-setting'),
   hideDesktopIconsSetting: $('#hide-desktop-icons-setting'),
@@ -187,7 +181,6 @@ function init() {
   bindContextMenu();
   bindPaste();
   bindCrop();
-  bindLicense();
   bindTooltips();
   if (elements.fontCurrentLabel) {
     elements.fontCurrentLabel.textContent = fontFamilyToLabel(state.textFontFamily);
@@ -237,38 +230,14 @@ function setCaptureModeButton(mode = null) {
   });
 }
 
-function setLicenseMessage(message = '', type = '') {
-  if (!elements.licenseMessage) return;
-  elements.licenseMessage.textContent = message;
-  elements.licenseMessage.classList.toggle('error', type === 'error');
-  elements.licenseMessage.classList.toggle('success', type === 'success');
-}
+let _cachedLicenseState = null;
 
 function updateLicenseDialog(licenseState) {
-  if (!elements.licenseDialog || !licenseState) return;
+  if (!licenseState) return;
+  _cachedLicenseState = licenseState;
   const trial = licenseState.trial || {};
-  if (elements.licenseEmailInput && licenseState.email) {
-    elements.licenseEmailInput.value = licenseState.email;
-  }
-
-  if (elements.licenseStatusCopy) {
-    if (licenseState.licensed) {
-      elements.licenseStatusCopy.textContent = `Licensed to ${licenseState.email}`;
-    } else if (trial.expired) {
-      elements.licenseStatusCopy.textContent = 'Your trial has ended. Activate a license to continue.';
-    } else {
-      elements.licenseStatusCopy.textContent = `${trial.daysRemaining} day${trial.daysRemaining === 1 ? '' : 's'} left in your trial.`;
-    }
-  }
-
-  if (licenseState.licensed) {
-    setLicenseMessage('License active.', 'success');
-    if (elements.licenseDialog.open) elements.licenseDialog.close();
-    return;
-  }
-
-  if (trial.expired && !elements.licenseDialog.open) {
-    elements.licenseDialog.showModal();
+  if (trial.expired && !licenseState.licensed) {
+    window.pico.openLicenseWindow();
   }
 }
 
@@ -277,35 +246,8 @@ async function refreshLicenseState() {
     const licenseState = await window.pico.getLicenseState();
     updateLicenseDialog(licenseState);
   } catch (error) {
-    setLicenseMessage(error?.message || 'Could not load license status.', 'error');
+    console.error('[license] failed to load state:', error?.message);
   }
-}
-
-function bindLicense() {
-  on(elements.licenseBuy, 'click', () => window.pico.openBuyLicense?.());
-  on(elements.licenseActivate, 'click', async () => {
-    const email = elements.licenseEmailInput?.value || '';
-    setLicenseMessage('Activating...', '');
-    if (elements.licenseActivate) elements.licenseActivate.disabled = true;
-    try {
-      const licenseState = await window.pico.activateLicense(email);
-      updateLicenseDialog(licenseState);
-    } catch (error) {
-      const message = String(error?.message || 'Activation failed.');
-      const readable = message.includes('license_not_found')
-        ? 'We could not find a license for this email. Use the same email you entered at checkout, or buy a license first.'
-        : message.includes('activation_limit_reached')
-          ? 'This license has reached its 2-device activation limit.'
-          : message;
-      setLicenseMessage(readable, 'error');
-    } finally {
-      if (elements.licenseActivate) elements.licenseActivate.disabled = false;
-    }
-  });
-  elements.licenseDialog?.addEventListener('cancel', async (event) => {
-    const licenseState = await window.pico.getLicenseState().catch(() => null);
-    if (licenseState?.status === 'trial-expired') event.preventDefault();
-  });
 }
 
 function bindToolbar() {
@@ -623,6 +565,7 @@ function bindIPC() {
   });
   window.pico.onSettingsChanged?.(() => { loadRecordingSettings(); scheduleAutoHideFn(); });
   window.pico.onSaveRecordingStarted?.(() => setRecordingSaveProgress(true));
+  window.pico.onLicenseStatusChanged?.(() => refreshLicenseState());
 }
 
 function bindInlineText() {
@@ -896,6 +839,10 @@ function onRecordButtonClick(event) {
 async function startRecordingWithFormat(format = 'mp4', mode = 'region') {
   hideRecordingFormatMenu();
   loadRecordingSettings();
+  if (_cachedLicenseState?.trial?.expired && !_cachedLicenseState?.licensed) {
+    window.pico.openLicenseWindow();
+    return;
+  }
   const normalizedFormat = format === 'gif' ? 'gif' : 'mp4';
   try {
     const started = await window.pico.startRecording({
@@ -1817,6 +1764,11 @@ function initTimelineInteraction() {
 
 async function startCapture(options = {}) {
   if (state.cropActive) cancelCrop();
+  if (_cachedLicenseState?.trial?.expired && !_cachedLicenseState?.licensed) {
+    window.pico.openLicenseWindow();
+    setCaptureModeButton();
+    return;
+  }
   try {
     const result = await window.pico.startCapture({
       hideDesktopIcons: options?.hideDesktopIcons ?? state.captureSettings.hideDesktopIcons,
@@ -1833,6 +1785,11 @@ async function startCapture(options = {}) {
 
 async function startCaptureWindow() {
   if (state.cropActive) cancelCrop();
+  if (_cachedLicenseState?.trial?.expired && !_cachedLicenseState?.licensed) {
+    window.pico.openLicenseWindow();
+    setCaptureModeButton();
+    return;
+  }
   try {
     const result = await window.pico.startCaptureWindow({
       hideDesktopIcons: state.captureSettings.hideDesktopIcons,
@@ -1848,6 +1805,11 @@ async function startCaptureWindow() {
 
 async function startCaptureFullscreen() {
   if (state.cropActive) cancelCrop();
+  if (_cachedLicenseState?.trial?.expired && !_cachedLicenseState?.licensed) {
+    window.pico.openLicenseWindow();
+    setCaptureModeButton();
+    return;
+  }
   try {
     const result = await window.pico.startCaptureFullscreen({
       hideDesktopIcons: state.captureSettings.hideDesktopIcons,
@@ -3403,6 +3365,7 @@ function initToolbarDismiss() {
 
   const autoHide = () => {
     if (hidden || !isFloatingMode()) return;
+    if (document.querySelector('dialog[open]')) { scheduleAutoHide(); return; }
     if (state.recordingSettings.captureOrangeFuji && state.isRecording) { scheduleAutoHide(); return; }
     if (dragging) {
       scheduleAutoHide();
@@ -3412,6 +3375,7 @@ function initToolbarDismiss() {
     toolbar.classList.add('auto-hidden');
     minimizeTimer = window.setTimeout(() => {
       if (!hidden || !isFloatingMode()) return;
+      if (document.querySelector('dialog[open]')) return;
       if (state.recordingSettings.captureOrangeFuji && state.isRecording) return;
       window.pico.minimizeWindow().catch(() => {});
     }, hideAfterAnimationMs);
@@ -3420,6 +3384,7 @@ function initToolbarDismiss() {
   function scheduleAutoHide() {
     window.clearTimeout(hideTimer);
     if (hidden || !isFloatingMode() || isCaptureMode) return;
+    if (document.querySelector('dialog[open]')) return;
     if (state.recordingSettings.captureOrangeFuji && state.isRecording) return;
     const idx = Math.min(Math.max(Math.round(state.recordingSettings.autoHideDelay ?? 0), 0), 7);
     if (idx >= AUTO_HIDE_DELAYS.length - 1) return;
@@ -3429,6 +3394,7 @@ function initToolbarDismiss() {
 
   const markActivity = () => {
     if (hidden) return;
+    if (document.querySelector('dialog[open]')) return;
     scheduleAutoHide();
   };
 

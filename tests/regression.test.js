@@ -13,6 +13,7 @@ const indexSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer'
 const preferencesSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'preferences.html'), 'utf8');
 const preferencesScript = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'preferences.js'), 'utf8');
 const aboutSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'about.html'), 'utf8');
+const licenseSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'license.html'), 'utf8');
 const captureOverlaySource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'capture-overlay.html'), 'utf8');
 const previewToastSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'preview-toast.html'), 'utf8');
 const releaseWorkflowSource = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'release-please.yml'), 'utf8');
@@ -324,7 +325,8 @@ function createStreamWithCursorSetting(cursor) {
   assert.ok(mainSource.includes("ipcMain.handle('activate-license'"), 'main process must expose license activation IPC');
   assert.ok(preloadSource.includes("getLicenseState: () => ipcRenderer.invoke('get-license-state')"), 'preload must expose license state');
   assert.ok(/activateLicense:\s*async\s*\(email\)\s*=>[\s\S]*ipcRenderer\.invoke\('activate-license', email\)/.test(preloadSource), 'preload must expose license activation');
-  assert.ok(indexSource.includes('id="license-dialog"'), 'renderer markup must include the license dialog');
+  assert.ok(licenseSource.includes('id="license-buy-btn"'), 'license window must include the buy button');
+  assert.ok(licenseSource.includes('id="license-activate-btn"'), 'license window must include the activate button');
   assert.ok(rendererSource.includes('refreshLicenseState();'), 'renderer must check trial/license state on startup');
   assert.ok(!indexSource.includes('pro-feature'), 'recording button must not keep old pro feature styling hooks');
   assert.ok(!stylesSource.includes('pro-feature'), 'styles must not keep old pro feature hooks');
@@ -704,7 +706,7 @@ test('Recording Features', () => {
   assert.ok(/ipcMain\.handle\('activate-license'/.test(mainSource), 'main process must expose license activation IPC');
   assert.ok(/getLicenseState: \(\) => ipcRenderer\.invoke\('get-license-state'\)/.test(preloadSource), 'preload must expose license state IPC');
   assert.ok(/activateLicense:\s*async\s*\(email\)\s*=>[\s\S]*ipcRenderer\.invoke\('activate-license', email\)/.test(preloadSource), 'preload must expose license activation IPC');
-  assert.ok(indexSource.includes('id="license-dialog"'), 'renderer must include a license activation dialog');
+  assert.ok(licenseSource.includes('id="license-buy-btn"'), 'renderer must include a license activation dialog');
   assert.ok(rendererSource.includes('refreshLicenseState();'), 'renderer must check license state during startup');
 
   assert.ok(!/pro-feature|pro-badge/.test(indexSource), 'recording UI must not keep pro/trial hooks in markup');
