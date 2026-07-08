@@ -828,6 +828,8 @@ contextBridge.exposeInMainWorld('pico', {
   downloadAppUpdate: () => ipcRenderer.invoke('download-app-update'),
   installAppUpdate: () => ipcRenderer.invoke('install-app-update'),
   openBuyLicense: () => ipcRenderer.invoke('open-buy-license'),
+  openLicenseWindow: () => ipcRenderer.invoke('open-license-window'),
+  onLicenseStatusChanged: (callback) => ipcRenderer.on('license-status-changed', () => callback()),
   chooseDefaultSavePath: (currentPath) => ipcRenderer.invoke('choose-default-save-path', currentPath),
   copyToClipboard: (dataUrl) => ipcRenderer.invoke('copy-to-clipboard', dataUrl),
   readClipboardImage: () => ipcRenderer.invoke('read-clipboard-image'),

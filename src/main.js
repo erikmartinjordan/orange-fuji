@@ -41,6 +41,7 @@ let tray = null;
 let desktopIconsHidden = false;
 let desktopIconsVisibleBeforeRecording = true;
 let preferencesWindow = null;
+let licenseWindow = null;
 let aboutWindow = null;
 let previewToastWindow = null;
 let pendingPreviewToastPayload = null;
@@ -285,6 +286,13 @@ function readableLicenseError(message = '') {
 async function hasUsageEntitlement() {
   const state = await getLicenseState();
   return state.licensed || !state.trial.expired;
+}
+
+async function requireLicense() {
+  const state = await getLicenseState();
+  if (state.licensed || !state.trial.expired) return true;
+  openLicenseWindow();
+  return false;
 }
 
 function configuredDefaultSaveDirectory() {
@@ -900,6 +908,37 @@ function openPreferencesWindow() {
   preferencesWindow.loadFile(path.join(__dirname, 'renderer', 'preferences.html'));
   preferencesWindow.on('closed', () => {
     preferencesWindow = null;
+  });
+}
+
+function openLicenseWindow() {
+  if (licenseWindow && !licenseWindow.isDestroyed()) {
+    licenseWindow.focus();
+    return;
+  }
+
+  licenseWindow = new BrowserWindow({
+    width: 520,
+    height: 390,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    closable: true,
+    movable: true,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 14, y: 16 },
+    vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
+    visualEffectState: 'active',
+    transparent: process.platform === 'darwin',
+    backgroundColor: process.platform === 'darwin' ? '#00000000' : '#252525',
+    autoHideMenuBar: true,
+    title: 'Orange Fuji — License',
+    webPreferences: getAppWebPreferences(),
+  });
+
+  licenseWindow.loadFile(path.join(__dirname, 'renderer', 'license.html'));
+  licenseWindow.on('closed', () => {
+    licenseWindow = null;
   });
 }
 
@@ -2345,7 +2384,7 @@ async function captureRegion(options = {}) {
   const returnMode = mainWindowMode;
   pendingCaptureReturnMode = returnMode === 'editor' ? 'editor' : null;
   try {
-    if (!await hasUsageEntitlement()) {
+    if (!await requireLicense()) {
       notifyRendererCaptureFinished();
       if (mainWindow) showMainWindowForCurrentMode();
       return { success: false, error: 'Trial expired. Activate a license to continue.' };
@@ -2415,7 +2454,7 @@ ipcMain.handle('start-capture', async (event, options = {}) => {
 
 async function captureWindow(options = {}) {
   notifyRendererCaptureModeStarted();
-  if (!await hasUsageEntitlement()) {
+  if (!await requireLicense()) {
     notifyRendererCaptureFinished();
     if (mainWindow) showMainWindowForCurrentMode();
     return { success: false, error: 'Trial expired. Activate a license to continue.' };
@@ -2472,7 +2511,7 @@ ipcMain.handle('start-capture-window', async (event, options = {}) => captureWin
 
 async function captureFullscreen(options = {}) {
   notifyRendererCaptureModeStarted();
-  if (!await hasUsageEntitlement()) {
+  if (!await requireLicense()) {
     notifyRendererCaptureFinished();
     if (mainWindow) showMainWindowForCurrentMode();
     return { success: false, error: 'Trial expired. Activate a license to continue.' };
@@ -2634,7 +2673,11 @@ ipcMain.handle('get-license-state', async () => getLicenseState());
 
 ipcMain.handle('activate-license', async (event, email) => {
   try {
-    return { ok: true, state: await activateLicense(email) };
+    const state = await activateLicense(email);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('license-status-changed');
+    }
+    return { ok: true, state };
   } catch (error) {
     return { ok: false, error: readableLicenseError(error.message) };
   }
@@ -2642,6 +2685,11 @@ ipcMain.handle('activate-license', async (event, email) => {
 
 ipcMain.handle('open-buy-license', async () => {
   await shell.openExternal(BUY_LICENSE_URL);
+  return { success: true };
+});
+
+ipcMain.handle('open-license-window', async () => {
+  openLicenseWindow();
   return { success: true };
 });
 
@@ -2870,7 +2918,7 @@ function chooseRecordingWindowSource() {
 }
 
 ipcMain.handle('pro-recording-source', async (event, options = {}) => {
-  if (!await hasUsageEntitlement()) {
+  if (!await requireLicense()) {
     throw new Error('Trial expired. Activate a license to continue.');
   }
   if (!await ensureMacScreenRecordingPermission()) {
