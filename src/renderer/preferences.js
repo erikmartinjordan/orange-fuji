@@ -20,6 +20,9 @@ const licenseStatusSetting = document.querySelector('#license-status-setting');
 const licenseEmailSetting = document.querySelector('#license-email-setting');
 const buyLicenseSetting = document.querySelector('#buy-license-setting');
 const activateLicenseSetting = document.querySelector('#activate-license-setting');
+const licenseActiveState = document.querySelector('#license-active-state');
+const licenseActivationForm = document.querySelector('#license-activation-form');
+const licenseActiveEmail = document.querySelector('#license-active-email');
 const preferencesTabs = Array.from(document.querySelectorAll('[data-preferences-tab]'));
 const preferencesSections = Array.from(document.querySelectorAll('[data-preferences-section]'));
 
@@ -117,8 +120,18 @@ function renderLicenseState(state) {
 
   if (state.licensed) {
     setLicenseMessage('License active.', 'success');
+    if (licenseActiveState) licenseActiveState.style.display = 'flex';
+    if (licenseActivationForm) licenseActivationForm.style.display = 'none';
+    if (licenseActiveEmail && state.email) {
+      licenseActiveEmail.textContent = state.email;
+    } else if (licenseActiveEmail) {
+      licenseActiveEmail.textContent = 'License active';
+    }
     return;
   }
+
+  if (licenseActiveState) licenseActiveState.style.display = 'none';
+  if (licenseActivationForm) licenseActivationForm.style.display = '';
 
   if (state.trial?.expired) {
     setLicenseMessage('Trial ended. Activate a license to continue.', '');

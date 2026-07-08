@@ -98,14 +98,21 @@
       <section class="preferences-section" data-preferences-section="license" aria-label="License">
         <div class="preferences-group preferences-field preferences-field--license" aria-label="License">
           <div class="preferences-copy">
-            <label for="license-email-setting">License</label>
+            <label>License</label>
             <p id="license-status-setting">Checking license status...</p>
           </div>
-          <div class="license-settings-activation">
+          <div class="license-settings-active" id="license-active-state" hidden>
+            <img class="license-settings-active-icon" src="../assets/icons/macos/256x256.png" alt="">
+            <div class="license-settings-active-text">
+              <span class="license-settings-email" id="license-active-email"></span>
+              <span class="license-settings-active-thanks">Thank you for your support!</span>
+            </div>
+          </div>
+          <div class="license-settings-activation" id="license-activation-form">
             <input type="email" id="license-email-setting" placeholder="you@example.com" autocomplete="email">
             <div class="license-settings-actions">
-              <button type="button" id="buy-license-setting">Buy</button>
-              <button type="button" id="activate-license-setting" class="secondary">Activate</button>
+              <button type="button" id="activate-license-setting">Activate</button>
+              <button type="button" id="buy-license-setting" class="secondary">Buy license</button>
             </div>
           </div>
         </div>
