@@ -76,6 +76,10 @@ const DEFAULT_SETTINGS = {
   licenseStatus: '',
   licenseActivationId: '',
   licenseLastValidatedAt: '',
+  licenseKey: '',
+  licensePurchasedAt: '',
+  licenseDevicesTotal: 2,
+  licenseDevicesUsed: 0,
 };
 const updateState = {
   status: 'idle',
@@ -111,6 +115,10 @@ function normalizeSettings(candidate = {}) {
     licenseStatus: typeof candidate.licenseStatus === 'string' ? candidate.licenseStatus : DEFAULT_SETTINGS.licenseStatus,
     licenseActivationId: typeof candidate.licenseActivationId === 'string' ? candidate.licenseActivationId : DEFAULT_SETTINGS.licenseActivationId,
     licenseLastValidatedAt: typeof candidate.licenseLastValidatedAt === 'string' ? candidate.licenseLastValidatedAt : DEFAULT_SETTINGS.licenseLastValidatedAt,
+    licenseKey: typeof candidate.licenseKey === 'string' ? candidate.licenseKey : DEFAULT_SETTINGS.licenseKey,
+    licensePurchasedAt: typeof candidate.licensePurchasedAt === 'string' ? candidate.licensePurchasedAt : DEFAULT_SETTINGS.licensePurchasedAt,
+    licenseDevicesTotal: typeof candidate.licenseDevicesTotal === 'number' ? candidate.licenseDevicesTotal : DEFAULT_SETTINGS.licenseDevicesTotal,
+    licenseDevicesUsed: typeof candidate.licenseDevicesUsed === 'number' ? candidate.licenseDevicesUsed : DEFAULT_SETTINGS.licenseDevicesUsed,
   };
 }
 
@@ -222,6 +230,10 @@ async function validateLicenseIfNeeded(settings) {
       licenseStatus: result.status || 'active',
       licenseActivationId: result.activationId || settings.licenseActivationId,
       licenseLastValidatedAt: result.validatedAt || nowIso(),
+      licenseKey: result.key || result.licenseKey || settings.licenseKey,
+      licensePurchasedAt: result.purchasedAt || result.createdAt || settings.licensePurchasedAt,
+      licenseDevicesTotal: result.devicesTotal ?? result.maxActivations ?? settings.licenseDevicesTotal,
+      licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? settings.licenseDevicesUsed,
     });
   } catch (error) {
     console.error('[orange-fuji][license] validation failed:', error.message);
@@ -241,6 +253,10 @@ async function getLicenseState() {
     status: licensed ? 'licensed' : (trial.expired ? 'trial-expired' : 'trial-active'),
     buyUrl: BUY_LICENSE_URL,
     checkIntervalDays: LICENSE_CHECK_INTERVAL_DAYS,
+    licenseKey: settings.licenseKey,
+    purchasedAt: settings.licensePurchasedAt,
+    devicesTotal: settings.licenseDevicesTotal,
+    devicesUsed: settings.licenseDevicesUsed,
   };
 }
 
@@ -265,6 +281,10 @@ async function activateLicense(email) {
     licenseStatus: result.status || 'active',
     licenseActivationId: result.activationId || settings.deviceId,
     licenseLastValidatedAt: result.validatedAt || nowIso(),
+    licenseKey: result.key || result.licenseKey || '',
+    licensePurchasedAt: result.purchasedAt || result.createdAt || '',
+    licenseDevicesTotal: result.devicesTotal ?? result.maxActivations ?? 2,
+    licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? 0,
   });
 
   return getLicenseState();
@@ -281,6 +301,31 @@ function readableLicenseError(message = '') {
     return 'Enter the email you used at checkout.';
   }
   return message || 'Activation failed. Please try again.';
+}
+
+async function deactivateLicense() {
+  const settings = ensureLocalLicenseSettings();
+  if (settings.licenseStatus !== 'active' || !settings.licenseEmail) {
+    throw new Error('No active license to deactivate.');
+  }
+  try {
+    await callLicenseApi('deactivate-license', {
+      email: settings.licenseEmail,
+      activationId: settings.licenseActivationId,
+      deviceId: settings.deviceId,
+    });
+  } catch (error) {
+    console.error('[orange-fuji][license] deactivation API error:', error.message);
+  }
+  writeSettings({
+    licenseStatus: '',
+    licenseActivationId: '',
+    licenseLastValidatedAt: '',
+    licenseKey: '',
+    licensePurchasedAt: '',
+    licenseDevicesUsed: 0,
+  });
+  return getLicenseState();
 }
 
 async function hasUsageEntitlement() {
@@ -2680,6 +2725,18 @@ ipcMain.handle('activate-license', async (event, email) => {
     return { ok: true, state };
   } catch (error) {
     return { ok: false, error: readableLicenseError(error.message) };
+  }
+});
+
+ipcMain.handle('deactivate-license', async () => {
+  try {
+    const state = await deactivateLicense();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('license-status-changed');
+    }
+    return { ok: true, state };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Deactivation failed.' };
   }
 });
 
