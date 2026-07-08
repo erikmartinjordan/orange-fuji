@@ -20,6 +20,7 @@ const licenseStatusSetting = document.querySelector('#license-status-setting');
 const licenseEmailSetting = document.querySelector('#license-email-setting');
 const buyLicenseSetting = document.querySelector('#buy-license-setting');
 const activateLicenseSetting = document.querySelector('#activate-license-setting');
+const licenseCopy = document.querySelector('.preferences-field--license .preferences-copy');
 const licenseActiveState = document.querySelector('#license-active-state');
 const licenseActivationForm = document.querySelector('#license-activation-form');
 const licenseActiveEmail = document.querySelector('#license-active-email');
@@ -123,8 +124,14 @@ function renderLicenseState(state) {
   if (licenseEmailSetting && state.email) licenseEmailSetting.value = state.email;
 
   if (state.licensed) {
-    setLicenseMessage('License active.', 'success');
-    if (licenseActiveState) licenseActiveState.style.display = '';
+    if (licenseCopy) {
+      licenseCopy.style.display = 'none';
+      document.querySelector('.preferences-field--license')?.classList.add('license-field--active');
+    }
+    if (licenseActiveState) {
+      licenseActiveState.style.display = '';
+      licenseActiveState.removeAttribute('hidden');
+    }
     if (licenseActivationForm) licenseActivationForm.style.display = 'none';
     if (licenseActiveEmail && state.email) {
       licenseActiveEmail.textContent = state.email;
@@ -134,22 +141,36 @@ function renderLicenseState(state) {
     if (licensePurchasedAt) {
       const d = state.purchasedAt ? new Date(state.purchasedAt) : null;
       licensePurchasedAt.textContent = d && Number.isFinite(d.getTime())
-        ? d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        ? d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
         : '—';
     }
     if (licenseKeyDisplay) {
       const key = state.licenseKey || '';
-      licenseKeyDisplay.textContent = key || '—';
+      const row = licenseKeyDisplay.closest('.license-row');
+      if (key) {
+        licenseKeyDisplay.textContent = key;
+        licenseKeyDisplay.title = key;
+        if (row) row.style.display = '';
+      } else {
+        if (row) row.style.display = 'none';
+      }
     }
     if (licenseDevicesDisplay) {
       const used = state.devicesUsed ?? 0;
       const total = state.devicesTotal ?? 2;
-      licenseDevicesDisplay.textContent = `${used}/${total}`;
+      licenseDevicesDisplay.textContent = `${total - used} of ${total} available`;
     }
     return;
   }
 
-  if (licenseActiveState) licenseActiveState.style.display = 'none';
+  if (licenseCopy) {
+    licenseCopy.style.display = '';
+    document.querySelector('.preferences-field--license')?.classList.remove('license-field--active');
+  }
+  if (licenseActiveState) {
+    licenseActiveState.style.display = 'none';
+    licenseActiveState.setAttribute('hidden', '');
+  }
   if (licenseActivationForm) licenseActivationForm.style.display = '';
 
   if (state.trial?.expired) {
@@ -163,7 +184,9 @@ function renderLicenseState(state) {
 
 async function loadLicenseState() {
   try {
-    renderLicenseState(await window.pico.getLicenseState());
+    const result = await window.pico.revalidateLicense?.();
+    const state = result?.ok ? result.state : await window.pico.getLicenseState();
+    renderLicenseState(state);
   } catch (error) {
     if (licenseStatusSetting) licenseStatusSetting.textContent = 'Could not load license status.';
     setLicenseMessage(error?.message || 'License status unavailable.', 'error');

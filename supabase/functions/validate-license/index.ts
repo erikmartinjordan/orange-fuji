@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 
   const { data: activation, error: activationError } = await supabase
     .from("license_activations")
-    .select("id,status")
+    .select("id,status,license_id,activated_at")
     .eq("license_id", license.id)
     .eq("device_id", deviceId)
     .eq("status", "active")
@@ -33,6 +33,14 @@ Deno.serve(async (req) => {
 
   if (activationError) return json({ ok: false, error: "activation_lookup_failed" }, 500);
   if (!activation) return json({ ok: false, error: "activation_not_found" }, 404);
+
+  const { count: activeDevices, error: countError } = await supabase
+    .from("license_activations")
+    .select("id", { count: "exact", head: true })
+    .eq("license_id", license.id)
+    .eq("status", "active");
+
+  if (countError) return json({ ok: false, error: "activation_count_failed" }, 500);
 
   const validatedAt = new Date().toISOString();
   const { error: updateError } = await supabase
@@ -47,7 +55,10 @@ Deno.serve(async (req) => {
     email,
     status: license.status,
     activationId: activation.id,
+    licenseId: activation.license_id,
     maxActivations: license.max_activations,
+    activeDevices: activeDevices || 0,
     validatedAt,
+    activatedAt: activation.activated_at,
   });
 });

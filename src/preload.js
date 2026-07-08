@@ -830,6 +830,7 @@ contextBridge.exposeInMainWorld('pico', {
   openBuyLicense: () => ipcRenderer.invoke('open-buy-license'),
   openLicenseWindow: () => ipcRenderer.invoke('open-license-window'),
   deactivateLicense: () => ipcRenderer.invoke('deactivate-license'),
+  revalidateLicense: () => ipcRenderer.invoke('revalidate-license'),
   onLicenseStatusChanged: (callback) => ipcRenderer.on('license-status-changed', () => callback()),
   chooseDefaultSavePath: (currentPath) => ipcRenderer.invoke('choose-default-save-path', currentPath),
   copyToClipboard: (dataUrl) => ipcRenderer.invoke('copy-to-clipboard', dataUrl),

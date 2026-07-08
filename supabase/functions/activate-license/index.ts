@@ -26,12 +26,20 @@ Deno.serve(async (req) => {
 
   const { data: existing, error: existingError } = await supabase
     .from("license_activations")
-    .select("id,status")
+    .select("id,status,license_id,activated_at")
     .eq("license_id", license.id)
     .eq("device_id", deviceId)
     .maybeSingle();
 
   if (existingError) return json({ ok: false, error: "activation_lookup_failed" }, 500);
+
+  const { count: activeCount, error: countError } = await supabase
+    .from("license_activations")
+    .select("id", { count: "exact", head: true })
+    .eq("license_id", license.id)
+    .eq("status", "active");
+
+  if (countError) return json({ ok: false, error: "activation_count_failed" }, 500);
 
   if (existing?.status === "active") {
     const { error } = await supabase
@@ -49,19 +57,15 @@ Deno.serve(async (req) => {
       email,
       status: "active",
       activationId: existing.id,
+      licenseId: existing.license_id,
       maxActivations: license.max_activations,
+      activeDevices: activeCount || 0,
       validatedAt: new Date().toISOString(),
+      activatedAt: existing.activated_at,
     });
   }
 
-  const { count, error: countError } = await supabase
-    .from("license_activations")
-    .select("id", { count: "exact", head: true })
-    .eq("license_id", license.id)
-    .eq("status", "active");
-
-  if (countError) return json({ ok: false, error: "activation_count_failed" }, 500);
-  if ((count || 0) >= license.max_activations) {
+  if ((activeCount || 0) >= license.max_activations) {
     return json({ ok: false, error: "activation_limit_reached" }, 409);
   }
 
@@ -73,7 +77,7 @@ Deno.serve(async (req) => {
       status: "active",
       app_version: appVersion,
     })
-    .select("id")
+    .select("id,license_id,activated_at")
     .single();
 
   if (insertError) return json({ ok: false, error: "activation_create_failed" }, 500);
@@ -83,7 +87,10 @@ Deno.serve(async (req) => {
     email,
     status: "active",
     activationId: activation.id,
+    licenseId: activation.license_id,
     maxActivations: license.max_activations,
+    activeDevices: (activeCount || 0) + 1,
     validatedAt: new Date().toISOString(),
+    activatedAt: activation.activated_at,
   });
 });

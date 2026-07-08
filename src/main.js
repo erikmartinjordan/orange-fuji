@@ -230,8 +230,8 @@ async function validateLicenseIfNeeded(settings) {
       licenseStatus: result.status || 'active',
       licenseActivationId: result.activationId || settings.licenseActivationId,
       licenseLastValidatedAt: result.validatedAt || nowIso(),
-      licenseKey: result.key || result.licenseKey || settings.licenseKey,
-      licensePurchasedAt: result.purchasedAt || result.createdAt || settings.licensePurchasedAt,
+      licenseKey: result.licenseId || settings.licenseKey || settings.licenseActivationId || '',
+      licensePurchasedAt: result.activatedAt || settings.licensePurchasedAt || '',
       licenseDevicesTotal: result.devicesTotal ?? result.maxActivations ?? settings.licenseDevicesTotal,
       licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? settings.licenseDevicesUsed,
     });
@@ -253,8 +253,8 @@ async function getLicenseState() {
     status: licensed ? 'licensed' : (trial.expired ? 'trial-expired' : 'trial-active'),
     buyUrl: BUY_LICENSE_URL,
     checkIntervalDays: LICENSE_CHECK_INTERVAL_DAYS,
-    licenseKey: settings.licenseKey,
-    purchasedAt: settings.licensePurchasedAt,
+    licenseKey: settings.licenseKey || settings.licenseActivationId || '',
+    purchasedAt: settings.licensePurchasedAt || '',
     devicesTotal: settings.licenseDevicesTotal,
     devicesUsed: settings.licenseDevicesUsed,
   };
@@ -281,8 +281,8 @@ async function activateLicense(email) {
     licenseStatus: result.status || 'active',
     licenseActivationId: result.activationId || settings.deviceId,
     licenseLastValidatedAt: result.validatedAt || nowIso(),
-    licenseKey: result.key || result.licenseKey || '',
-    licensePurchasedAt: result.purchasedAt || result.createdAt || '',
+    licenseKey: result.licenseId || result.activationId || '',
+    licensePurchasedAt: result.activatedAt || '',
     licenseDevicesTotal: result.devicesTotal ?? result.maxActivations ?? 2,
     licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? 0,
   });
@@ -2737,6 +2737,32 @@ ipcMain.handle('deactivate-license', async () => {
     return { ok: true, state };
   } catch (error) {
     return { ok: false, error: error?.message || 'Deactivation failed.' };
+  }
+});
+
+ipcMain.handle('revalidate-license', async () => {
+  try {
+    const settings = ensureLocalLicenseSettings();
+    if (settings.licenseStatus !== 'active' || !settings.licenseEmail) {
+      return { ok: true, state: await getLicenseState() };
+    }
+    const result = await callLicenseApi('validate-license', {
+      email: settings.licenseEmail,
+      activationId: settings.licenseActivationId,
+      deviceId: settings.deviceId,
+    });
+    writeSettings({
+      licenseStatus: result.status || 'active',
+      licenseActivationId: result.activationId || settings.licenseActivationId,
+      licenseLastValidatedAt: result.validatedAt || nowIso(),
+      licenseKey: result.licenseId || settings.licenseKey || settings.licenseActivationId || '',
+      licensePurchasedAt: result.activatedAt || settings.licensePurchasedAt || '',
+      licenseDevicesTotal: result.devicesTotal ?? result.maxActivations ?? settings.licenseDevicesTotal,
+      licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? settings.licenseDevicesUsed,
+    });
+    return { ok: true, state: await getLicenseState() };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Re-validation failed.' };
   }
 });
 

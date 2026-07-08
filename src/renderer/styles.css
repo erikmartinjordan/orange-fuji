@@ -971,10 +971,14 @@ body.has-content .toolbar-group.capture-modes + .toolbar-separator {
   gap: 6px;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   License — Active state (Preferences)
+   ══════════════════════════════════════════════════════════════════════════ */
+
 .license-settings-active {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .license-settings-active[hidden] {
@@ -987,83 +991,94 @@ body.has-content .toolbar-group.capture-modes + .toolbar-separator {
   gap: 10px;
 }
 
-.license-settings-active-icon {
+.license-active-icon {
   width: 36px;
   height: 36px;
-  border-radius: 7px;
+  border-radius: 8px;
   flex-shrink: 0;
 }
 
-.license-settings-active-text {
+.license-active-owner {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.license-settings-email {
-  font-size: 12px;
+.license-active-email {
+  font-size: 12.5px;
   font-weight: 600;
   color: #1d1d1f;
+  letter-spacing: -0.01em;
 }
 
-.license-settings-active-thanks {
+.license-active-thanks {
   font-size: 11px;
-  color: rgba(60, 60, 67, 0.58);
+  color: rgba(60, 60, 67, 0.5);
   margin: 0;
 }
 
 .license-active-table {
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(60, 60, 67, 0.13);
   border-radius: 8px;
   overflow: hidden;
+  background: rgba(60, 60, 67, 0.04);
+  border: 1px solid rgba(60, 60, 67, 0.08);
 }
 
 .license-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(60, 60, 67, 0.08);
+  padding: 9px 14px;
 }
 
-.license-row:last-child {
-  border-bottom: none;
+.license-row + .license-row {
+  border-top: 1px solid rgba(60, 60, 67, 0.06);
 }
 
 .license-row-label {
-  font-size: 11.5px;
-  color: rgba(60, 60, 67, 0.68);
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(60, 60, 67, 0.6);
+  letter-spacing: -0.01em;
 }
 
 .license-row-value {
-  font-size: 11.5px;
-  font-weight: 560;
+  font-size: 12px;
+  font-weight: 500;
   color: #1d1d1f;
   text-align: right;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 .license-deactivate-btn {
   align-self: flex-start;
-  background: none;
-  border: 1px solid rgba(60, 60, 67, 0.16);
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
   border-radius: 6px;
-  padding: 5px 12px;
+  background: rgba(198, 40, 40, 0.08);
   font-size: 11px;
-  color: rgba(60, 60, 67, 0.72);
+  font-weight: 560;
+  color: #b42318;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
 }
 
 .license-deactivate-btn:hover {
-  background: rgba(60, 60, 67, 0.08);
-  color: #c62828;
-  border-color: rgba(198, 40, 40, 0.2);
+  background: rgba(198, 40, 40, 0.14);
+  color: #8b1e14;
+}
+
+.license-deactivate-btn:active {
+  background: rgba(198, 40, 40, 0.22);
+  color: #7a1a11;
 }
 
 .license-deactivate-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: default;
 }
 
@@ -1383,24 +1398,25 @@ body.has-content .toolbar-group.capture-modes + .toolbar-separator {
       0 1px 0 rgba(255,255,255,0.04);
   }
 
-  .license-settings-email {
+  .license-active-email {
     color: #f0ede8;
   }
 
-  .license-settings-active-thanks {
-    color: rgba(220, 215, 210, 0.5);
+  .license-active-thanks {
+    color: rgba(220, 215, 210, 0.45);
   }
 
   .license-active-table {
-    border-color: rgba(255, 255, 255, 0.11);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
-  .license-row {
-    border-bottom-color: rgba(255, 255, 255, 0.06);
+  .license-row + .license-row {
+    border-top-color: rgba(255, 255, 255, 0.05);
   }
 
   .license-row-label {
-    color: rgba(220, 215, 210, 0.55);
+    color: rgba(220, 215, 210, 0.5);
   }
 
   .license-row-value {
@@ -1408,14 +1424,19 @@ body.has-content .toolbar-group.capture-modes + .toolbar-separator {
   }
 
   .license-deactivate-btn {
-    border-color: rgba(255, 255, 255, 0.14);
-    color: rgba(220, 215, 210, 0.6);
+    border: 0;
+    background: rgba(239, 154, 154, 0.08);
+    color: #ef9a9a;
   }
 
   .license-deactivate-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ef9a9a;
-    border-color: rgba(239, 154, 154, 0.2);
+    background: rgba(239, 154, 154, 0.16);
+    color: #ffcdd2;
+  }
+
+  .license-deactivate-btn:active {
+    background: rgba(239, 154, 154, 0.24);
+    color: #ffe0e0;
   }
 
   .preferences-field p.error {
@@ -1896,57 +1917,91 @@ body.preferences-window .preferences-field p.success {
   color: var(--prefs-accent);
 }
 
+body.preferences-window .preferences-field--license.license-field--active {
+  grid-template-columns: 1fr;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
 body.preferences-window .license-settings-active {
-  gap: 14px;
+  gap: 16px;
 }
 
 body.preferences-window .license-active-header {
   gap: 12px;
 }
 
-body.preferences-window .license-settings-active-icon {
+body.preferences-window .license-active-icon {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: 9px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+body.preferences-window .license-active-owner {
+  gap: 3px;
+}
+
+body.preferences-window .license-active-email {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--prefs-text);
+}
+
+body.preferences-window .license-active-thanks {
+  font-size: 11.5px;
+  color: var(--prefs-muted);
 }
 
 body.preferences-window .license-active-table {
-  border-color: var(--prefs-line);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--prefs-line);
   border-radius: 8px;
 }
 
 body.preferences-window .license-row {
-  border-bottom-color: var(--prefs-line);
-  padding: 7px 12px;
+  padding: 9px 14px;
+}
+
+body.preferences-window .license-row + .license-row {
+  border-top: 1px solid var(--prefs-line);
 }
 
 body.preferences-window .license-row-label {
-  font-size: 11.5px;
+  font-size: 12px;
+  font-weight: 520;
   color: var(--prefs-dim);
 }
 
 body.preferences-window .license-row-value {
   font-size: 12px;
-  font-weight: 560;
+  font-weight: 530;
   color: var(--prefs-text);
   font-variant-numeric: tabular-nums;
 }
 
 body.preferences-window .license-deactivate-btn {
-  border-color: var(--prefs-line);
-  color: var(--prefs-muted);
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(252, 165, 165, 0.08);
+  color: #fca5a5;
   font-size: 11px;
-  border-radius: 6px;
-  padding: 5px 12px;
-  background: none;
+  font-weight: 650;
+  letter-spacing: 0;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
 }
 
 body.preferences-window .license-deactivate-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fca5a5;
-  border-color: rgba(252, 165, 165, 0.25);
+  background: rgba(252, 165, 165, 0.16);
+  color: #fed7d7;
+}
+
+body.preferences-window .license-deactivate-btn:active {
+  background: rgba(252, 165, 165, 0.24);
+  color: #fee2e2;
 }
 
 body.preferences-window .license-deactivate-btn:disabled {
@@ -1954,17 +2009,7 @@ body.preferences-window .license-deactivate-btn:disabled {
   cursor: default;
 }
 
-body.preferences-window .license-settings-email {
-  color: var(--prefs-text);
-  font-size: 12px;
-  font-weight: 600;
-}
 
-body.preferences-window .license-settings-active-thanks {
-  font-size: 11px;
-  color: var(--prefs-muted);
-  margin: 0;
-}
 
 @media (prefers-color-scheme: light) {
   body.preferences-window {
@@ -2092,14 +2137,18 @@ body.preferences-window .license-settings-active-thanks {
   }
 
   body.preferences-window .license-deactivate-btn {
-    border-color: rgba(60, 60, 67, 0.16);
-    color: rgba(60, 60, 67, 0.72);
+    background: rgba(198, 40, 40, 0.08);
+    color: #b42318;
   }
 
   body.preferences-window .license-deactivate-btn:hover {
-    background: rgba(60, 60, 67, 0.08);
-    color: #c62828;
-    border-color: rgba(198, 40, 40, 0.2);
+    background: rgba(198, 40, 40, 0.14);
+    color: #8b1e14;
+  }
+
+  body.preferences-window .license-deactivate-btn:active {
+    background: rgba(198, 40, 40, 0.22);
+    color: #7a1a11;
   }
 }
 
