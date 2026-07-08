@@ -27,3 +27,5 @@ Thumbs.db
 *.dmg
 *.exe
 *.AppImage
+supabase/.temp/
+test-results/
