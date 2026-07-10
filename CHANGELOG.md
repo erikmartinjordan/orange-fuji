@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.6.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.5.3...v1.6.0) (2026-07-10)
+
+
+### ✨ Features
+
+* add screenshot slideshow to landing page ([1ae4617](https://github.com/erikmartinjordan/orange-fuji/commit/1ae4617e7e51b99d084045288c5d656fbff42b85))
+* add separate paywall window for expired trial ([3e4e73e](https://github.com/erikmartinjordan/orange-fuji/commit/3e4e73e1c93c95bd10fe15c7769d482fc3631bb2))
+* deploy edge functions with licenseId/activatedAt/activeDevices, en-US dates, match deactivate button to other fields ([f7492fd](https://github.com/erikmartinjordan/orange-fuji/commit/f7492fd20633fc6836cd2c8d36aced6c748dfb0d))
+* redesing license section in preferences tab ([f9e4675](https://github.com/erikmartinjordan/orange-fuji/commit/f9e4675cd3a569432295053fb544dc560d9511a7))
+* show license details table in preferences active state ([35e1b0f](https://github.com/erikmartinjordan/orange-fuji/commit/35e1b0fe57d8a89172cbbb0e9bee6ff41919439f))
+* store license metadata and add deactivate API ([8516c4e](https://github.com/erikmartinjordan/orange-fuji/commit/8516c4eea63476f9d9fc6737a42b1f32ddf0b466))
+
+
+### 🐛 Fixes
+
+* dont show purchase banner after deactivation, wait until user action ([2a71bd5](https://github.com/erikmartinjordan/orange-fuji/commit/2a71bd52ca7282d6d8d0199c6c79b2c030347254))
+* prevent capture focus jumps ([a3c6777](https://github.com/erikmartinjordan/orange-fuji/commit/a3c6777385da4d852fea5a116f53ef7d2fd0391c))
+* Pulse effect while recording ([7fcf89e](https://github.com/erikmartinjordan/orange-fuji/commit/7fcf89ee27685746a3abd5c4d60248551c071620))
+* stabilize recording window lifecycle ([949dad4](https://github.com/erikmartinjordan/orange-fuji/commit/949dad4eabba125ad5cb08e4f0578a3e16c92817))
+* tray menu buttons not working when main window is closed ([2da90c0](https://github.com/erikmartinjordan/orange-fuji/commit/2da90c0ca467307d863e253150903032610a508f))
+* update license window ID assertions in tests ([017772c](https://github.com/erikmartinjordan/orange-fuji/commit/017772c99d95f86f2de86ab91e29ac9a8f0dc728))
+* Video selection on retina displays ([2d0d287](https://github.com/erikmartinjordan/orange-fuji/commit/2d0d28757acc4c26baa889003d98d5e0e2daf1d6))
+
+
+### 📝 Documentation
+
+* explain macos notarization secrets ([eb58798](https://github.com/erikmartinjordan/orange-fuji/commit/eb5879814506081e9429d49f1ad82ad8eabdf10d))
+
+
+### ♻️ Refactoring
+
+* replace inline license dialog with separate paywall window ([92a03b3](https://github.com/erikmartinjordan/orange-fuji/commit/92a03b31cc4295ffa04ea87724e19abf2815ff8d))
+
+
+### 👷 CI
+
+* notarize macos builds ([3ba1eb5](https://github.com/erikmartinjordan/orange-fuji/commit/3ba1eb5e6bb3f28f2fdbfc656f78ba5d13759b00))
+* notarize macOS builds ([aaba038](https://github.com/erikmartinjordan/orange-fuji/commit/aaba0386462814357fa276167d2a19ee0602f0df))
+
 ## [1.5.3](https://github.com/erikmartinjordan/orange-fuji/compare/v1.5.2...v1.5.3) (2026-06-06)
 
 
