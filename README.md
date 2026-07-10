@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/github/downloads/erikmartinjordan/orange-fuji/total?label=Total%20downloads&style=flat-square" alt="Total downloads" />
 </p>
 
-Orange Fuji is a minimal screen capture and annotation app for Windows, Linux, and experimental macOS builds.
+Orange Fuji is a minimal screen capture and annotation app for Windows, Linux, and macOS.
 
 ## Download
 
@@ -22,20 +22,37 @@ Recommended launch targets:
 
 - Windows: portable EXE
 - Linux: AppImage
-- macOS: experimental ad-hoc signed, unnotarized DMG/ZIP for technical users only
+- macOS: Developer ID signed and notarized DMG/ZIP when Apple signing secrets are configured in GitHub Actions
 
-> Windows may show a SmartScreen warning on first launch because releases are not yet signed.
->
-> macOS builds are ad-hoc signed, but they are not Developer ID signed or notarized until Orange Fuji can fund an Apple Developer Program account. Recent macOS versions can block unnotarized apps, require manual approval in System Settings, and ask for Screen Recording permission again after installs or updates because the app does not yet have a stable Developer ID identity. If you are not comfortable with that security tradeoff, use the Windows/Linux builds or build Orange Fuji from source on a Mac you control.
+> Windows may show a SmartScreen warning on first launch because releases are not yet signed. macOS CI builds fall back to ad-hoc signing only when Apple signing or notarization secrets are missing.
 
-### macOS status
+### macOS signing and notarization
 
-The native macOS app is not the primary launch target right now. It is useful for testing, but it has two known limitations:
+The GitHub Actions build signs and notarizes macOS artifacts when these repository secrets are configured:
 
-1. Gatekeeper can make unnotarized apps difficult or impossible for mainstream users to open.
-2. Screen capture requires Screen Recording permission in System Settings → Privacy & Security → Screen & System Audio Recording. Without Developer ID signing and notarization, macOS can treat updated builds as a new app and ask for this permission again. Orange Fuji detects denied permission and opens the correct settings pane with recovery instructions.
+- `MAC_CSC_LINK`: base64-encoded `.p12` Developer ID Application certificate exported from Keychain Access.
+- `MAC_CSC_KEY_PASSWORD`: password for the exported `.p12` certificate.
+- `APPLE_ID`: Apple Developer account email used for notarization.
+- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID.
+- `APPLE_TEAM_ID`: 10-character Apple Developer Team ID.
 
-If you test the macOS build, download it only from the official GitHub release, verify checksums when provided, and expect to quit and reopen Orange Fuji after changing Screen Recording permission.
+Where to get each secret:
+
+1. Create or download a `Developer ID Application` certificate in Apple Developer → Certificates, Identifiers & Profiles → Certificates. Use the Apple Developer account that owns the app's team.
+2. Install the certificate on a Mac by opening the downloaded certificate file. In Keychain Access, export the `Developer ID Application` certificate together with its private key as a `.p12` file and choose a strong export password.
+3. Convert that `.p12` file to base64 and paste the output into `MAC_CSC_LINK`:
+
+   ```bash
+   base64 -i DeveloperIDApplication.p12 | pbcopy
+   ```
+
+4. Use the `.p12` export password as `MAC_CSC_KEY_PASSWORD`.
+5. Use your Apple Developer account email as `APPLE_ID`.
+6. Generate an app-specific password for that Apple ID and use it as `APPLE_APP_SPECIFIC_PASSWORD`.
+7. Copy the team's 10-character Team ID from Apple Developer membership details and use it as `APPLE_TEAM_ID`.
+8. Add each value in GitHub → repository Settings → Secrets and variables → Actions → Repository secrets.
+
+If any Apple notarization credential is missing, the macOS build remains ad-hoc signed so pull requests and local CI still produce test artifacts. Release builds intended for end users should verify that all five secrets are present before publishing.
 
 ## Features
 
@@ -75,7 +92,7 @@ npm run build          # current platform
 npm run build:desktop  # Windows and Linux launch artifacts
 npm run build:win      # Windows portable EXE
 npm run build:linux    # Linux AppImage
-npm run build:mac      # experimental unsigned macOS artifacts
+npm run build:mac      # macOS artifacts; notarized when Apple credentials are configured
 npm run build:all      # macOS, Windows, and Linux
 ```
 
@@ -94,15 +111,12 @@ Use Conventional Commits for changes:
 
 After commits are merged to `main`, Release Please opens or updates a release PR containing the next version bump and `CHANGELOG.md` changes. Merge that Release Please PR only when you are ready to publish officially; merging it creates the Git tag, GitHub Release, changelog update, and package version update. The release workflow then builds the desktop binaries and attaches them to that GitHub Release.
 
-Orange Fuji's no-budget launch path is to treat Windows and Linux as the primary downloadable platforms while keeping macOS transparent and experimental until notarization is affordable.
-
 Before publishing a release:
 
-- Build Windows portable EXE and Linux AppImage as the main artifacts.
+- Build Windows portable EXE, Linux AppImage, and notarized macOS DMG/ZIP artifacts.
 - Publish SHA-256 checksums for every artifact.
-- Label macOS artifacts as ad-hoc signed and unnotarized.
+- Confirm macOS artifacts were Developer ID signed and notarized in GitHub Actions before marketing them as one-click downloads.
 - Keep the GitHub release page as the only official binary download source.
-- Fund Apple Developer Program membership before marketing macOS as a polished one-click app.
 
 ## License
 

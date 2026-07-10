@@ -20,7 +20,8 @@
   },
   "devDependencies": {
     "electron": "^32.3.3",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "@electron/notarize": "2.5.0"
   },
   "dependencies": {
     "electron-updater": "6.6.2",
@@ -65,8 +66,7 @@
           ]
         }
       ],
-      "icon": "build/icon.icns",
-      "identity": "-"
+      "icon": "build/icon.icns"
     },
     "dmg": {
       "icon": "build/icon.icns"
