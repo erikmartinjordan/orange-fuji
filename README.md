@@ -36,22 +36,6 @@ The GitHub Actions build signs and notarizes macOS artifacts when these reposito
 - `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID.
 - `APPLE_TEAM_ID`: 10-character Apple Developer Team ID.
 
-Where to get each secret:
-
-1. Create or download a `Developer ID Application` certificate in Apple Developer → Certificates, Identifiers & Profiles → Certificates. Use the Apple Developer account that owns the app's team.
-2. Install the certificate on a Mac by opening the downloaded certificate file. In Keychain Access, export the `Developer ID Application` certificate together with its private key as a `.p12` file and choose a strong export password.
-3. Convert that `.p12` file to base64 and paste the output into `MAC_CSC_LINK`:
-
-   ```bash
-   base64 -i DeveloperIDApplication.p12 | pbcopy
-   ```
-
-4. Use the `.p12` export password as `MAC_CSC_KEY_PASSWORD`.
-5. Use your Apple Developer account email as `APPLE_ID`.
-6. Generate an app-specific password for that Apple ID and use it as `APPLE_APP_SPECIFIC_PASSWORD`.
-7. Copy the team's 10-character Team ID from Apple Developer membership details and use it as `APPLE_TEAM_ID`.
-8. Add each value in GitHub → repository Settings → Secrets and variables → Actions → Repository secrets.
-
 If any Apple notarization credential is missing, the macOS build remains ad-hoc signed so pull requests and local CI still produce test artifacts. Release builds intended for end users should verify that all five secrets are present before publishing.
 
 ## Features
