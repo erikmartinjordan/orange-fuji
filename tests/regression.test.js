@@ -337,10 +337,13 @@ function createStreamWithCursorSetting(cursor) {
     owner: 'erikmartinjordan',
     repo: 'orange-fuji',
   }, 'electron-builder must publish update metadata to GitHub releases');
-  assert.strictEqual(packageJson.build.mac.identity, '-', 'macOS builds must remain ad-hoc signed until a Developer ID certificate is available');
-  assert.strictEqual(packageJson.build.afterSign, 'scripts/sign-mac-ad-hoc.js', 'macOS builds must normalize the ad-hoc signature after packaging');
-  assert.ok(/context\.electronPlatformName !== 'darwin'/.test(macAdHocSignSource), 'mac ad-hoc signing hook must only run for macOS builds');
-  assert.ok(/'--identifier'[\s\S]*appInfo\.id/.test(macAdHocSignSource), 'mac ad-hoc signing hook must bind the app bundle identifier into the signature');
+  assert.ok(!Object.prototype.hasOwnProperty.call(packageJson.build.mac, 'identity'), 'macOS builds must allow Developer ID signing when a certificate is configured');
+  assert.strictEqual(packageJson.build.afterSign, 'scripts/sign-mac-ad-hoc.js', 'macOS builds must run the signing/notarization hook after packaging');
+  assert.strictEqual(packageJson.devDependencies['@electron/notarize'], '2.5.0', 'macOS builds must include the notarization helper');
+  assert.ok(/context\.electronPlatformName !== 'darwin'/.test(macAdHocSignSource), 'mac signing hook must only run for macOS builds');
+  assert.ok(/function hasNotarizationCredentials\(\)[\s\S]*APPLE_ID[\s\S]*APPLE_APP_SPECIFIC_PASSWORD[\s\S]*APPLE_TEAM_ID/.test(macAdHocSignSource), 'mac signing hook must require Apple notarization credentials');
+  assert.ok(/notarize\(\{[\s\S]*appBundleId: appInfo\.id[\s\S]*appPath[\s\S]*teamId: process\.env\.APPLE_TEAM_ID/.test(macAdHocSignSource), 'mac signing hook must submit Developer ID signed apps for Apple notarization');
+  assert.ok(/'--identifier'[\s\S]*appInfo\.id/.test(macAdHocSignSource), 'mac ad-hoc fallback must bind the app bundle identifier into the signature');
   assert.ok(/let autoUpdater = null;[\s\S]*require\('electron-updater'\)/.test(mainSource), 'main process must load electron-updater');
   assert.ok(/function setupAutoUpdater\(\)/.test(mainSource), 'main process must configure the auto updater');
   assert.ok(/autoUpdater\.autoDownload = false/.test(mainSource), 'updates must require an explicit user download action');
