@@ -1,5 +1,120 @@
 # Changelog
 
+## [1.7.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.6.0...v1.7.0) (2026-07-11)
+
+
+### ✨ Features
+
+* add capture region magnifier loupe ([857c285](https://github.com/erikmartinjordan/orange-fuji/commit/857c28597db710159d25ca2a381d32b7f3b31704))
+* add capture region magnifier loupe ([f283dfa](https://github.com/erikmartinjordan/orange-fuji/commit/f283dfafa328e7be7ca4f3bcdbf11d6e2fb3d668))
+* add recording preview video tools ([853befd](https://github.com/erikmartinjordan/orange-fuji/commit/853befd0d61b1ad40f46c3c128d9bac59c1615dc))
+* add screenshot slideshow to landing page ([1ae4617](https://github.com/erikmartinjordan/orange-fuji/commit/1ae4617e7e51b99d084045288c5d656fbff42b85))
+* add separate paywall window for expired trial ([3e4e73e](https://github.com/erikmartinjordan/orange-fuji/commit/3e4e73e1c93c95bd10fe15c7769d482fc3631bb2))
+* add shortcuts for all options ([335874a](https://github.com/erikmartinjordan/orange-fuji/commit/335874ae9a71d5e578065d57cc5d84ae9398f57d))
+* Add text selector to the editor ([e25a711](https://github.com/erikmartinjordan/orange-fuji/commit/e25a711585ab2c61fda9ce0589ff18c3cd89d52e))
+* Added filmstrip to video recording ([44c3423](https://github.com/erikmartinjordan/orange-fuji/commit/44c34234d7fb57907b46c16020f99ae8be916796))
+* deploy edge functions with licenseId/activatedAt/activeDevices, en-US dates, match deactivate button to other fields ([f7492fd](https://github.com/erikmartinjordan/orange-fuji/commit/f7492fd20633fc6836cd2c8d36aced6c748dfb0d))
+* pixelate sensitive info ([8c0cc7e](https://github.com/erikmartinjordan/orange-fuji/commit/8c0cc7ed89b71dd63a8f477a7612eb7e4be28724))
+* redesing license section in preferences tab ([f9e4675](https://github.com/erikmartinjordan/orange-fuji/commit/f9e4675cd3a569432295053fb544dc560d9511a7))
+* Set the delay to hide the pill ([cc589e3](https://github.com/erikmartinjordan/orange-fuji/commit/cc589e3d28c80cc8a2d72a94d93d5ab77e931bb9))
+* show license details table in preferences active state ([35e1b0f](https://github.com/erikmartinjordan/orange-fuji/commit/35e1b0fe57d8a89172cbbb0e9bee6ff41919439f))
+* store license metadata and add deactivate API ([8516c4e](https://github.com/erikmartinjordan/orange-fuji/commit/8516c4eea63476f9d9fc6737a42b1f32ddf0b466))
+* Update version from the About page ([88536c6](https://github.com/erikmartinjordan/orange-fuji/commit/88536c6ead264473482c605f03c317d3a9b3f3e1))
+
+
+### 🐛 Fixes
+
+* **1:** keep clear canvas in pill mode ([e6e089f](https://github.com/erikmartinjordan/orange-fuji/commit/e6e089f4ce25ccab628a58f68ffda5afd598b330))
+* **2:** smooth recording camera and cursor motion ([3a6a79a](https://github.com/erikmartinjordan/orange-fuji/commit/3a6a79a7cc1018156ab42e1bfa4f98a83d671daf))
+* **3:** apply preference changes immediately ([3a84273](https://github.com/erikmartinjordan/orange-fuji/commit/3a842734239fca11d88b4ecaaddce4018e3a73ed))
+* **4:** suppress pill-mode recording save toasts ([74385ef](https://github.com/erikmartinjordan/orange-fuji/commit/74385efc967f38fcb1b8d38a46a49f8d6d9523b7))
+* **5:** show recording save progress after export starts ([01187c2](https://github.com/erikmartinjordan/orange-fuji/commit/01187c2a314251594a834f0a81a35cbdd00f19dd))
+* **6:** use native mac preferences styling ([1fb01c3](https://github.com/erikmartinjordan/orange-fuji/commit/1fb01c3eb33c707a3f3170dd6428af75c871b3d8))
+* **7:** prevent capture overlay black flash ([e4ad61d](https://github.com/erikmartinjordan/orange-fuji/commit/e4ad61d0734aa2e64291c5c74544ccd5bc3ffb41))
+* **8:** map recording regions to pixel space ([7a02949](https://github.com/erikmartinjordan/orange-fuji/commit/7a029492ac6f5a5e8f4a8630011ffe1180163a71))
+* Activate license process ([904a62a](https://github.com/erikmartinjordan/orange-fuji/commit/904a62add65ca8ca1b1ae44f0e6f3854f95608fe))
+* Adjust video preview borders ([f7a6d8b](https://github.com/erikmartinjordan/orange-fuji/commit/f7a6d8b8f7fdf69e753cd4b9cd8178767c865150))
+* Autocapture after editing mode ([fcdcca6](https://github.com/erikmartinjordan/orange-fuji/commit/fcdcca664a1f0098a2ab2cb98f6ab991faac8bb2))
+* Autoupdates ([347328f](https://github.com/erikmartinjordan/orange-fuji/commit/347328fbb8261672bf96c30ec17de271c09f7b8f))
+* Autoupdates and blockmap assets ([995a1cb](https://github.com/erikmartinjordan/orange-fuji/commit/995a1cb4598fe13039a684752e97d738314e7dd9))
+* Avoid block installation in macOS ([182d510](https://github.com/erikmartinjordan/orange-fuji/commit/182d5106357e259c03dcffd6dfc101bb96dc34ca))
+* Bug that didn't hide pillbar on window capture ([59b8043](https://github.com/erikmartinjordan/orange-fuji/commit/59b8043bab48e1aa2e7c027ab8199d79c3f23d3b))
+* check last updates ([1a4fd41](https://github.com/erikmartinjordan/orange-fuji/commit/1a4fd41499ad08b05873988865c4676741946079))
+* Crosshair cursor on region capture ([61bdf87](https://github.com/erikmartinjordan/orange-fuji/commit/61bdf873a373b13ae16f7d3351d7a26a06046497))
+* Dark mode theme ([4a33129](https://github.com/erikmartinjordan/orange-fuji/commit/4a33129eabca6a28e828a8a9bb03221861995fab))
+* decouple capture preview toast ([4b86106](https://github.com/erikmartinjordan/orange-fuji/commit/4b861068bde83690cec2eb80b01b929ba29f11de))
+* decouple capture preview toast and enforce macOS desktop icon hiding ([bdf3609](https://github.com/erikmartinjordan/orange-fuji/commit/bdf360977e4e0f249837cda3cf1dba4be0b65ee7))
+* Delete toast notifications ([3575d37](https://github.com/erikmartinjordan/orange-fuji/commit/3575d37695b62bc3d62abb013a7f9ab5421c516b))
+* dont show purchase banner after deactivation, wait until user action ([2a71bd5](https://github.com/erikmartinjordan/orange-fuji/commit/2a71bd52ca7282d6d8d0199c6c79b2c030347254))
+* Download installer depending on OS ([04be852](https://github.com/erikmartinjordan/orange-fuji/commit/04be852b5016fb863283aab0ca7e1b05878e81fd))
+* harden release builds and align portable artifacts ([39d7d72](https://github.com/erikmartinjordan/orange-fuji/commit/39d7d72eb84d5ffa4db4053fa07e2fc19be0eac9))
+* harden release builds and align portable artifacts ([cfd8bb1](https://github.com/erikmartinjordan/orange-fuji/commit/cfd8bb1ec4f7b6fddf96bdcd235c3a4506e1e435))
+* Icon hides on video recording ([3bcbf57](https://github.com/erikmartinjordan/orange-fuji/commit/3bcbf57fa62e80334774daa2cb11830f3ae1195d))
+* Icons hidden when preferences are set to do it ([3f01a3e](https://github.com/erikmartinjordan/orange-fuji/commit/3f01a3efb08cca04edc60f7e7a17f43134257ce7))
+* Improve tooltips ([b31142c](https://github.com/erikmartinjordan/orange-fuji/commit/b31142ceed39566111e576d9bf1507a7021ca38e))
+* Improved design of About and Preferences ([03c4bf4](https://github.com/erikmartinjordan/orange-fuji/commit/03c4bf4aba8c464b18b94504c7824e39606e255c))
+* Landing shows always last release version ([a5fda04](https://github.com/erikmartinjordan/orange-fuji/commit/a5fda04d613f3beced86215aa1b074d6e5b80374))
+* Menu structure ([a877513](https://github.com/erikmartinjordan/orange-fuji/commit/a877513fbc1bb3595a3a39b5aebe92ebd4291592))
+* Moving tab on cmd + shift + s ([789e873](https://github.com/erikmartinjordan/orange-fuji/commit/789e8736103d9e3796b8fa7cb232a16d0675cc4a))
+* Notifications as native toast ([0c017a4](https://github.com/erikmartinjordan/orange-fuji/commit/0c017a4c3ecbb6e783027baf72e5eeec1b3e8d52))
+* Now the main window is native, rather than faking it as MacOS native window ([ff2e5f0](https://github.com/erikmartinjordan/orange-fuji/commit/ff2e5f05af6980d95a6c58a7820cee52be2e609b))
+* Only show frames when ready on video screen-recording ([c08f8e0](https://github.com/erikmartinjordan/orange-fuji/commit/c08f8e001fbf4b18b4be0914d979872ee36ec22c))
+* Orange halo and losing focus ([7da23b9](https://github.com/erikmartinjordan/orange-fuji/commit/7da23b92143c6c6400463b582365b1017b7190c6))
+* Orange halo in some buttons ([cc095ea](https://github.com/erikmartinjordan/orange-fuji/commit/cc095ea4d9c6272948d002446a4c28469a367242))
+* Permissions issues on install in macOS ([3e9fd83](https://github.com/erikmartinjordan/orange-fuji/commit/3e9fd8327b334c1b68ea42db58ce424c86041fde))
+* Preferences to autorecord and record video ([f3aae9b](https://github.com/erikmartinjordan/orange-fuji/commit/f3aae9b46b48050097bdd743f8614267ec5f0a59))
+* Preferences window in dark mode ([8191784](https://github.com/erikmartinjordan/orange-fuji/commit/819178424ac9734b4f1a290f332bc4b531d2511b))
+* prevent capture focus jumps ([a3c6777](https://github.com/erikmartinjordan/orange-fuji/commit/a3c6777385da4d852fea5a116f53ef7d2fd0391c))
+* Pulse effect while recording ([7fcf89e](https://github.com/erikmartinjordan/orange-fuji/commit/7fcf89ee27685746a3abd5c4d60248551c071620))
+* refine recording preview layout ([9d86038](https://github.com/erikmartinjordan/orange-fuji/commit/9d86038bb047415a77624c61fce8021316c03054))
+* remove the recording autozoom and delete trial ([a2a1b04](https://github.com/erikmartinjordan/orange-fuji/commit/a2a1b041be7eda155fe9acca66ce814e33d3a94d))
+* Remove trial sentence from landing page ([07dcc2c](https://github.com/erikmartinjordan/orange-fuji/commit/07dcc2cd83de57ed39dc6f0243be2d4c3983dd15))
+* removed buttons from edition mode ([99de179](https://github.com/erikmartinjordan/orange-fuji/commit/99de179efeaa5a57468ca393ff31eb7914821f73))
+* Rename landing page ([e1f9bb2](https://github.com/erikmartinjordan/orange-fuji/commit/e1f9bb2a015aebbfbabb08619995bc013a1cc04f))
+* rename Pico to Orange Fuji ([4a781a2](https://github.com/erikmartinjordan/orange-fuji/commit/4a781a22127a967bee3afcf4dbd2c76f377d54bf))
+* scope editable tool selection to edition tools group ([1df4432](https://github.com/erikmartinjordan/orange-fuji/commit/1df44320d143d2b7f01706f4e445e5b6c64e2eff))
+* Screen record not moving window to Desktop ([d31024b](https://github.com/erikmartinjordan/orange-fuji/commit/d31024b26960a7d3efe966120dfa0612e475e3c2))
+* Separators in dark-mode ([973c3ff](https://github.com/erikmartinjordan/orange-fuji/commit/973c3ffc5b23bb3d0075451c30243ad2536437e7))
+* show recording preview toolbar tools ([aabaaff](https://github.com/erikmartinjordan/orange-fuji/commit/aabaaff1586ccdfa36d8f2885fd50ed9625b6d0e))
+* Signature while no notarization ([980f340](https://github.com/erikmartinjordan/orange-fuji/commit/980f3402797a4f6cd31d3f51bccf53dc5e32a4da))
+* Simplify current controls on video screen recording ([1db7aeb](https://github.com/erikmartinjordan/orange-fuji/commit/1db7aeb074a7390a468df03d3292a3a4ec471a52))
+* Simplify tray menu ([8699b6d](https://github.com/erikmartinjordan/orange-fuji/commit/8699b6de08079470411a9a5ffe15fab9254d5299))
+* stabilize recording window lifecycle ([949dad4](https://github.com/erikmartinjordan/orange-fuji/commit/949dad4eabba125ad5cb08e4f0578a3e16c92817))
+* Test OS before downloading the package ([26d11c3](https://github.com/erikmartinjordan/orange-fuji/commit/26d11c3459b2775225e5add7a27d23fd4d9e9263))
+* Toast on the side without shadow ([a0ed4e7](https://github.com/erikmartinjordan/orange-fuji/commit/a0ed4e7628867558153d65a4061ec1fae4bf7563))
+* Toast window now shows preview without broken image ([b98c6fa](https://github.com/erikmartinjordan/orange-fuji/commit/b98c6fa41fdb8516a780c641243679e540a33c33))
+* tray menu buttons not working when main window is closed ([2da90c0](https://github.com/erikmartinjordan/orange-fuji/commit/2da90c0ca467307d863e253150903032610a508f))
+* update license window ID assertions in tests ([017772c](https://github.com/erikmartinjordan/orange-fuji/commit/017772c99d95f86f2de86ab91e29ac9a8f0dc728))
+* use default cursor for region capture ([b9496cd](https://github.com/erikmartinjordan/orange-fuji/commit/b9496cde48e9777f97912e0bc271ee65e38040d4))
+* Video miniatures and improved general behavior on trimming ([f8e52a5](https://github.com/erikmartinjordan/orange-fuji/commit/f8e52a508b40cf97f175f34ede805e6ad4aed35c))
+* Video selection on retina displays ([2d0d287](https://github.com/erikmartinjordan/orange-fuji/commit/2d0d28757acc4c26baa889003d98d5e0e2daf1d6))
+* window moving around ([ba7c53d](https://github.com/erikmartinjordan/orange-fuji/commit/ba7c53d72300b9db3733f53cfe962dea20dff805))
+
+
+### 📝 Documentation
+
+* add total downloads badge to README ([2aa995a](https://github.com/erikmartinjordan/orange-fuji/commit/2aa995a18f4da2387b91317c35c4c1891e9a3f5e))
+* add total downloads badge to README ([ad643b8](https://github.com/erikmartinjordan/orange-fuji/commit/ad643b8cea0c6c9ec7ac30129b047ef3335eeb5b))
+* explain macos notarization secrets ([eb58798](https://github.com/erikmartinjordan/orange-fuji/commit/eb5879814506081e9429d49f1ad82ad8eabdf10d))
+* update README download artifact names ([e37d296](https://github.com/erikmartinjordan/orange-fuji/commit/e37d29621ae6dc4895249ef2d3c2c128fc5797e4))
+* update README download artifact names ([ea20841](https://github.com/erikmartinjordan/orange-fuji/commit/ea2084137f6c7ea3c711c3c21daff1b1fe485a00))
+
+
+### ♻️ Refactoring
+
+* replace inline license dialog with separate paywall window ([92a03b3](https://github.com/erikmartinjordan/orange-fuji/commit/92a03b31cc4295ffa04ea87724e19abf2815ff8d))
+* simplify recording preview editor ([fb6ec0f](https://github.com/erikmartinjordan/orange-fuji/commit/fb6ec0fbcb060266d6ae49dd4296602b520712ee))
+* streamline recording preview editor ([7d9fddb](https://github.com/erikmartinjordan/orange-fuji/commit/7d9fddb5a6ebe35aefa8bf90175a21e4464d0da4))
+* streamline recording preview editor ([f8ed390](https://github.com/erikmartinjordan/orange-fuji/commit/f8ed39014e0e8d3c5e27b474c0e899dd91d61640))
+
+
+### 👷 CI
+
+* notarize macos builds ([3ba1eb5](https://github.com/erikmartinjordan/orange-fuji/commit/3ba1eb5e6bb3f28f2fdbfc656f78ba5d13759b00))
+* notarize macOS builds ([aaba038](https://github.com/erikmartinjordan/orange-fuji/commit/aaba0386462814357fa276167d2a19ee0602f0df))
+* only upload orange-fuji-portable.exe and Orange Fuji*.exe (no helpers) ([1b3bd2b](https://github.com/erikmartinjordan/orange-fuji/commit/1b3bd2b6df159a22babd0729585a4aa854ae3e9b))
+* update actions to v5 (Node 24 compat), exclude helper exes from build.yml ([dc01cb8](https://github.com/erikmartinjordan/orange-fuji/commit/dc01cb8358768ec451fbea725b67d9a4269c1c77))
+
 ## [1.6.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.5.3...v1.6.0) (2026-07-10)
 
 
