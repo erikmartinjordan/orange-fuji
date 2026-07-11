@@ -107,9 +107,10 @@ jobs:
           path: |
             dist/**/*.dmg
             dist/**/*.zip
-            dist/**/*.exe
             dist/**/*.yml
             dist/**/*.blockmap
+            dist/**/orange-fuji-portable.exe
+            dist/**/Orange Fuji*.exe
           if-no-files-found: ignore
 
   upload-release-assets:
@@ -153,7 +154,8 @@ jobs:
       - name: Collect binaries
         run: |
           mkdir -p release
-          find artifacts -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.yml" -o -name "*.blockmap" \) -exec cp {} release/ \;
+          find artifacts -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.yml" -o -name "*.blockmap" \) -exec cp {} release/ \;
+          find artifacts -type f \( -name "orange-fuji-portable.exe" -o -name "Orange Fuji*.exe" \) -exec cp {} release/ \;
           ls -lh release/
           test "$(find release -type f | wc -l)" -gt 0
 
