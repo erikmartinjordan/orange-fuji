@@ -1102,6 +1102,7 @@ async function saveRecordingPreview() {
     const result = await window.pico.saveRecording({
       data: state.recordingPreview.data,
       format: state.recordingPreview.format,
+      mimeType: state.recordingPreview.mimeType,
       trimStart: state.recordingPreview.trimStart || 0,
       trimEnd: state.recordingPreview.trimEnd,
       muted: elements.recordingPreviewVideo?.muted === true,

@@ -3075,27 +3075,46 @@ ipcMain.handle('pro-save-recording', async (event, payload) => {
 
   event.sender.send('pro-save-recording-started');
 
-  const webmPath = tempRecordingPath('webm');
+  const inputMime = String(payload?.mimeType || 'video/webm').toLowerCase();
+  const inputIsMp4 = inputMime.includes('mp4');
+  const inputExtension = inputIsMp4 ? 'mp4' : 'webm';
+  const inputPath = tempRecordingPath(inputExtension);
   const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
-  fs.writeFileSync(webmPath, bytes);
+  fs.writeFileSync(inputPath, bytes);
+
+  const needsProcessing = trimStart > 0 || trimEnd > trimStart || muted;
 
   try {
+    // Fast path: the recorder already produced H.264 MP4 and nothing needs to
+    // change, so skip the re-encode entirely (no quality loss, instant save).
+    if (format === 'mp4' && inputIsMp4 && !needsProcessing) {
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+      fs.copyFileSync(inputPath, outputPath);
+      return { mp4: outputPath };
+    }
+
     let mp4Path = outputPath;
     if (format === 'gif') mp4Path = tempRecordingPath('mp4');
 
     let mp4;
     try {
-      mp4 = await convertWebmToMp4(webmPath, mp4Path, { trimStart, trimEnd, muted });
+      if (format === 'gif' && inputIsMp4 && !needsProcessing) {
+        // Feed GIF creation straight from the recorded MP4 — one less
+        // generation of lossy re-encoding.
+        mp4 = inputPath;
+      } else {
+        mp4 = await convertWebmToMp4(inputPath, mp4Path, { trimStart, trimEnd, muted });
+      }
     } catch (conversionError) {
       fs.rmSync(mp4Path, { force: true });
       if (format === 'mp4') fs.rmSync(outputPath, { force: true });
-      // Save as webm so the recording is not lost, but inform the user clearly
-      const webmOutputPath = outputPath.replace(/\.[^.]+$/i, '.webm');
-      fs.mkdirSync(path.dirname(webmOutputPath), { recursive: true });
-      fs.copyFileSync(webmPath, webmOutputPath);
+      // Save in the recorded format so the recording is not lost, but inform the user clearly
+      const rawOutputPath = outputPath.replace(/\.[^.]+$/i, `.${inputExtension}`);
+      fs.mkdirSync(path.dirname(rawOutputPath), { recursive: true });
+      fs.copyFileSync(inputPath, rawOutputPath);
       return {
-        webm: webmOutputPath,
-        warning: `Saved as .webm (bundled ffmpeg/gifski conversion tools are unavailable for ${format.toUpperCase()} export).`,
+        [inputExtension]: rawOutputPath,
+        warning: `Saved as .${inputExtension} (bundled ffmpeg/gifski conversion tools are unavailable for ${format.toUpperCase()} export).`,
       };
     }
 
@@ -3103,13 +3122,13 @@ ipcMain.handle('pro-save-recording', async (event, payload) => {
       try {
         return { gif: await convertMp4ToGif(mp4, outputPath) };
       } finally {
-        fs.rmSync(mp4, { force: true });
+        if (mp4 !== inputPath) fs.rmSync(mp4, { force: true });
       }
     }
 
     return { mp4 };
   } finally {
-    fs.rmSync(webmPath, { force: true });
+    fs.rmSync(inputPath, { force: true });
   }
 });
 
@@ -3120,16 +3139,17 @@ ipcMain.handle('pro-trim-recording', async (event, payload) => {
   const trimStart = Number.isFinite(payload?.trimStart) && payload.trimStart > 0 ? payload.trimStart : 0;
   const trimEnd = Number.isFinite(payload?.trimEnd) && payload.trimEnd > trimStart ? payload.trimEnd : 0;
   if (!trimStart && !trimEnd) return { data, mimeType: payload.mimeType || 'video/webm', format: payload.format || 'mp4' };
-  const webmPath = tempRecordingPath('webm');
+  const inputIsMp4 = String(payload?.mimeType || '').toLowerCase().includes('mp4');
+  const inputPath = tempRecordingPath(inputIsMp4 ? 'mp4' : 'webm');
   const mp4Path = tempRecordingPath('mp4');
   const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
-  fs.writeFileSync(webmPath, bytes);
+  fs.writeFileSync(inputPath, bytes);
   try {
-    await convertWebmToMp4(webmPath, mp4Path, { trimStart, trimEnd, muted: false });
+    await convertWebmToMp4(inputPath, mp4Path, { trimStart, trimEnd, muted: false });
     const result = fs.readFileSync(mp4Path);
     return { data: result, mimeType: 'video/mp4', format: 'mp4' };
   } finally {
-    fs.rmSync(webmPath, { force: true });
+    fs.rmSync(inputPath, { force: true });
     fs.rmSync(mp4Path, { force: true });
   }
 });

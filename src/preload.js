@@ -22,21 +22,48 @@ function getStreamCursorSetting(stream) {
 function markStreamCursorMode(stream, requestedMode) {
   if (!stream) return stream;
   const cursorSetting = getStreamCursorSetting(stream);
-  const mode = cursorSetting === 'never' ? 'synthetic' : requestedMode;
-  streamCursorModes.set(stream, mode === 'native' ? 'native' : 'synthetic');
+  let mode;
+  if (cursorSetting === 'never') {
+    // The OS provably hid the cursor from the stream, so drawing our own
+    // smoothed cursor is safe on every platform (including macOS 14.4+, where
+    // ScreenCaptureKit honors the `cursor: 'never'` constraint).
+    mode = 'synthetic';
+  } else if (cursorSetting === 'always') {
+    // The OS composited its own cursor into the frames. Drawing a second one
+    // would produce a double cursor, so keep the native one.
+    mode = 'native';
+  } else if (typeof process !== 'undefined' && process.platform === 'darwin') {
+    // Unknown support on macOS (older versions always composite the cursor):
+    // assume native to avoid the double-cursor failure mode.
+    mode = 'native';
+  } else {
+    mode = requestedMode === 'native' ? 'native' : 'synthetic';
+  }
+  streamCursorModes.set(stream, mode);
   return stream;
 }
 
 function shouldDrawSyntheticCursor(stream) {
-  if (typeof process !== 'undefined' && process.platform === 'darwin') return false;
-  return streamCursorModes.get(stream) !== 'native';
+  return streamCursorModes.get(stream) === 'synthetic';
 }
 
 function getRecordingMimeType() {
-  const preferred = 'video/webm;codecs=vp9';
-  if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(preferred)) return preferred;
-  const fallback = 'video/webm;codecs=vp8';
-  if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(fallback)) return fallback;
+  // Prefer H.264 in MP4: it is hardware-encoded on macOS (VideoToolbox) and
+  // Windows (Media Foundation), which keeps CPU free for a steady 60 fps and
+  // lets the main process skip the lossy WebM → MP4 re-encode entirely.
+  const candidates = [
+    'video/mp4;codecs=avc1.640034',
+    'video/mp4;codecs=avc1.4d0034',
+    'video/mp4;codecs=avc1',
+    'video/mp4',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+  ];
+  if (typeof MediaRecorder !== 'undefined') {
+    for (const candidate of candidates) {
+      if (MediaRecorder.isTypeSupported(candidate)) return candidate;
+    }
+  }
   return 'video/webm';
 }
 
@@ -106,16 +133,35 @@ function expEase(current, target, speed, dt) {
   return current + (target - current) * (1 - Math.exp(-speed * dt));
 }
 
+// Critically damped spring step (stable SmoothDamp formulation). Unlike an
+// exponential ease, the spring carries velocity across frames, so the cursor
+// glides through direction changes without the velocity jumps that read as
+// "kinks" or abrupt motion.
+function springStep(current, target, velocity, omega, dt) {
+  const safeDt = clamp(dt, 1 / 240, 0.1);
+  const x = omega * safeDt;
+  const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const change = current - target;
+  const temp = (velocity + omega * change) * safeDt;
+  const nextVelocity = (velocity - omega * temp) * exp;
+  const nextValue = target + (change + temp) * exp;
+  return [nextValue, nextVelocity];
+}
+
 function createCursorSmoother(options = {}) {
   const renderDelayMs = options.renderDelayMs ?? 35;
   const maxSampleAgeMs = options.maxSampleAgeMs ?? 350;
   const sampleLimit = options.sampleLimit ?? 24;
   const easeSpeed = options.easeSpeed ?? 34;
   const snapDistance = options.snapDistance ?? 220;
+  // easeSpeed is kept as the public tuning knob; mapped onto spring frequency.
+  const baseOmega = clamp(easeSpeed * 0.55, 2, 30);
 
   const displayCursor = {
     x: options.initialX ?? 0,
     y: options.initialY ?? 0,
+    vx: 0,
+    vy: 0,
     visible: false,
     initialized: false,
   };
@@ -171,21 +217,35 @@ function createCursorSmoother(options = {}) {
 
   function update(now, dt) {
     const sample = getSampleForFrame(now);
-    if (!sample) return { ...displayCursor, visible: false };
+    if (!sample) {
+      displayCursor.visible = false;
+      displayCursor.vx = 0;
+      displayCursor.vy = 0;
+      return { ...displayCursor };
+    }
 
     const distance = Math.hypot(sample.x - displayCursor.x, sample.y - displayCursor.y);
     if (!displayCursor.initialized || distance > snapDistance) {
       displayCursor.x = sample.x;
       displayCursor.y = sample.y;
+      displayCursor.vx = 0;
+      displayCursor.vy = 0;
       displayCursor.initialized = true;
     } else {
-      displayCursor.x = expEase(displayCursor.x, sample.x, easeSpeed, dt);
-      displayCursor.y = expEase(displayCursor.y, sample.y, easeSpeed, dt);
+      // Adaptive stiffness: small moves float gently, large moves converge
+      // faster so the cursor still feels present instead of laggy.
+      const omega = baseOmega * clamp(1 + distance / 260, 1, 3);
+      const nextX = springStep(displayCursor.x, sample.x, displayCursor.vx, omega, dt);
+      const nextY = springStep(displayCursor.y, sample.y, displayCursor.vy, omega, dt);
+      displayCursor.x = nextX[0];
+      displayCursor.vx = nextX[1];
+      displayCursor.y = nextY[0];
+      displayCursor.vy = nextY[1];
     }
 
     const newestSample = samples[samples.length - 1];
     displayCursor.visible = Boolean(sample.visible && newestSample && now - newestSample.time < maxSampleAgeMs);
-    return { ...displayCursor };
+    return { x: displayCursor.x, y: displayCursor.y, visible: displayCursor.visible };
   }
 
   return {
@@ -272,11 +332,11 @@ function createAutoZoomStream(sourceStream, region, options = {}) {
   let prevPollTime       = null;
   let cursorSpeedEMA     = 0;
   const EMA_ALPHA        = 0.12;
-  const CURSOR_RENDER_DELAY_MS = 35;
-  const CURSOR_MAX_SAMPLE_AGE_MS = 350;
-  const CURSOR_SAMPLE_LIMIT = 24;
-  const CURSOR_EASE_SPEED = 12;
-  const CURSOR_SNAP_DISTANCE = 220 * scaleFactor;
+  const CURSOR_RENDER_DELAY_MS = 90;
+  const CURSOR_MAX_SAMPLE_AGE_MS = 400;
+  const CURSOR_SAMPLE_LIMIT = 48;
+  const CURSOR_EASE_SPEED = 11;
+  const CURSOR_SNAP_DISTANCE = 520 * scaleFactor;
   const CURSOR_BASE_SIZE = 20;
   const cursorBaseScale = clamp((pixelScaleX + pixelScaleY) / 2, 1, 3);
   const cursorSmoother = createCursorSmoother({
@@ -527,7 +587,7 @@ function createAutoZoomStream(sourceStream, region, options = {}) {
     const startLiveDrawing = video.play().then(() => {
       lastFrameTime = performance.now();
       pollCursor();
-      pollTimer = setInterval(pollCursor, 16); // 60 Hz
+      pollTimer = setInterval(pollCursor, 8); // 120 Hz target; in-flight guard absorbs IPC jitter
       draw();
       return canvasStream;
     });
@@ -667,12 +727,16 @@ async function startRecording(options = {}) {
     let zoomPipeline = null;
     const shouldCropRegion = mode === 'region' && source.region;
     const streamAlignedRegion = shouldCropRegion ? alignRegionToStreamPixels(source.region, rawStream) : null;
+    // Route fullscreen and region captures through the canvas pipeline even
+    // when auto-zoom is turned off: the pipeline is also what draws the
+    // smooth synthetic cursor and keeps frame pacing steady at 60 fps.
     const autoZoomRegion = shouldCropRegion
       ? streamAlignedRegion
-      : (source.autoZoom === false || options?.autoZoom === false ? null : await getAutoZoomRegion(source, mode));
+      : await getAutoZoomRegion(source, mode);
+    const enableAutoZoom = options?.autoZoom !== false && source.autoZoom !== false;
     if (autoZoomRegion) {
       zoomPipeline = createAutoZoomStream(rawStream, autoZoomRegion, {
-        autoZoom: shouldCropRegion ? options?.autoZoom !== false && source.autoZoom !== false : true,
+        autoZoom: enableAutoZoom,
       });
       proRecordingStream = await zoomPipeline.ready;
       proRecordingRawStream = rawStream;

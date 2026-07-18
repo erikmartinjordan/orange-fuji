@@ -88,9 +88,11 @@ function createStreamWithCursorSetting(cursor) {
 }
 
 {
+  // 'always' means the OS composited its own cursor into the frames; drawing a
+  // second one would produce a double cursor, so the policy must keep native.
   const stream = createStreamWithCursorSetting('always');
   markStreamCursorMode(stream, 'synthetic');
-  assert.strictEqual(shouldDrawSyntheticCursor(stream), true);
+  assert.strictEqual(shouldDrawSyntheticCursor(stream), false);
 }
 
 {
@@ -110,6 +112,24 @@ function createStreamWithCursorSetting(cursor) {
   const darwinHelpers = loadPreloadHelpers('darwin');
   const stream = createStreamWithCursorSetting('');
   darwinHelpers.markStreamCursorMode(stream, 'native');
+  assert.strictEqual(darwinHelpers.shouldDrawSyntheticCursor(stream), false);
+}
+
+{
+  // macOS 14.4+ honors `cursor: 'never'` via ScreenCaptureKit, which unlocks
+  // the smooth synthetic cursor on macOS too.
+  const darwinHelpers = loadPreloadHelpers('darwin');
+  const stream = createStreamWithCursorSetting('never');
+  darwinHelpers.markStreamCursorMode(stream, 'synthetic');
+  assert.strictEqual(darwinHelpers.shouldDrawSyntheticCursor(stream), true);
+}
+
+{
+  // On macOS, a stream reporting 'always' must fall back to the native cursor
+  // to avoid rendering a second cursor on top of the composited one.
+  const darwinHelpers = loadPreloadHelpers('darwin');
+  const stream = createStreamWithCursorSetting('always');
+  darwinHelpers.markStreamCursorMode(stream, 'synthetic');
   assert.strictEqual(darwinHelpers.shouldDrawSyntheticCursor(stream), false);
 }
 
@@ -206,7 +226,8 @@ function createStreamWithCursorSetting(cursor) {
     'screen recorder must request a high video bitrate to preserve screen-detail alignment checks',
   );
   assert.ok(
-    /autoZoom:\s*shouldCropRegion\s*\?\s*options\?\.autoZoom !== false && source\.autoZoom !== false\s*:\s*true/.test(preloadSource),
+    /const enableAutoZoom = options\?\.autoZoom !== false && source\.autoZoom !== false/.test(preloadSource) &&
+    /autoZoom: enableAutoZoom/.test(preloadSource),
     'region recording must pass the user autozoom setting into the Ken Burns pipeline',
   );
   assert.ok(
@@ -457,18 +478,19 @@ test('Recording Features', () => {
   );
 
   assert.ok(
-    /autoZoom:\s*shouldCropRegion\s*\?\s*options\?\.autoZoom !== false && source\.autoZoom !== false\s*:\s*true/.test(preloadSource),
+    /const enableAutoZoom = options\?\.autoZoom !== false && source\.autoZoom !== false/.test(preloadSource) &&
+    /autoZoom: enableAutoZoom/.test(preloadSource),
     'region recordings must pass the saved autozoom setting into the Ken Burns stream',
   );
 
   assert.ok(
-    /const autoZoomRegion = shouldCropRegion\s*\?\s*streamAlignedRegion\s*:\s*\(source\.autoZoom === false \|\| options\?\.autoZoom === false \? null : await getAutoZoomRegion\(source, mode\)\)/.test(preloadSource),
-    'region recordings must always route through the canvas stream so the selected crop can be animated',
+    /const autoZoomRegion = shouldCropRegion\s*\?\s*streamAlignedRegion\s*:\s*await getAutoZoomRegion\(source, mode\)/.test(preloadSource),
+    'fullscreen and region recordings must always route through the canvas stream so crops, zoom and the synthetic cursor can be composited',
   );
 
   assert.ok(
-    /zoomPipeline = createAutoZoomStream\(rawStream, autoZoomRegion, \{\s*autoZoom: shouldCropRegion \? options\?\.autoZoom !== false && source\.autoZoom !== false : true,\s*\}\)/.test(preloadSource),
-    'recording startup must create the Ken Burns pipeline with autozoom enabled for region recordings unless the user turns it off',
+    /zoomPipeline = createAutoZoomStream\(rawStream, autoZoomRegion, \{\s*autoZoom: enableAutoZoom,\s*\}\)/.test(preloadSource),
+    'recording startup must create the Ken Burns pipeline with autozoom driven by the user setting',
   );
 
   assert.ok(
