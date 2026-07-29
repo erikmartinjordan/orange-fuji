@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.7.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.6.0...v1.7.0) (2026-07-29)
+
+
+### ✨ Features
+
+* buttery-smooth high-quality screen recording with spring-smoothed cursor ([7fca3bd](https://github.com/erikmartinjordan/orange-fuji/commit/7fca3bd9a15415d848d9c55bf06b20f719070481))
+* redesign landing page with cinematic 'Sunrise over Fuji' theme ([1244a6f](https://github.com/erikmartinjordan/orange-fuji/commit/1244a6fab8bf2cd979675b42ac185cf80171f53d))
+
+
+### 🐛 Fixes
+
+* tray Quit now works on first click instead of requiring two ([178e1e5](https://github.com/erikmartinjordan/orange-fuji/commit/178e1e53b79b14d8ef14dbbf1844c49e941fe763))
+
 ## [1.6.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.5.3...v1.6.0) (2026-07-10)
 
 
