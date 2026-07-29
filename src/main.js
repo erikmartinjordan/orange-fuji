@@ -37,6 +37,7 @@ let pendingRecordingWindowClose = false;
 let allowMainWindowCloseAfterRecordingCleanup = false;
 let pendingAppWindowClose = false;
 let allowMainWindowCloseAfterRendererCleanup = false;
+let quitRequested = false;
 let tray = null;
 let desktopIconsHidden = false;
 let desktopIconsVisibleBeforeRecording = true;
@@ -2166,6 +2167,7 @@ function createMainWindow(focusOnReady = false) {
     pendingAppWindowClose = false;
     mainWindowMode = 'toolbar';
     mainWindow = null;
+    if (quitRequested) { quitRequested = false; app.quit(); }
   });
 }
 
@@ -3166,6 +3168,7 @@ ipcMain.on('pro-recording-window-close-cleaned-up', () => {
 ipcMain.on('app-window-close-cleaned-up', (event, payload = {}) => {
   if (payload?.handled) {
     pendingAppWindowClose = false;
+    if (quitRequested) closeMainWindowAfterRendererCleanup();
     return;
   }
   closeMainWindowAfterRendererCleanup();
@@ -3236,7 +3239,7 @@ function setupTray() {
     { type: 'separator' },
     { label: 'About', click: showAboutDialog },
     { type: 'separator' },
-    { label: 'Quit', role: 'quit' },
+    { label: 'Quit', click: () => { quitRequested = true; if (!mainWindow || mainWindow.isDestroyed()) { app.quit(); return; } mainWindow.close(); } },
   ]);
 
   tray.setContextMenu(trayMenu);
