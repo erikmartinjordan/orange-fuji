@@ -89,6 +89,10 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
+      - name: Merge update metadata (macOS)
+        if: matrix.platform == 'mac'
+        run: node scripts/merge-update-metadata.js
+
       - name: Build (Windows)
         if: matrix.platform == 'win'
         run: npm run build:win -- --publish never
