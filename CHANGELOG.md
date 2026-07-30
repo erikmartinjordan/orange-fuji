@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.7.0...v1.7.1) (2026-07-30)
+
+
+### 🐛 Fixes
+
+* merge legacy artifacts into latest-mac.yml so all architectures can update ([8587527](https://github.com/erikmartinjordan/orange-fuji/commit/85875277f7b098ae8a437013266b938668335e03))
+
 ## [1.7.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.6.0...v1.7.0) (2026-07-29)
 
 
