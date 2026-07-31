@@ -24,13 +24,22 @@ function hasNotarizationCredentials() {
   );
 }
 
+function isSigned(appPath) {
+  return new Promise((resolve) => {
+    execFile('/usr/bin/codesign', ['--verify', '--deep', appPath], (error) => {
+      resolve(!error);
+    });
+  });
+}
+
 module.exports = async function signOrNotarizeMac(context) {
   if (context.electronPlatformName !== 'darwin') return;
 
   const appInfo = context.packager.appInfo;
   const appPath = path.join(context.appOutDir, `${appInfo.productFilename}.app`);
 
-  if (hasNotarizationCredentials()) {
+  const signed = await isSigned(appPath);
+  if (hasNotarizationCredentials() && signed) {
     console.log(`Notarizing ${appPath} with Apple notary service...`);
     await notarize({
       appBundleId: appInfo.id,
@@ -42,7 +51,9 @@ module.exports = async function signOrNotarizeMac(context) {
     return;
   }
 
-  console.log('Apple notarization credentials are not configured; using ad-hoc macOS signing.');
+  console.log(
+    'App is not signed (e.g. pull-request build without a signing identity) or Apple notarization credentials are not configured; using ad-hoc macOS signing.'
+  );
   await run('/usr/bin/codesign', [
     '--force',
     '--deep',
