@@ -184,13 +184,15 @@
       const busy = status === 'checking' || status === 'downloading' || status === 'installing';
       const canDownload = supported && status === 'available';
       const canInstall = supported && status === 'downloaded';
+      const canRetry = supported && status === 'error';
       const message = state.error || state.message || 'Up to date';
 
       setUpdateMessage(message, status === 'error' ? 'error' : (status === 'downloaded' || status === 'idle' ? 'success' : ''));
       updateApp.hidden = !canDownload && status !== 'downloading' && !canInstall;
+      if (canRetry) updateApp.hidden = false;
       updateApp.disabled = busy;
       updateApp.textContent = status === 'downloading' ? 'Downloading...' : (canInstall ? 'Restart' : 'Update');
-      updateApp.dataset.action = canInstall ? 'install' : 'download';
+      updateApp.dataset.action = canInstall ? 'install' : (canRetry ? 'check' : 'download');
 
       const percent = Number(state.progress?.percent);
       const hasProgress = status === 'downloading' && Number.isFinite(percent);
@@ -213,6 +215,8 @@
       renderUpdateState(state);
       if (state?.supported !== false && (state?.status === 'idle' || !state?.status)) {
         invokeUpdate('check-for-app-updates', { status: 'checking', supported: true, message: 'Checking...' });
+      } else if (state?.status === 'error') {
+        invokeUpdate('check-for-app-updates', { status: 'checking', supported: true, message: 'Checking...' });
       }
     }).catch((error) => {
       setUpdateMessage(error?.message || '', 'error');
@@ -220,6 +224,8 @@
     updateApp.addEventListener('click', () => {
       if (updateApp.dataset.action === 'install') {
         invokeUpdate('install-app-update', { status: 'installing', supported: true, message: 'Installing...' });
+      } else if (updateApp.dataset.action === 'check') {
+        invokeUpdate('check-for-app-updates', { status: 'checking', supported: true, message: 'Checking...' });
       } else {
         invokeUpdate('download-app-update', { status: 'downloading', supported: true, message: 'Downloading...', progress: { percent: 0 } });
       }
