@@ -156,7 +156,8 @@ jobs:
       - name: Collect binaries
         run: |
           mkdir -p release
-          find artifacts -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.yml" -o -name "*.blockmap" \) -exec cp {} release/ \;
+          find artifacts -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.blockmap" \) -exec cp {} release/ \;
+          find artifacts -type f \( -name "*.yml" \) -not -path "*/legacy/*" -exec cp {} release/ \;
           find artifacts -type f \( -name "orange-fuji-portable.exe" -o -name "Orange Fuji*.exe" \) -exec cp {} release/ \;
           ls -lh release/
           test "$(find release -type f | wc -l)" -gt 0

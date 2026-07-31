@@ -494,11 +494,12 @@ function updateCheckFailureState(error, message = 'Update check failed.') {
     };
   }
 
-  console.error('[orange-fuji][updater]', message, error?.message || error);
+  const detail = error?.message || String(error || '');
+  console.error('[orange-fuji][updater]', message, detail);
   return {
     status: 'error',
-    message,
-    error: message,
+    message: `${message} ${detail}`,
+    error: `${message} ${detail}`,
     progress: null,
   };
 }
