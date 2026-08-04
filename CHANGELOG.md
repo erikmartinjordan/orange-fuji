@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.7.2](https://github.com/erikmartinjordan/orange-fuji/compare/v1.7.1...v1.7.2) (2026-08-04)
+
+
+### 🐛 Fixes
+
+* allow retrying a failed update from the About window instead of getting stuck ([6f58201](https://github.com/erikmartinjordan/orange-fuji/commit/6f5820127877ff5562513388ce9c91e3c83a5033))
+* order workflow metadata collection to match regression test ([779e942](https://github.com/erikmartinjordan/orange-fuji/commit/779e942e002c81df707ef2560deac2c43a966bf5))
+* skip notarization for unsigned pull-request builds ([9536d04](https://github.com/erikmartinjordan/orange-fuji/commit/9536d04c85cfd4764a02b44ad06d73651e3bd5de))
+* surface updater error detail and keep merged latest-mac.yml intact in release workflow ([37209f6](https://github.com/erikmartinjordan/orange-fuji/commit/37209f61dcb5594508c4ae381e6c3c366ee9d679))
+
+
+### 👷 CI
+
+* build and publish Linux AppImage, run tests; fix site platform claims ([030321b](https://github.com/erikmartinjordan/orange-fuji/commit/030321b73dbe8d5c2d322f46702c309a0dfab89f))
+
 ## [1.7.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.7.0...v1.7.1) (2026-07-30)
 
 
