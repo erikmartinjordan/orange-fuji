@@ -3,23 +3,25 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
-const preloadSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'preload.js'), 'utf8');
-const mainSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.js'), 'utf8');
-const rendererSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'renderer.js'), 'utf8');
-const stylesSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'styles.css'), 'utf8');
-const landingSource = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const indexSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'index.html'), 'utf8');
-const preferencesSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'preferences.html'), 'utf8');
-const preferencesScript = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'preferences.js'), 'utf8');
-const aboutSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'about.html'), 'utf8');
-const licenseSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'license.html'), 'utf8');
-const captureOverlaySource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'capture-overlay.html'), 'utf8');
-const previewToastSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'preview-toast.html'), 'utf8');
-const releaseWorkflowSource = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'release-please.yml'), 'utf8');
-const buildWorkflowSource = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'build.yml'), 'utf8');
-const legacyMacBuilderSource = fs.readFileSync(path.join(__dirname, '..', 'config', 'electron-builder.legacy-mac.cjs'), 'utf8');
-const macAdHocSignSource = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'sign-mac-ad-hoc.js'), 'utf8');
+const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8').replace(/\r\n/g, '\n');
+
+const packageJson = JSON.parse(read('package.json'));
+const preloadSource = read('src/preload.js');
+const mainSource = read('src/main.js');
+const rendererSource = read('src/renderer/renderer.js');
+const stylesSource = read('src/renderer/styles.css');
+const landingSource = read('index.html');
+const indexSource = read('src/renderer/index.html');
+const preferencesSource = read('src/renderer/preferences.html');
+const preferencesScript = read('src/renderer/preferences.js');
+const aboutSource = read('src/renderer/about.html');
+const licenseSource = read('src/renderer/license.html');
+const captureOverlaySource = read('src/renderer/capture-overlay.html');
+const previewToastSource = read('src/renderer/preview-toast.html');
+const releaseWorkflowSource = read('.github/workflows/release-please.yml');
+const buildWorkflowSource = read('.github/workflows/build.yml');
+const legacyMacBuilderSource = read('config/electron-builder.legacy-mac.cjs');
+const macAdHocSignSource = read('scripts/sign-mac-ad-hoc.js');
 
 const tests = [];
 
