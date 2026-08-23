@@ -10,6 +10,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const https = require('https');
 const { tempRecordingPath, convertWebmToMp4, convertMp4ToGif } = require('./pro/recording');
+const nativeRecorder = require('./pro/native-recorder');
 let autoUpdater = null;
 try {
   ({ autoUpdater } = require('electron-updater'));
@@ -3049,6 +3050,45 @@ ipcMain.handle('pro-recording-display-media-source', async (event, payload = {})
   recordingDisplayMediaSourceId = payload.sourceId;
   lastRecordingSourceId = payload.sourceId;
   return { success: true };
+});
+
+// Native ScreenCaptureKit recorder (macOS only; full Retina resolution).
+ipcMain.handle('pro-native-recording-supported', () => nativeRecorder.isSupported());
+
+ipcMain.handle('pro-native-recording-start', async (_event, options = {}) => {
+  // Region selection, license, permissions and desktop-icon hiding have
+  // already happened in 'pro-recording-source' before this is reached.
+  let startOptions = {};
+  if (Number.isFinite(options?.fps)) {
+    startOptions.fps = Math.max(1, Math.min(120, Math.round(options.fps)));
+  }
+  if (options?.mode === 'region' && options.region) {
+    // Region coords are display-relative logical points; the helper maps
+    // them onto SCStreamConfiguration.sourceRect.
+    startOptions = {
+      region: {
+        x: Math.round(options.region.x),
+        y: Math.round(options.region.y),
+        width: Math.round(options.region.width),
+        height: Math.round(options.region.height),
+      },
+    };
+  }
+  return nativeRecorder.startRecording(startOptions);
+});
+
+ipcMain.handle('pro-native-recording-stop', async () => {
+  try {
+    const result = await nativeRecorder.stopRecording();
+    let data = null;
+    if (result?.file && fs.existsSync(result.file)) {
+      data = fs.readFileSync(result.file);
+      fs.rmSync(result.file, { force: true });
+    }
+    return { ...result, data };
+  } finally {
+    await restoreMacDesktopIconsAfterRecording().catch(() => {});
+  }
 });
 
 ipcMain.handle('pro-save-recording', async (event, payload) => {

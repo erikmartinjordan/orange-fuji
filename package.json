@@ -66,7 +66,16 @@
           ]
         }
       ],
-      "icon": "build/icon.icns"
+      "icon": "build/icon.icns",
+      "extraResources": [
+        {
+          "from": "src/bin",
+          "to": "bin",
+          "filter": [
+            "**/*"
+          ]
+        }
+      ]
     },
     "dmg": {
       "icon": "build/icon.icns"
@@ -98,15 +107,6 @@
         }
       ]
     },
-    "extraResources": [
-      {
-        "from": "src/bin",
-        "to": "bin",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
     "asarUnpack": [
       "node_modules/ffmpeg-static/**",
       "node_modules/gifski/**"

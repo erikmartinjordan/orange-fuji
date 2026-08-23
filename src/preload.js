@@ -11,6 +11,7 @@ let proRecordingChunks = [];
 let proRecordingFormat = 'mp4';
 let proRecordingRawStream = null;
 let proRecordingZoomStop = null;
+let proNativeActive = false;
 const streamCursorModes = new WeakMap();
 
 function getStreamCursorSetting(stream) {
@@ -45,6 +46,16 @@ function markStreamCursorMode(stream, requestedMode) {
 
 function shouldDrawSyntheticCursor(stream) {
   return streamCursorModes.get(stream) === 'synthetic';
+}
+
+// Ask the encoder to prioritize fine detail over motion smoothness. Screen
+// recordings are full of text and UI edges, which benefit from the sharper
+// rate-control path this hint unlocks in Chromium's H.264/VPx encoders.
+function applyVideoContentHint(stream) {
+  stream?.getVideoTracks?.().forEach((track) => {
+    try { track.contentHint = 'detail'; } catch (_) { /* older engines */ }
+  });
+  return stream;
 }
 
 function getRecordingMimeType() {
@@ -88,13 +99,19 @@ async function getDesktopStream(sourceId, includeAudio) {
     try {
       await ipcRenderer.invoke('pro-recording-display-media-source', { sourceId });
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        audio: Boolean(includeAudio),
+        // System audio is not a voice call: disabling the call-oriented
+        // processing chain preserves music/UI sound fidelity.
+        audio: Boolean(includeAudio) ? {
+          autoGainControl: false,
+          echoCancellation: false,
+          noiseSuppression: false,
+        } : false,
         video: {
           cursor: 'never',
           frameRate: { ideal: 60, max: 60 },
         },
       });
-      return markStreamCursorMode(stream, 'synthetic');
+      return markStreamCursorMode(applyVideoContentHint(stream), 'synthetic');
     } catch (displayMediaError) {
       console.warn('[orange-fuji][recording] getDisplayMedia failed; falling back to desktop getUserMedia:', displayMediaError?.message || displayMediaError);
     }
@@ -115,11 +132,11 @@ async function getDesktopStream(sourceId, includeAudio) {
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio, video });
-    return markStreamCursorMode(stream, 'synthetic');
+    return markStreamCursorMode(applyVideoContentHint(stream), 'synthetic');
   } catch (error) {
     delete video.cursor;
     const stream = await navigator.mediaDevices.getUserMedia({ audio, video });
-    return markStreamCursorMode(stream, 'native');
+    return markStreamCursorMode(applyVideoContentHint(stream), 'native');
   }
 }
 
@@ -574,6 +591,7 @@ function createAutoZoomStream(sourceStream, region, options = {}) {
   }
 
   const canvasStream = canvas.captureStream(fps);
+  applyVideoContentHint(canvasStream);
   sourceStream.getAudioTracks().forEach((track) => canvasStream.addTrack(track));
 
   const stop = () => {
@@ -685,8 +703,47 @@ function alignRegionToStreamPixels(region, stream) {
   };
 }
 
+// Try to hand the recording to the native ScreenCaptureKit helper. Returns a
+// start payload on success, {canceled:true} if the user canceled selection, or
+// null when the native engine is unavailable (caller uses MediaRecorder).
+async function tryStartNativeRecording(source, options) {
+  if (process.platform !== 'darwin') return null;
+  if ((options?.format ?? 'mp4') === 'gif') return null;
+  if (source.mode !== 'region' || !source.region) return null;
+  let supported = false;
+  try {
+    supported = await ipcRenderer.invoke('pro-native-recording-supported');
+  } catch (_) {
+    return null;
+  }
+  if (!supported) return null;
+
+  const payload = {
+    mode: source.mode,
+    hideDesktopIcons: options?.hideDesktopIcons !== false,
+    captureOrangeFuji: options?.captureOrangeFuji === true,
+  };
+  if (Number.isFinite(options?.fps)) payload.fps = options.fps;
+  if (source.mode === 'region' && source.region) {
+    // Region coords are display-relative logical points; the helper maps
+    // them onto SCStreamConfiguration.sourceRect.
+    payload.region = {
+      x: source.region.x,
+      y: source.region.y,
+      width: source.region.width,
+      height: source.region.height,
+    };
+  }
+  try {
+    return await ipcRenderer.invoke('pro-native-recording-start', payload);
+  } catch (error) {
+    console.warn('[orange-fuji][recording] native engine unavailable; falling back to MediaRecorder:', error?.message || error);
+    return null;
+  }
+}
+
 async function startRecording(options = {}) {
-  if (proRecorder && proRecorder.state !== 'inactive') {
+  if ((proRecorder && proRecorder.state !== 'inactive') || proNativeActive) {
     throw new Error('A screen recording is already in progress');
   }
 
@@ -700,6 +757,29 @@ async function startRecording(options = {}) {
     inlinePreview: Boolean(options?.previewVideoId),
   });
   if (!source) throw new Error('Recording canceled');
+
+  // Native engine (macOS): records at the display's full Retina resolution via
+  // ScreenCaptureKit. Falls back to MediaRecorder whenever it is unavailable.
+  const nativeAttempt = await tryStartNativeRecording(source, options);
+  if (nativeAttempt?.canceled) throw new Error('Recording canceled');
+  if (nativeAttempt) {
+    proNativeActive = true;
+    ipcRenderer.invoke('pro-recording-indicator-show', {
+      region: source.mode === 'region' ? source.region : null,
+      inlinePreview: Boolean(options?.previewVideoId),
+    }).catch(() => {});
+    return {
+      success: true,
+      pro: true,
+      source,
+      systemAudio: Boolean(nativeAttempt.audio),
+      mimeType: 'video/mp4',
+      inlinePreview: Boolean(options?.previewVideoId),
+      native: true,
+      nativeSize: { width: nativeAttempt.width, height: nativeAttempt.height },
+    };
+  }
+
   let systemAudio = true;
   let rawStream = null;
   try {
@@ -754,6 +834,9 @@ async function startRecording(options = {}) {
     proRecorder = new MediaRecorder(proRecordingStream, {
       mimeType,
       videoBitsPerSecond: 50_000_000,
+      // Match the 192k AAC used by the ffmpeg conversion path so direct
+      // MP4 saves (which skip re-encoding) keep the same audio quality.
+      audioBitsPerSecond: 192_000,
     });
     proRecorder.ondataavailable = (event) => {
       if (event.data && event.data.size > 0) proRecordingChunks.push(event.data);
@@ -779,6 +862,34 @@ async function startRecording(options = {}) {
 }
 function stopRecording(options = {}) {
   return new Promise((resolve, reject) => {
+    if (proNativeActive) {
+      const shouldDiscard = Boolean(options?.discard);
+      ipcRenderer.invoke('pro-native-recording-stop').then((result) => {
+        proNativeActive = false;
+        ipcRenderer.invoke('pro-recording-indicator-hide', shouldDiscard ? { skipMainWindowRestore: true } : {}).catch(() => {});
+        if (shouldDiscard) {
+          resolve({ discarded: true });
+          return;
+        }
+        if (!result?.data || result.data.length === 0) {
+          throw new Error('Native recording produced no video data');
+        }
+        resolve({
+          preview: true,
+          data: new Uint8Array(result.data),
+          mimeType: 'video/mp4',
+          gif: false,
+          format: proRecordingFormat || 'mp4',
+          nativeSize: { width: result.width, height: result.height },
+        });
+      }).catch((error) => {
+        proNativeActive = false;
+        ipcRenderer.invoke('pro-recording-indicator-hide', {}).catch(() => {});
+        reject(error instanceof Error ? error : new Error(String(error)));
+      });
+      return;
+    }
+
     if (!proRecorder || proRecorder.state === 'inactive') {
       reject(new Error('No screen recording is in progress'));
       return;
@@ -875,6 +986,11 @@ contextBridge.exposeInMainWorld('pico', {
   saveRecording: (payload) => ipcRenderer.invoke('pro-save-recording', payload),
   onSaveRecordingStarted: (callback) => ipcRenderer.on('pro-save-recording-started', () => callback()),
   trimRecording: (payload) => ipcRenderer.invoke('pro-trim-recording', payload),
+
+  // Native ScreenCaptureKit recorder (macOS; full Retina resolution)
+  nativeRecordingSupported: () => ipcRenderer.invoke('pro-native-recording-supported'),
+  nativeRecordingStart: (options = {}) => ipcRenderer.invoke('pro-native-recording-start', options),
+  nativeRecordingStop: () => ipcRenderer.invoke('pro-native-recording-stop'),
 
   // File operations
   openFile: () => ipcRenderer.invoke('open-file'),

@@ -12,3 +12,8 @@ npm-provided tools for local development or custom distribution:
 
 Electron Builder copies this directory to packaged app resources as `bin/`.
 Files in this directory take precedence over npm-provided binaries at runtime.
+
+`orange-fuji-recorder(.swift)` is the native macOS screen recorder helper
+(ScreenCaptureKit + AVAssetWriter) used for full-Retina-quality recordings.
+Rebuild it with `scripts/build-recorder-macos.sh`. It is only shipped in macOS
+builds (`mac.extraResources`) and resolved by `resolveBundledBinary()`.
