@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.7.2...v1.8.0) (2026-08-23)
+
+
+### ✨ Features
+
+* **mac:** native ScreenCaptureKit recorder for full-Retina region capture ([8cd088e](https://github.com/erikmartinjordan/orange-fuji/commit/8cd088edb923cfeadf2f214b0b4099171516fe15))
+
+
+### 🐛 Fixes
+
+* **mac:** mark bundled helper as multi-arch so universal build merges cleanly ([4b13253](https://github.com/erikmartinjordan/orange-fuji/commit/4b13253ee1bd350ce76e233456a0c0dae77c7968))
+
 ## [1.7.2](https://github.com/erikmartinjordan/orange-fuji/compare/v1.7.1...v1.7.2) (2026-08-04)
 
 
