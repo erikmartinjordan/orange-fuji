@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.8.0...v1.9.0) (2026-08-25)
+
+
+### ✨ Features
+
+* **onboarding:** friendly Screen Recording permissions with single native prompt ([bfa2ad4](https://github.com/erikmartinjordan/orange-fuji/commit/bfa2ad4b2070655c1f46913c7f7366c66ee90eb7))
+
+
+### 🐛 Fixes
+
+* **tests:** restore capturer probe trust for stale TCC ([f1c505a](https://github.com/erikmartinjordan/orange-fuji/commit/f1c505a5eb05e1434f3660936b0ade9d816aa44c))
+
 ## [1.8.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.7.2...v1.8.0) (2026-08-23)
 
 
