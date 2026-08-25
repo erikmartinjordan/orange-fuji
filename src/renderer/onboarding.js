@@ -14,7 +14,6 @@ const els = {
 
 let pollTimer = null;
 let currentStatus = 'checking';
-let autoRelaunchScheduled = false;
 let hasVisitedSettings = false;
 
 const SETTINGS_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.68 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> ';
@@ -27,23 +26,20 @@ function setStatus(status, text) {
   if (status === 'granted') {
     els.statusDot.classList.add('granted');
     els.card.classList.add('is-granted');
-    els.continueBtn.disabled = false;
-    els.continueBtn.textContent = 'Continue →';
+    // Sin auto-reinicio sorpresa: el usuario decide con "Restart Now".
+    // Solo notificamos a main para que before-quit relance si el sistema
+    // mata la app con su diálogo "Quit and Reopen".
+    try { window.pico.notifyPermissionGrantedNeedsRelaunch(); } catch (_) {}
+    if (hasVisitedSettings) {
+      els.continueBtn.disabled = false;
+      els.continueBtn.textContent = 'Restart Now →';
+    } else {
+      els.continueBtn.disabled = false;
+      els.continueBtn.textContent = 'Continue →';
+    }
     els.openSettings.innerHTML = SETTINGS_ICON + 'Open System Settings';
     els.openSettings.disabled = true;
     els.openSettings.style.opacity = '0.45';
-    // Auto-relaunch when permission is granted via System Settings toggle,
-    // so the user doesn't have to manually quit and reopen. Also notify main
-    // so the system "Quit and Reopen" dialog (which kills ad-hoc builds
-    // without reopening) is handled via before-quit relaunch.
-    try { window.pico.notifyPermissionGrantedNeedsRelaunch(); } catch (_) {}
-    if (!autoRelaunchScheduled) {
-      autoRelaunchScheduled = true;
-      els.continueBtn.textContent = 'Restarting…';
-      setTimeout(() => {
-        window.pico.relaunchApp().catch(() => window.pico.closeOnboarding?.());
-      }, 900);
-    }
   } else if (status === 'denied') {
     els.statusDot.classList.add('denied');
     els.card.classList.add('is-denied');
@@ -167,7 +163,6 @@ els.skipBtn.addEventListener('click', () => {
   if (pollTimer) clearInterval(pollTimer);
   window.pico.closeOnboarding?.();
 });
-
 // Allow Esc to skip
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') els.skipBtn.click();

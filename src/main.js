@@ -993,12 +993,15 @@ function openLicenseWindow() {
 }
 
 let onboardingWindow = null;
+let onboardingSkippedThisSession = false;
 
-function openOnboardingWindow() {
+function openOnboardingWindow(options = {}) {
   if (onboardingWindow && !onboardingWindow.isDestroyed()) {
-    onboardingWindow.focus();
+    // No robar foco: solo traer delante sin activar (no cambia de espacio).
+    try { onboardingWindow.showInactive(); } catch (_) {}
     return onboardingWindow;
   }
+  if (!options.force && onboardingSkippedThisSession) return null;
 
   onboardingWindow = new BrowserWindow({
     width: 460,
@@ -1016,10 +1019,16 @@ function openOnboardingWindow() {
     backgroundColor: process.platform === 'darwin' ? '#00000000' : '#1e1e22',
     autoHideMenuBar: true,
     title: 'Orange Fuji — Welcome',
+    show: false,
     webPreferences: getAppWebPreferences(),
   });
 
   onboardingWindow.loadFile(path.join(__dirname, 'renderer', 'onboarding.html'));
+  onboardingWindow.once('ready-to-show', () => {
+    if (!onboardingWindow || onboardingWindow.isDestroyed()) return;
+    // showInactive: aparece sin robar foco ni cambiar de espacio/app activa.
+    onboardingWindow.showInactive();
+  });
   onboardingWindow.on('closed', () => {
     onboardingWindow = null;
   });
@@ -1027,6 +1036,7 @@ function openOnboardingWindow() {
 }
 
 function closeOnboardingWindow() {
+  onboardingSkippedThisSession = true;
   if (onboardingWindow && !onboardingWindow.isDestroyed()) onboardingWindow.close();
 }
 
@@ -1218,7 +1228,7 @@ async function ensureMacScreenRecordingPermission() {
 
     // Denegó/cerró el aviso nativo → onboarding amistoso con "Abrir Ajustes".
     pendingPermissionRelaunch = true;
-    openOnboardingWindow();
+    openOnboardingWindow({ force: true });
     return false;
   })();
 
