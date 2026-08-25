@@ -1182,6 +1182,7 @@ let permissionGateInFlight = null;
 async function ensureMacScreenRecordingPermission() {
   if (process.platform !== 'darwin') return true;
   if (getMacScreenRecordingStatus() === 'granted' && await canReadMacScreenCapture()) return true;
+  if (await canReadMacScreenCapture()) return true;
 
   const settings = readSettings();
   const alreadyAsked = Boolean(settings.screenPermissionPromptedAt);
