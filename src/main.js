@@ -1191,6 +1191,7 @@ async function ensureMacScreenRecordingPermission() {
   // Ya se preguntó en una ejecución anterior y sigue denegado: guía directa,
   // sin disparar probes ni esperas (el aviso nativo ya no volverá a salir).
   if (alreadyAsked && currentStatus === 'denied') {
+    pendingPermissionRelaunch = true;
     openOnboardingWindow();
     return false;
   }
@@ -1216,6 +1217,7 @@ async function ensureMacScreenRecordingPermission() {
     }
 
     // Denegó/cerró el aviso nativo → onboarding amistoso con "Abrir Ajustes".
+    pendingPermissionRelaunch = true;
     openOnboardingWindow();
     return false;
   })();
@@ -3588,23 +3590,14 @@ ipcMain.on('permission-granted-needs-relaunch', () => {
 
 app.on('before-quit', (event) => {
   // macOS muestra "Quit and Reopen" tras activar el toggle; para builds ad-hoc
-  // ese botón solo hace quit sin reopen. Si acabamos de conceder el permiso,
-  // forzamos relaunch aquí.
+  // ese botón solo hace quit sin reopen. Si el onboarding está esperando el
+  // permiso, forzamos relaunch siempre para que el nuevo proceso pique el
+  // permiso recién concedido (aunque TCC aún reporte 'denied' hasta reiniciar).
   if (pendingPermissionRelaunch && process.platform === 'darwin') {
-    try {
-      if (getMacScreenRecordingStatus() === 'granted' || canReadMacScreenCaptureSync?.()) {
-        pendingPermissionRelaunch = false;
-        app.relaunch();
-      }
-    } catch (_) {}
+    pendingPermissionRelaunch = false;
+    try { app.relaunch(); } catch (_) {}
   }
 });
-
-function canReadMacScreenCaptureSync() {
-  // Sync probe sin prompt: si ya está granted, canRead es true.
-  // No llamamos a desktopCapturer aquí (async) para no bloquear quit.
-  try { return getMacScreenRecordingStatus() === 'granted'; } catch (_) { return false; }
-}
 
 app.on('window-all-closed', () => {
   // Keep global shortcuts active on macOS even when all windows are closed,

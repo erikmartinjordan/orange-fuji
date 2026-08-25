@@ -15,6 +15,7 @@ const els = {
 let pollTimer = null;
 let currentStatus = 'checking';
 let autoRelaunchScheduled = false;
+let hasVisitedSettings = false;
 
 const SETTINGS_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.68 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> ';
 
@@ -46,8 +47,15 @@ function setStatus(status, text) {
   } else if (status === 'denied') {
     els.statusDot.classList.add('denied');
     els.card.classList.add('is-denied');
-    els.continueBtn.disabled = true;
-    els.continueBtn.textContent = 'Continue';
+    if (hasVisitedSettings) {
+      els.continueBtn.disabled = false;
+      els.continueBtn.textContent = 'Restart Now →';
+      // Override text to guide restart
+      els.statusText.textContent = 'Permission denied — enable it in System Settings, then restart';
+    } else {
+      els.continueBtn.disabled = true;
+      els.continueBtn.textContent = 'Continue';
+    }
     els.openSettings.innerHTML = SETTINGS_ICON + 'Open System Settings';
     els.openSettings.disabled = false;
     els.openSettings.style.opacity = '1';
@@ -129,9 +137,14 @@ els.openSettings.addEventListener('click', async () => {
   // denied → open System Settings (no native prompt)
   els.openSettings.disabled = true;
   els.openSettings.textContent = 'Opening…';
+  hasVisitedSettings = true;
+  try { window.pico.notifyPermissionGrantedNeedsRelaunch(); } catch (_) {}
   try {
     await window.pico.openScreenRecordingSettings();
   } catch (_) {}
+  // Enable manual restart immediately after visiting Settings, even if
+  // polling still reports denied (needs restart to take effect).
+  setStatus('denied', 'Permission denied — enable it in System Settings, then restart');
   setTimeout(() => {
     els.openSettings.disabled = false;
     els.openSettings.innerHTML = SETTINGS_ICON + 'Open System Settings';
@@ -139,7 +152,7 @@ els.openSettings.addEventListener('click', async () => {
 });
 
 els.continueBtn.addEventListener('click', async () => {
-  if (currentStatus !== 'granted') return;
+  if (currentStatus !== 'granted' && !(currentStatus === 'denied' && hasVisitedSettings)) return;
   els.continueBtn.disabled = true;
   els.continueBtn.textContent = 'Restarting…';
   try {
