@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;">
+  <title>Orange Fuji — Welcome</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="onboarding-window">
+  <div class="onboarding-panel">
+    <div class="onboarding-titlebar" aria-hidden="true"></div>
+
+    <header class="onboarding-header">
+      <img class="onboarding-icon" src="../assets/icons/macos/256x256.png" alt="">
+      <div>
+        <h1>Welcome to Orange Fuji</h1>
+        <p>One step to start capturing</p>
+      </div>
+    </header>
+
+    <!-- Progress dots -->
+    <div class="onboarding-steps" aria-label="Steps">
+      <span class="onboarding-step-dot active"></span>
+      <span class="onboarding-step-dot"></span>
+      <span class="onboarding-step-dot"></span>
+    </div>
+
+    <!-- Main card -->
+    <div class="onboarding-card" id="onboarding-card">
+      <div class="onboarding-card-icon" aria-hidden="true">
+        <!-- screen capture icon -->
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="2" y="3" width="20" height="14" rx="2.5"/>
+          <path d="M8 21h8M12 17v4"/>
+          <circle cx="12" cy="10" r="3.5" stroke-dasharray="2 2"/>
+        </svg>
+      </div>
+      <div class="onboarding-card-copy">
+        <h2>Screen Recording Permission</h2>
+        <p>macOS requires your permission to capture the screen. Without it, Orange Fuji can't take screenshots or recordings.</p>
+      </div>
+
+      <!-- Visual guide -->
+      <div class="onboarding-visual">
+        <div class="onboarding-visual-row">
+          <span class="onboarding-visual-num">1</span>
+          <span class="onboarding-visual-text">Open System Settings</span>
+        </div>
+        <div class="onboarding-visual-arrow">↓</div>
+        <div class="onboarding-visual-row">
+          <span class="onboarding-visual-num">2</span>
+          <span class="onboarding-visual-text">Privacy & Security → Screen Recording</span>
+        </div>
+        <div class="onboarding-visual-arrow">↓</div>
+        <div class="onboarding-visual-row">
+          <span class="onboarding-visual-num">3</span>
+          <span class="onboarding-visual-text">Turn on <strong>Orange Fuji</strong></span>
+          <span class="onboarding-toggle" aria-hidden="true"><span class="onboarding-toggle-knob"></span></span>
+        </div>
+      </div>
+
+      <!-- Live status -->
+      <div class="onboarding-status" id="onboarding-status" role="status" aria-live="polite">
+        <span class="onboarding-status-dot" id="onboarding-status-dot"></span>
+        <span class="onboarding-status-text" id="onboarding-status-text">Checking permission…</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="onboarding-actions">
+      <button class="onboarding-primary" id="onboarding-open-settings">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.68 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Open System Settings
+      </button>
+      <button class="onboarding-secondary" id="onboarding-continue" disabled>Continue</button>
+    </div>
+
+    <button class="onboarding-skip" id="onboarding-skip">Skip for now</button>
+
+    <p class="onboarding-hint">After enabling permission, the app will restart automatically. This is required by macOS.</p>
+  </div>
+
+  <script src="onboarding.js"></script>
+</body>
+</html>

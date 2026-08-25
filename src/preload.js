@@ -1025,6 +1025,15 @@ contextBridge.exposeInMainWorld('pico', {
   // Display info
   getDisplays: () => ipcRenderer.invoke('get-displays'),
 
+  // Onboarding
+  getScreenRecordingStatus: () => ipcRenderer.invoke('get-screen-recording-status'),
+  requestScreenRecordingPermission: () => ipcRenderer.invoke('request-screen-recording-permission'),
+  openScreenRecordingSettings: () => ipcRenderer.invoke('open-screen-recording-settings'),
+  openOnboarding: () => ipcRenderer.invoke('open-onboarding-window'),
+  closeOnboarding: () => ipcRenderer.send('close-onboarding'),
+  relaunchApp: () => ipcRenderer.invoke('relaunch-app'),
+  notifyPermissionGrantedNeedsRelaunch: () => ipcRenderer.send('permission-granted-needs-relaunch'),
+
   // Platform info
   platform: process.platform,
 });

@@ -82,6 +82,7 @@ const DEFAULT_SETTINGS = {
   licensePurchasedAt: '',
   licenseDevicesTotal: 2,
   licenseDevicesUsed: 0,
+  screenPermissionPromptedAt: '',
 };
 const updateState = {
   status: 'idle',
@@ -121,6 +122,7 @@ function normalizeSettings(candidate = {}) {
     licensePurchasedAt: typeof candidate.licensePurchasedAt === 'string' ? candidate.licensePurchasedAt : DEFAULT_SETTINGS.licensePurchasedAt,
     licenseDevicesTotal: typeof candidate.licenseDevicesTotal === 'number' ? candidate.licenseDevicesTotal : DEFAULT_SETTINGS.licenseDevicesTotal,
     licenseDevicesUsed: typeof candidate.licenseDevicesUsed === 'number' ? candidate.licenseDevicesUsed : DEFAULT_SETTINGS.licenseDevicesUsed,
+    screenPermissionPromptedAt: typeof candidate.screenPermissionPromptedAt === 'string' ? candidate.screenPermissionPromptedAt : DEFAULT_SETTINGS.screenPermissionPromptedAt,
   };
 }
 
@@ -990,6 +992,70 @@ function openLicenseWindow() {
   });
 }
 
+let onboardingWindow = null;
+
+function openOnboardingWindow() {
+  if (onboardingWindow && !onboardingWindow.isDestroyed()) {
+    onboardingWindow.focus();
+    return onboardingWindow;
+  }
+
+  onboardingWindow = new BrowserWindow({
+    width: 460,
+    height: 620,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    closable: true,
+    movable: true,
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 14, y: 14 },
+    vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
+    visualEffectState: 'active',
+    transparent: process.platform === 'darwin',
+    backgroundColor: process.platform === 'darwin' ? '#00000000' : '#1e1e22',
+    autoHideMenuBar: true,
+    title: 'Orange Fuji — Welcome',
+    webPreferences: getAppWebPreferences(),
+  });
+
+  onboardingWindow.loadFile(path.join(__dirname, 'renderer', 'onboarding.html'));
+  onboardingWindow.on('closed', () => {
+    onboardingWindow = null;
+  });
+  return onboardingWindow;
+}
+
+function closeOnboardingWindow() {
+  if (onboardingWindow && !onboardingWindow.isDestroyed()) onboardingWindow.close();
+}
+
+async function getScreenRecordingStatusForOnboarding() {
+  const status = getMacScreenRecordingStatus();
+  // Avoid triggering the native TCC prompt automatically: only probe capture
+  // when macOS has already made a decision (denied/granted). For not-determined,
+  // the prompt must be user-initiated from the onboarding button.
+  if (status === 'not-determined' || status === 'unknown') {
+    return { status, canCapture: false, granted: false };
+  }
+  const canCapture = await canReadMacScreenCapture();
+  return { status, canCapture, granted: canCapture || status === 'granted' };
+}
+
+async function requestScreenRecordingPermission() {
+  // User-initiated probe: this is the only place that triggers the native
+  // macOS TCC prompt for not-determined. Returns updated status after prompt.
+  const canCapture = await canReadMacScreenCapture();
+  const status = getMacScreenRecordingStatus();
+  return { status, canCapture, granted: canCapture || status === 'granted' };
+}
+
+// El onboarding ya no se muestra al arrancar: el estado TCC tras un reset
+// puede reportarse como 'denied' y un probe aquí dispararía el prompt nativo
+// duplicando avisos. Flujo único: primer intento de captura → aviso nativo
+// (Permitir/No permitir) → si deniega, ensureMacScreenRecordingPermission abre
+// el onboarding con "Abrir Ajustes del Sistema".
+
 async function hideMacDesktopIconsForRecording(options = {}) {
   const shouldHide = process.platform === 'darwin' && options?.hideDesktopIcons !== false;
   if (!shouldHide) return;
@@ -1043,7 +1109,16 @@ function getMacScreenRecordingStatus() {
 
 async function openMacScreenRecordingSettings() {
   if (process.platform !== 'darwin') return;
-  await shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
+  const urls = [
+    'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
+    'x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_ScreenCapture',
+  ];
+  for (const url of urls) {
+    try {
+      await shell.openExternal(url);
+      return;
+    } catch (_) {}
+  }
 }
 
 async function canReadMacScreenCapture() {
@@ -1060,35 +1135,95 @@ async function canReadMacScreenCapture() {
   }
 }
 
-async function explainMacScreenRecordingPermission() {
-  if (process.platform !== 'darwin') return;
-  const result = await dialog.showMessageBox(mainWindow, {
-    type: 'warning',
-    buttons: ['Open System Settings', 'Not Now'],
-    defaultId: 0,
-    cancelId: 1,
-    title: 'Screen Recording permission required',
-    message: 'Orange Fuji needs macOS Screen Recording permission to capture the screen.',
-    detail: 'Open System Settings → Privacy & Security → Screen & System Audio Recording, enable Orange Fuji, then quit and reopen the app before trying again.',
+function waitForMacScreenRecordingDecision(timeoutMs = 600000) {
+  // Espera la decisión REAL del usuario sobre el prompt nativo. Resuelve:
+  //  - 'granted': el probe de captura funciona (concedió en Ajustes)
+  //  - 'denied': TCC pasó explícitamente a denegado durante la espera, o timeout
+  // No nos fiamos del estado inicial: tras un reset macOS puede reportar
+  // 'denied' aunque nunca se haya preguntado.
+  return new Promise((resolve) => {
+    const startedAt = Date.now();
+    const initialStatus = getMacScreenRecordingStatus();
+    let busy = false;
+    const tick = async () => {
+      if (busy) { setTimeout(tick, 600); return; }
+      busy = true;
+      try {
+        if (await canReadMacScreenCapture()) {
+          resolve('granted');
+          return;
+        }
+        const status = getMacScreenRecordingStatus();
+        if (status === 'granted') {
+          resolve('granted');
+          return;
+        }
+        // Transición explícita a denegado mientras esperábamos = usuario pulsó
+        // "Denegar" en el aviso nativo → resolver sin esperar el timeout.
+        if (initialStatus !== 'denied' && status === 'denied') {
+          resolve('denied');
+          return;
+        }
+        if (Date.now() - startedAt > timeoutMs) {
+          resolve('denied');
+          return;
+        }
+      } finally {
+        busy = false;
+      }
+      setTimeout(tick, 600);
+    };
+    tick();
   });
-  if (result.response === 0) await openMacScreenRecordingSettings();
 }
+
+let permissionGateInFlight = null;
 
 async function ensureMacScreenRecordingPermission() {
   if (process.platform !== 'darwin') return true;
-  const status = getMacScreenRecordingStatus();
-  if (status === 'granted') return true;
+  if (getMacScreenRecordingStatus() === 'granted' && await canReadMacScreenCapture()) return true;
 
-  // Let a first capture attempt trigger Apple's TCC prompt when macOS still has
-  // not made a decision. For explicit denials, fail fast with useful guidance.
-  if (status === 'not-determined' || status === 'unknown') return true;
+  const settings = readSettings();
+  const alreadyAsked = Boolean(settings.screenPermissionPromptedAt);
+  const currentStatus = getMacScreenRecordingStatus();
 
-  // Unsigned DMG builds can keep reporting denied after the user grants Screen
-  // Recording and relaunches. Trust an actual capturer probe over stale TCC state.
-  if (await canReadMacScreenCapture()) return true;
+  // Ya se preguntó en una ejecución anterior y sigue denegado: guía directa,
+  // sin disparar probes ni esperas (el aviso nativo ya no volverá a salir).
+  if (alreadyAsked && currentStatus === 'denied') {
+    openOnboardingWindow();
+    return false;
+  }
 
-  await explainMacScreenRecordingPermission();
-  return false;
+  // Gate único: si ya hay una espera en curso, reutilizarla para no disparar
+  // un segundo prompt ni abrir otra ventana.
+  if (permissionGateInFlight) return permissionGateInFlight;
+
+  permissionGateInFlight = (async () => {
+    // Marcar que el aviso nativo se ha mostrado al menos una vez (persistente
+    // entre ejecuciones) antes de dispararlo.
+    if (!readSettings().screenPermissionPromptedAt) {
+      writeSettings({ screenPermissionPromptedAt: nowIso() });
+    }
+    await canReadMacScreenCapture();
+    const decision = await waitForMacScreenRecordingDecision();
+
+    if (decision === 'granted') {
+      // desktopCapturer necesita un proceso nuevo para aplicar el permiso.
+      app.relaunch();
+      app.exit(0);
+      return false;
+    }
+
+    // Denegó/cerró el aviso nativo → onboarding amistoso con "Abrir Ajustes".
+    openOnboardingWindow();
+    return false;
+  })();
+
+  try {
+    return await permissionGateInFlight;
+  } finally {
+    permissionGateInFlight = null;
+  }
 }
 
 async function getDefaultRecordingSource() {
@@ -2218,7 +2353,7 @@ async function captureAllScreens() {
   });
 
   if (sources.length === 0 || sources.every((source) => !source.thumbnail || source.thumbnail.isEmpty())) {
-    if (process.platform === 'darwin') await explainMacScreenRecordingPermission();
+    // El gate de permisos ya gestionó el aviso nativo/onboarding; aquí solo abortamos.
     throw new Error('No capturable screen sources were returned.');
   }
 
@@ -2775,6 +2910,30 @@ ipcMain.handle('open-buy-license', async () => {
 ipcMain.handle('open-license-window', async () => {
   openLicenseWindow();
   return { success: true };
+});
+
+ipcMain.handle('open-onboarding-window', async () => {
+  openOnboardingWindow();
+  return { success: true };
+});
+
+ipcMain.handle('get-screen-recording-status', async () => getScreenRecordingStatusForOnboarding());
+
+ipcMain.handle('request-screen-recording-permission', async () => requestScreenRecordingPermission());
+
+ipcMain.handle('open-screen-recording-settings', async () => {
+  pendingPermissionRelaunch = true;
+  await openMacScreenRecordingSettings();
+  return { success: true };
+});
+
+ipcMain.handle('relaunch-app', async () => {
+  app.relaunch();
+  app.exit(0);
+});
+
+ipcMain.on('close-onboarding', () => {
+  closeOnboardingWindow();
 });
 
 ipcMain.handle('open-native-preferences', async () => {
@@ -3399,7 +3558,52 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
     else showMainWindowForCurrentMode();
   });
+
+  // Onboarding SOLO reactivo: nunca al primer arranque (el probe dispararía el
+  // prompt nativo duplicando avisos). En ejecuciones posteriores, si el usuario
+  // ya vio el aviso nativo y sigue denegado, abrir la guía directamente.
+  setTimeout(() => {
+    const forceDemo = process.argv.includes('--onboarding') || process.argv.includes('--demo-onboarding') || process.env.FORCE_ONBOARDING === '1';
+    if (forceDemo) {
+      openOnboardingWindow();
+      return;
+    }
+    if (process.platform !== 'darwin') return;
+    try {
+      const settings = readSettings();
+      // Chequeo SIN probe: leer settings + estado TCC no dispara ningún aviso.
+      if (settings.screenPermissionPromptedAt && getMacScreenRecordingStatus() === 'denied') {
+        openOnboardingWindow();
+      }
+    } catch (_) {}
+  }, 900);
 });
+
+let pendingPermissionRelaunch = false;
+
+ipcMain.on('permission-granted-needs-relaunch', () => {
+  pendingPermissionRelaunch = true;
+});
+
+app.on('before-quit', (event) => {
+  // macOS muestra "Quit and Reopen" tras activar el toggle; para builds ad-hoc
+  // ese botón solo hace quit sin reopen. Si acabamos de conceder el permiso,
+  // forzamos relaunch aquí.
+  if (pendingPermissionRelaunch && process.platform === 'darwin') {
+    try {
+      if (getMacScreenRecordingStatus() === 'granted' || canReadMacScreenCaptureSync?.()) {
+        pendingPermissionRelaunch = false;
+        app.relaunch();
+      }
+    } catch (_) {}
+  }
+});
+
+function canReadMacScreenCaptureSync() {
+  // Sync probe sin prompt: si ya está granted, canRead es true.
+  // No llamamos a desktopCapturer aquí (async) para no bloquear quit.
+  try { return getMacScreenRecordingStatus() === 'granted'; } catch (_) { return false; }
+}
 
 app.on('window-all-closed', () => {
   // Keep global shortcuts active on macOS even when all windows are closed,
