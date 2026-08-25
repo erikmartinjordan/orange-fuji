@@ -2946,8 +2946,11 @@ ipcMain.handle('open-screen-recording-settings', async () => {
 });
 
 ipcMain.handle('relaunch-app', async () => {
+  console.log('[orange-fuji][onboarding] relaunch requested');
   app.relaunch();
-  app.exit(0);
+  // Dar un respiro a que LaunchServices registre el relaunch pendiente antes
+  // de matar el proceso; evita carreras donde la app muere sin reabrirse.
+  setTimeout(() => app.exit(0), 150);
 });
 
 ipcMain.on('close-onboarding', () => {
@@ -3473,14 +3476,31 @@ function macPermissionBlocking() {
   return getMacScreenRecordingStatus() !== 'granted';
 }
 
-app.whenReady().then(() => {
+async function computeMacPermissionBlocking() {
+  if (process.platform !== 'darwin') return false;
+  const status = getMacScreenRecordingStatus();
+  if (status === 'granted') return false;
+  if (status === 'denied' || status === 'unknown') {
+    // Tras activar el toggle, TCC puede seguir reportando 'denied' hasta que
+    // el proceso reinicie. La prueba REAL de captura manda: si ya podemos
+    // leer píxeles, no bloqueamos (evita volver a caer en onboarding).
+    return !(await canReadMacScreenCapture());
+  }
+  return true; // not-determined: sin decidir, bloqueamos
+}
+
+app.whenReady().then(async () => {
   ensureLocalLicenseSettings();
   setupRecordingDisplayMediaHandler();
 
   // NUEVO FLUJO: sin permiso, el onboarding ES la app. No se crea el pill,
   // ni tray, ni atajos: el usuario no puede hacer nada hasta conceder.
   const forceDemo = process.argv.includes('--onboarding') || process.argv.includes('--demo-onboarding') || process.env.FORCE_ONBOARDING === '1';
-  const blocked = macPermissionBlocking();
+  let blocked = macPermissionBlocking();
+  if (blocked && !forceDemo) {
+    blocked = await computeMacPermissionBlocking();
+  }
+  console.log('[orange-fuji][onboarding] boot gate:', { blocked, forceDemo });
   if (blocked || forceDemo) {
     openOnboardingWindow({ activate: true, force: true });
     if (forceDemo && !blocked) {
