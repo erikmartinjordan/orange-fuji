@@ -996,12 +996,17 @@ let onboardingWindow = null;
 let onboardingSkippedThisSession = false;
 
 function openOnboardingWindow(options = {}) {
+  const { activate = false, force = false } = options;
   if (onboardingWindow && !onboardingWindow.isDestroyed()) {
-    // No robar foco: solo traer delante sin activar (no cambia de espacio).
-    try { onboardingWindow.showInactive(); } catch (_) {}
+    // No robar foco salvo que se pida explícitamente (primer arranque).
+    if (activate) {
+      try { onboardingWindow.show(); onboardingWindow.focus(); } catch (_) {}
+    } else {
+      try { onboardingWindow.showInactive(); } catch (_) {}
+    }
     return onboardingWindow;
   }
-  if (!options.force && onboardingSkippedThisSession) return null;
+  if (!force && onboardingSkippedThisSession) return null;
 
   onboardingWindow = new BrowserWindow({
     width: 460,
@@ -1026,8 +1031,8 @@ function openOnboardingWindow(options = {}) {
   onboardingWindow.loadFile(path.join(__dirname, 'renderer', 'onboarding.html'));
   onboardingWindow.once('ready-to-show', () => {
     if (!onboardingWindow || onboardingWindow.isDestroyed()) return;
-    // showInactive: aparece sin robar foco ni cambiar de espacio/app activa.
-    onboardingWindow.showInactive();
+    if (activate) onboardingWindow.show();
+    else onboardingWindow.showInactive();
   });
   onboardingWindow.on('closed', () => {
     onboardingWindow = null;
@@ -3463,9 +3468,33 @@ function setupTray() {
 
 applyLegacyUserDataPath();
 
+function macPermissionBlocking() {
+  if (process.platform !== 'darwin') return false;
+  return getMacScreenRecordingStatus() !== 'granted';
+}
+
 app.whenReady().then(() => {
   ensureLocalLicenseSettings();
   setupRecordingDisplayMediaHandler();
+
+  // NUEVO FLUJO: sin permiso, el onboarding ES la app. No se crea el pill,
+  // ni tray, ni atajos: el usuario no puede hacer nada hasta conceder.
+  const forceDemo = process.argv.includes('--onboarding') || process.argv.includes('--demo-onboarding') || process.env.FORCE_ONBOARDING === '1';
+  const blocked = macPermissionBlocking();
+  if (blocked || forceDemo) {
+    openOnboardingWindow({ activate: true, force: true });
+    if (forceDemo && !blocked) {
+      // Demo en máquina ya concedida: no bloquear el resto.
+      createMainWindow();
+      setupAutoUpdater();
+      setupTray();
+    }
+    app.on('activate', () => {
+      openOnboardingWindow({ activate: true });
+    });
+    return;
+  }
+
   createMainWindow();
   setupAutoUpdater();
   setupTray();
@@ -3571,25 +3600,6 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
     else showMainWindowForCurrentMode();
   });
-
-  // Onboarding SOLO reactivo: nunca al primer arranque (el probe dispararía el
-  // prompt nativo duplicando avisos). En ejecuciones posteriores, si el usuario
-  // ya vio el aviso nativo y sigue denegado, abrir la guía directamente.
-  setTimeout(() => {
-    const forceDemo = process.argv.includes('--onboarding') || process.argv.includes('--demo-onboarding') || process.env.FORCE_ONBOARDING === '1';
-    if (forceDemo) {
-      openOnboardingWindow();
-      return;
-    }
-    if (process.platform !== 'darwin') return;
-    try {
-      const settings = readSettings();
-      // Chequeo SIN probe: leer settings + estado TCC no dispara ningún aviso.
-      if (settings.screenPermissionPromptedAt && getMacScreenRecordingStatus() === 'denied') {
-        openOnboardingWindow();
-      }
-    } catch (_) {}
-  }, 900);
 });
 
 let pendingPermissionRelaunch = false;

@@ -1,177 +1,176 @@
 /**
  * Orange Fuji - Onboarding (Permissions)
- * Polls screen recording status and guides user to System Settings
+ * Blocking first-run flow: Grant -> Enable -> Restart.
+ * Real-time monitoring of the Screen Recording toggle.
  */
 
 const els = {
-  statusDot: document.getElementById('onboarding-status-dot'),
-  statusText: document.getElementById('onboarding-status-text'),
-  card: document.getElementById('onboarding-card'),
-  openSettings: document.getElementById('onboarding-open-settings'),
-  continueBtn: document.getElementById('onboarding-continue'),
-  skipBtn: document.getElementById('onboarding-skip'),
+  card: document.getElementById('ob-card'),
+  stage: document.getElementById('ob-stage'),
+  title: document.getElementById('ob-title'),
+  copy: document.getElementById('ob-copy'),
+  statusText: document.getElementById('ob-status-text'),
+  dot: document.getElementById('ob-dot'),
+  action: document.getElementById('ob-action'),
+  hint: document.getElementById('ob-hint'),
+  skip: document.getElementById('ob-skip'),
+  steps: Array.from(document.querySelectorAll('.ob-step')),
 };
 
 let pollTimer = null;
-let currentStatus = 'checking';
-let hasVisitedSettings = false;
+let state = 'checking';          // checking | ask | enable | granted
+let visitedSettings = false;
+let actionBusy = false;
 
-const SETTINGS_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.68 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> ';
-
-function setStatus(status, text) {
-  currentStatus = status;
-  els.statusText.textContent = text;
-  els.statusDot.className = 'onboarding-status-dot';
-  els.card.classList.remove('is-granted', 'is-denied', 'is-checking');
-  if (status === 'granted') {
-    els.statusDot.classList.add('granted');
-    els.card.classList.add('is-granted');
-    // Sin auto-reinicio sorpresa: el usuario decide con "Restart Now".
-    // Solo notificamos a main para que before-quit relance si el sistema
-    // mata la app con su diálogo "Quit and Reopen".
-    try { window.pico.notifyPermissionGrantedNeedsRelaunch(); } catch (_) {}
-    if (hasVisitedSettings) {
-      els.continueBtn.disabled = false;
-      els.continueBtn.textContent = 'Restart Now →';
-    } else {
-      els.continueBtn.disabled = false;
-      els.continueBtn.textContent = 'Continue →';
-    }
-    els.openSettings.innerHTML = SETTINGS_ICON + 'Open System Settings';
-    els.openSettings.disabled = true;
-    els.openSettings.style.opacity = '0.45';
-  } else if (status === 'denied') {
-    els.statusDot.classList.add('denied');
-    els.card.classList.add('is-denied');
-    if (hasVisitedSettings) {
-      els.continueBtn.disabled = false;
-      els.continueBtn.textContent = 'Restart Now →';
-      // Override text to guide restart
-      els.statusText.textContent = 'Permission denied — enable it in System Settings, then restart';
-    } else {
-      els.continueBtn.disabled = true;
-      els.continueBtn.textContent = 'Continue';
-    }
-    els.openSettings.innerHTML = SETTINGS_ICON + 'Open System Settings';
-    els.openSettings.disabled = false;
-    els.openSettings.style.opacity = '1';
-  } else if (status === 'not-determined') {
-    els.statusDot.classList.add('checking');
-    els.card.classList.add('is-checking');
-    els.continueBtn.disabled = true;
-    els.openSettings.innerHTML = 'Request Permission';
-    els.openSettings.disabled = false;
-    els.openSettings.style.opacity = '1';
-  } else {
-    els.statusDot.classList.add('checking');
-    els.card.classList.add('is-checking');
-    els.continueBtn.disabled = true;
-    els.openSettings.innerHTML = SETTINGS_ICON + 'Open System Settings';
-    els.openSettings.disabled = false;
-    els.openSettings.style.opacity = '1';
-  }
+function setSteps(active) {
+  const order = ['grant', 'enable', 'relaunch'];
+  els.steps.forEach((li, i) => {
+    li.classList.toggle('done', order.indexOf(active) > i);
+    li.classList.toggle('active', li.dataset.step === active);
+  });
 }
 
-async function checkPermission() {
-  try {
-    const result = await window.pico.getScreenRecordingStatus();
-    // result: { status: 'granted'|'denied'|'not-determined'|'unknown', canCapture: boolean }
-    if (result.canCapture || result.status === 'granted') {
-      setStatus('granted', 'Permission granted ✓ — ready to capture');
-      return 'granted';
-    }
-    if (result.status === 'not-determined') {
-      setStatus('not-determined', 'Click “Request Permission” to show the macOS prompt');
-      return 'not-determined';
-    }
-    if (result.status === 'denied') {
-      setStatus('denied', 'Permission denied — enable it in System Settings');
-      return 'denied';
-    }
-    setStatus('checking', 'Checking permission…');
-    return result.status;
-  } catch (e) {
-    setStatus('checking', 'Unable to check permission');
-    return 'unknown';
+function render(next) {
+  state = next;
+  els.card.className = 'ob-card';
+  els.stage.className = 'ob-stage';
+  els.dot.className = 'ob-status-dot';
+  els.action.disabled = false;
+  els.skip.hidden = false;
+  els.hint.hidden = false;
+
+  if (state === 'checking') {
+    setSteps('grant');
+    els.card.classList.add('is-checking');
+    els.stage.classList.add('st-wait');
+    els.dot.classList.add('pulse');
+    els.title.textContent = 'Checking permissions…';
+    els.copy.textContent = 'One moment while we look at your macOS settings.';
+    els.statusText.textContent = 'Reading system state';
+    els.action.textContent = '…';
+    els.action.disabled = true;
+    els.hint.hidden = true;
+    return;
   }
+
+  if (state === 'ask') {
+    setSteps('grant');
+    els.stage.classList.add('st-ask');
+    els.dot.classList.add('amber');
+    els.title.textContent = 'Allow screen access';
+    els.copy.textContent = 'macOS requires one approval before Orange Fuji can capture or record your screen.';
+    els.statusText.textContent = 'Waiting for you';
+    els.action.textContent = 'Grant Access';
+    els.hint.textContent = 'A macOS dialog will appear — nothing is shared until you allow it.';
+    return;
+  }
+
+  if (state === 'enable') {
+    setSteps('enable');
+    els.stage.classList.add('st-wait');
+    els.dot.classList.add('amber', 'pulse');
+    els.title.textContent = 'Enable Orange Fuji';
+    els.copy.innerHTML = 'In <strong>System Settings → Privacy &amp; Security → Screen Recording</strong>, turn on <strong>Orange Fuji</strong>. We are watching for the change — this panel updates by itself.';
+    els.statusText.textContent = 'Monitoring Settings…';
+    els.action.textContent = 'Open System Settings';
+    els.hint.textContent = 'Leave this window open. As soon as you flip the switch, we continue automatically.';
+    return;
+  }
+
+  // granted
+  setSteps('relaunch');
+  els.card.classList.add('is-granted');
+  els.stage.classList.add('st-done');
+  els.dot.classList.add('green');
+  els.title.textContent = 'All set!';
+  els.copy.textContent = 'Permission granted. One last restart and you are ready to capture.';
+  els.statusText.textContent = 'Permission active ✓';
+  els.action.textContent = 'Restart Now';
+  els.skip.hidden = true;
+  els.hint.textContent = 'The app reopens by itself in a second.';
+}
+
+async function refresh() {
+  if (actionBusy) return;
+  try {
+    const r = await window.pico.getScreenRecordingStatus();
+    if (r.canCapture || r.status === 'granted') {
+      if (state !== 'granted') render('granted');
+      return;
+    }
+    if (r.status === 'denied') {
+      if (state !== 'enable' && state !== 'granted') render('enable');
+      return;
+    }
+    if (state !== 'ask' && state !== 'enable' && state !== 'granted') render('ask');
+  } catch (_) { /* keep current view */ }
 }
 
 function startPolling() {
-  checkPermission();
   if (pollTimer) clearInterval(pollTimer);
-  // For not-determined we don't spam polling with native prompts; only poll denied/granted
-  pollTimer = setInterval(() => {
-    if (currentStatus !== 'not-determined') checkPermission();
-  }, 1400);
+  pollTimer = setInterval(refresh, 900);
 }
 
-els.openSettings.addEventListener('click', async () => {
-  // not-determined → user-initiated native prompt (single prompt)
-  if (currentStatus === 'not-determined') {
-    els.openSettings.disabled = true;
-    els.openSettings.textContent = 'Requesting…';
+els.action.addEventListener('click', async () => {
+  if (actionBusy) return;
+
+  if (state === 'granted') {
+    actionBusy = true;
+    els.action.disabled = true;
+    els.action.textContent = 'Restarting…';
     try {
-      const result = await window.pico.requestScreenRecordingPermission();
-      // After native prompt, re-check: will become granted or denied
-      if (result.granted) setStatus('granted', 'Permission granted ✓ — ready to capture');
-      else if (result.status === 'denied') setStatus('denied', 'Permission denied — enable it in System Settings');
-      else checkPermission();
-      // Now enable polling for denied/granted transitions
-      if (pollTimer) clearInterval(pollTimer);
-      pollTimer = setInterval(checkPermission, 1400);
+      await window.pico.notifyAndRelaunch();
     } catch (_) {
-      checkPermission();
-    } finally {
-      if (currentStatus !== 'granted') {
-        els.openSettings.disabled = false;
-        if (currentStatus === 'not-determined') els.openSettings.textContent = 'Request Permission';
-        else els.openSettings.innerHTML = SETTINGS_ICON + 'Open System Settings';
-      }
+      try { await window.pico.relaunchApp(); } catch (_) {}
     }
     return;
   }
-  // denied → open System Settings (no native prompt)
-  els.openSettings.disabled = true;
-  els.openSettings.textContent = 'Opening…';
-  hasVisitedSettings = true;
-  try { window.pico.notifyPermissionGrantedNeedsRelaunch(); } catch (_) {}
-  try {
-    await window.pico.openScreenRecordingSettings();
-  } catch (_) {}
-  // Enable manual restart immediately after visiting Settings, even if
-  // polling still reports denied (needs restart to take effect).
-  setStatus('denied', 'Permission denied — enable it in System Settings, then restart');
-  setTimeout(() => {
-    els.openSettings.disabled = false;
-    els.openSettings.innerHTML = SETTINGS_ICON + 'Open System Settings';
-  }, 900);
-});
 
-els.continueBtn.addEventListener('click', async () => {
-  if (currentStatus !== 'granted' && !(currentStatus === 'denied' && hasVisitedSettings)) return;
-  els.continueBtn.disabled = true;
-  els.continueBtn.textContent = 'Restarting…';
-  try {
-    await window.pico.relaunchApp();
-  } catch (e) {
-    // fallback: just close
-    window.pico.closeOnboarding?.();
+  if (state === 'ask') {
+    // Fire the single native prompt, user-initiated.
+    actionBusy = true;
+    els.action.disabled = true;
+    els.action.textContent = 'Waiting for macOS…';
+    try {
+      const r = await window.pico.requestScreenRecordingPermission();
+      if (r.granted || r.canCapture) render('granted');
+      else render('enable');           // denied → guide to Settings
+    } catch (_) {
+      render('enable');
+    } finally {
+      actionBusy = false;
+    }
+    startPolling();
+    return;
+  }
+
+  if (state === 'enable') {
+    els.action.disabled = true;
+    els.action.textContent = 'Opening…';
+    visitedSettings = true;
+    try { await window.pico.openScreenRecordingSettings(); } catch (_) {}
+    setTimeout(() => {
+      els.action.disabled = false;
+      els.action.textContent = 'Open System Settings';
+    }, 900);
   }
 });
 
-els.skipBtn.addEventListener('click', () => {
+els.skip.addEventListener('click', () => {
   if (pollTimer) clearInterval(pollTimer);
   window.pico.closeOnboarding?.();
 });
-// Allow Esc to skip
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') els.skipBtn.click();
+  if (e.key === 'Escape' && state !== 'granted') els.skip.click();
 });
 
-// Init
-startPolling();
-// Re-check when window regains focus (user returned from System Settings)
-window.addEventListener('focus', checkPermission);
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) checkPermission();
+// Real-time: react the moment the user returns from System Settings.
+window.addEventListener('focus', refresh);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+
+render('checking');
+refresh().then(() => {
+  if (state === 'checking') render('ask');
+  startPolling();
 });

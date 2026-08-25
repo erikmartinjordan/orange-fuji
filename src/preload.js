@@ -1032,7 +1032,10 @@ contextBridge.exposeInMainWorld('pico', {
   openOnboarding: () => ipcRenderer.invoke('open-onboarding-window'),
   closeOnboarding: () => ipcRenderer.send('close-onboarding'),
   relaunchApp: () => ipcRenderer.invoke('relaunch-app'),
-  notifyPermissionGrantedNeedsRelaunch: () => ipcRenderer.send('permission-granted-needs-relaunch'),
+  notifyAndRelaunch: async () => {
+    try { ipcRenderer.send('permission-granted-needs-relaunch'); } catch (_) {}
+    return ipcRenderer.invoke('relaunch-app');
+  },
 
   // Platform info
   platform: process.platform,

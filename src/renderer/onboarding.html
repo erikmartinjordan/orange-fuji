@@ -13,72 +13,48 @@
 
     <header class="onboarding-header">
       <img class="onboarding-icon" src="../assets/icons/macos/256x256.png" alt="">
-      <div>
-        <h1>Welcome to Orange Fuji</h1>
-        <p>One step to start capturing</p>
-      </div>
+      <h1>Welcome to Orange&nbsp;Fuji</h1>
     </header>
 
-    <!-- Progress dots -->
-    <div class="onboarding-steps" aria-label="Steps">
-      <span class="onboarding-step-dot active"></span>
-      <span class="onboarding-step-dot"></span>
-      <span class="onboarding-step-dot"></span>
-    </div>
+    <!-- Step indicator -->
+    <ol class="ob-steps" aria-label="Setup steps">
+      <li class="ob-step" data-step="grant"><span class="ob-step-dot"></span><span class="ob-step-label">Allow access</span></li>
+      <li class="ob-step" data-step="enable"><span class="ob-step-dot"></span><span class="ob-step-label">Enable in Settings</span></li>
+      <li class="ob-step" data-step="relaunch"><span class="ob-step-dot"></span><span class="ob-step-label">Restart</span></li>
+    </ol>
 
-    <!-- Main card -->
-    <div class="onboarding-card" id="onboarding-card">
-      <div class="onboarding-card-icon" aria-hidden="true">
-        <!-- screen capture icon -->
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6">
-          <rect x="2" y="3" width="20" height="14" rx="2.5"/>
-          <path d="M8 21h8M12 17v4"/>
-          <circle cx="12" cy="10" r="3.5" stroke-dasharray="2 2"/>
+    <!-- Stage -->
+    <section class="ob-card" id="ob-card">
+      <div class="ob-stage" id="ob-stage" aria-hidden="true">
+        <svg class="ob-art ob-art-ask" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6" y="10" width="36" height="24" rx="4"/>
+          <path d="M18 40h12M24 34v6"/>
+          <circle cx="24" cy="22" r="5"/>
+        </svg>
+        <svg class="ob-art ob-art-wait" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="14" y="8" width="20" height="32" rx="5"/>
+          <path d="M24 16v8l5 3"/>
+        </svg>
+        <svg class="ob-art ob-art-done" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="24" cy="24" r="17"/>
+          <path d="M16.5 24.5l5 5L32 19"/>
         </svg>
       </div>
-      <div class="onboarding-card-copy">
-        <h2>Screen Recording Permission</h2>
-        <p>macOS requires your permission to capture the screen. Without it, Orange Fuji can't take screenshots or recordings.</p>
+
+      <h2 class="ob-title" id="ob-title">One quick permission</h2>
+      <p class="ob-copy" id="ob-copy">macOS needs your approval before Orange Fuji can capture the screen.</p>
+
+      <div class="ob-status" id="ob-status" role="status" aria-live="polite">
+        <span class="ob-status-dot" id="ob-dot"></span>
+        <span id="ob-status-text">Checking…</span>
       </div>
+    </section>
 
-      <!-- Visual guide -->
-      <div class="onboarding-visual">
-        <div class="onboarding-visual-row">
-          <span class="onboarding-visual-num">1</span>
-          <span class="onboarding-visual-text">Open System Settings</span>
-        </div>
-        <div class="onboarding-visual-arrow">↓</div>
-        <div class="onboarding-visual-row">
-          <span class="onboarding-visual-num">2</span>
-          <span class="onboarding-visual-text">Privacy & Security → Screen Recording</span>
-        </div>
-        <div class="onboarding-visual-arrow">↓</div>
-        <div class="onboarding-visual-row">
-          <span class="onboarding-visual-num">3</span>
-          <span class="onboarding-visual-text">Turn on <strong>Orange Fuji</strong></span>
-          <span class="onboarding-toggle" aria-hidden="true"><span class="onboarding-toggle-knob"></span></span>
-        </div>
-      </div>
+    <!-- Single primary action -->
+    <button class="ob-primary" id="ob-action">Grant Access</button>
+    <p class="ob-hint" id="ob-hint">A macOS dialog will appear — nothing is shared until you allow it.</p>
 
-      <!-- Live status -->
-      <div class="onboarding-status" id="onboarding-status" role="status" aria-live="polite">
-        <span class="onboarding-status-dot" id="onboarding-status-dot"></span>
-        <span class="onboarding-status-text" id="onboarding-status-text">Checking permission…</span>
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="onboarding-actions">
-      <button class="onboarding-primary" id="onboarding-open-settings">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.68 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        Open System Settings
-      </button>
-      <button class="onboarding-secondary" id="onboarding-continue" disabled>Continue</button>
-    </div>
-
-    <button class="onboarding-skip" id="onboarding-skip">Skip for now</button>
-
-    <p class="onboarding-hint">After enabling permission, the app will restart automatically. This is required by macOS.</p>
+    <button class="ob-skip" id="ob-skip">Not now</button>
   </div>
 
   <script src="onboarding.js"></script>
