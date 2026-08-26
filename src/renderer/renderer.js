@@ -57,7 +57,7 @@ const state = {
   isSavingRecording: false,
   recordingLoop: true,
   recordingPreview: null,
-  recordingSettings: { format: 'mp4', autoZoom: true, autoHideDelay: 0, captureOrangeFuji: false },
+  recordingSettings: { format: 'mp4', autoZoom: true, autoHideDelay: 3, captureOrangeFuji: false },
   captureSettings: { hideDesktopIcons: true },
   magicWand: null,
   magicWandActive: false,
@@ -67,7 +67,7 @@ const state = {
   _marchingRAF: null,
 };
 
-const AUTO_HIDE_DELAYS = [500, 1000, 2000, 5000, 10000, 15000, 30000, Infinity];
+const AUTO_HIDE_DELAYS = [500, 1000, 2000, 3000, 5000, 10000, 15000, 30000, Infinity];
 
 // ══════════════════════════════════════════════════════════════════════════════
 // DOM Elements
@@ -878,7 +878,7 @@ function loadRecordingSettings() {
       const parsed = JSON.parse(raw);
       state.recordingSettings.format = parsed?.format === 'gif' ? 'gif' : 'mp4';
       state.recordingSettings.autoZoom = parsed?.autoZoom !== false;
-      state.recordingSettings.autoHideDelay = typeof parsed?.autoHideDelay === 'number' ? Math.min(Math.max(Math.round(parsed.autoHideDelay), 0), 7) : 0;
+      state.recordingSettings.autoHideDelay = typeof parsed?.autoHideDelay === 'number' ? Math.min(Math.max(Math.round(parsed.autoHideDelay), 0), AUTO_HIDE_DELAYS.length - 1) : 3;
       state.captureSettings.hideDesktopIcons = parsed?.hideDesktopIcons !== false;
       state.recordingSettings.captureOrangeFuji = parsed?.captureOrangeFuji === true;
     }
@@ -3383,7 +3383,7 @@ function initToolbarDismiss() {
     if (hidden || !isFloatingMode() || isCaptureMode) return;
     if (document.querySelector('dialog[open]')) return;
     if (state.recordingSettings.captureOrangeFuji && state.isRecording) return;
-    const idx = Math.min(Math.max(Math.round(state.recordingSettings.autoHideDelay ?? 0), 0), 7);
+    const idx = Math.min(Math.max(Math.round(state.recordingSettings.autoHideDelay ?? 3), 0), AUTO_HIDE_DELAYS.length - 1);
     if (idx >= AUTO_HIDE_DELAYS.length - 1) return;
     const delayMs = AUTO_HIDE_DELAYS[idx];
     hideTimer = window.setTimeout(autoHide, delayMs);

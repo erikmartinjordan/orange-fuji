@@ -1,4 +1,4 @@
-const DISPLAY_LABELS = ['0.5s', '1s', '2s', '5s', '10s', '15s', '30s', '∞'];
+const DISPLAY_LABELS = ['0.5s', '1s', '2s', '3s', '5s', '10s', '15s', '30s', '∞'];
 
 function sliderValueToLabel(v) {
   const idx = Math.min(Math.max(Math.round(v), 0), 7);
@@ -37,7 +37,7 @@ const settings = {
   autoZoom: true,
   hideDesktopIcons: true,
   captureOrangeFuji: false,
-  autoHideDelay: 0,
+  autoHideDelay: 3,
   defaultSavePath: '',
 };
 
@@ -95,7 +95,7 @@ async function loadSettings() {
       settings.autoZoom = parsed?.autoZoom !== false;
       settings.hideDesktopIcons = parsed?.hideDesktopIcons !== false;
       settings.captureOrangeFuji = parsed?.captureOrangeFuji === true;
-      settings.autoHideDelay = typeof parsed?.autoHideDelay === 'number' ? clampAutoHideDelay(parsed.autoHideDelay) : 0;
+      settings.autoHideDelay = typeof parsed?.autoHideDelay === 'number' ? clampAutoHideDelay(parsed.autoHideDelay) : 3;
     }
   } catch (_) {}
 
