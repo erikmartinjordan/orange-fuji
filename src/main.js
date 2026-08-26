@@ -1047,19 +1047,24 @@ function closeOnboardingWindow() {
 
 async function getScreenRecordingStatusForOnboarding() {
   const status = getMacScreenRecordingStatus();
-  // Avoid triggering the native TCC prompt automatically: only probe capture
-  // when macOS has already made a decision (denied/granted). For not-determined,
-  // the prompt must be user-initiated from the onboarding button.
-  if (status === 'not-determined' || status === 'unknown') {
-    return { status, canCapture: false, granted: false };
+  if (status === 'granted') {
+    const canCapture = await canReadMacScreenCapture();
+    return { status, canCapture, granted: true };
   }
+  // Nunca sondear automáticamente antes de haber mostrado el prompt una vez:
+  // el probe en estado fresco dispara la ventana nativa de macOS.
+  const asked = Boolean(readSettings().screenPermissionPromptedAt);
+  if (!asked) return { status, canCapture: false, granted: false };
   const canCapture = await canReadMacScreenCapture();
-  return { status, canCapture, granted: canCapture || status === 'granted' };
+  return { status, canCapture, granted: canCapture };
 }
 
 async function requestScreenRecordingPermission() {
   // User-initiated probe: this is the only place that triggers the native
-  // macOS TCC prompt for not-determined. Returns updated status after prompt.
+  // macOS TCC prompt. Mark asked BEFORE probing so polling stays safe.
+  if (!readSettings().screenPermissionPromptedAt) {
+    writeSettings({ screenPermissionPromptedAt: nowIso() });
+  }
   const canCapture = await canReadMacScreenCapture();
   const status = getMacScreenRecordingStatus();
   return { status, canCapture, granted: canCapture || status === 'granted' };
@@ -3481,9 +3486,11 @@ async function computeMacPermissionBlocking() {
   const status = getMacScreenRecordingStatus();
   if (status === 'granted') return false;
   if (status === 'denied' || status === 'unknown') {
-    // Tras activar el toggle, TCC puede seguir reportando 'denied' hasta que
-    // el proceso reinicie. La prueba REAL de captura manda: si ya podemos
-    // leer píxeles, no bloqueamos (evita volver a caer en onboarding).
+    // OJO: tras un reset, TCC reporta 'denied' sin haber preguntado jamás.
+    // Sondear aquí dispararía el aviso nativo en el arranque. Solo sondeamos
+    // si ya mostramos el prompt alguna vez (screenPermissionPromptedAt).
+    const asked = Boolean(readSettings().screenPermissionPromptedAt);
+    if (!asked) return true;
     return !(await canReadMacScreenCapture());
   }
   return true; // not-determined: sin decidir, bloqueamos
