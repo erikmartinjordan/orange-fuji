@@ -4002,9 +4002,18 @@ body.onboarding-window {
 .ob-mock-item-icon svg { width: 10px; height: 10px; display: block; }
 .ob-mock-item-icon.wifi { background: #0a84ff; }
 .ob-mock-item-icon.bt   { background: #0a84ff; }
-.ob-mock-item-icon.priv { background: #8e8e93; }
+.ob-mock-item-icon.priv { background: #636366; }
 .ob-mock-item-icon.disp { background: #5ac8fa; }
 .ob-mock-item-icon.gen  { background: #8e8e93; }
+
+.ob-mock-item.active .ob-mock-item-icon {
+  background: transparent !important;
+  box-shadow: none;
+}
+.ob-mock-item.active .ob-mock-item-icon svg {
+  stroke: #fff;
+  fill: #fff;
+}
 
 .ob-mock {
   width: min(360px, 100%);
