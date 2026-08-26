@@ -3915,7 +3915,7 @@ body.onboarding-window {
 
 /* ── macOS System Settings mockup ──────────────────────────────────────── */
 .ob-mock {
-  width: min(340px, 100%);
+  width: min(360px, 100%);
   border-radius: 12px;
   overflow: hidden;
   background: linear-gradient(180deg, #2a2a2e, #232327);
@@ -3956,15 +3956,15 @@ body.onboarding-window {
 
 .ob-mock-body {
   display: grid;
-  grid-template-columns: 116px 1fr;
-  min-height: 88px;
+  grid-template-columns: 144px 1fr;
+  min-height: 98px;
 }
 
 .ob-mock-sidebar {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 10px 7px;
+  padding: 10px 6px;
   background: rgba(255,255,255,0.04);
   border-right: 1px solid rgba(255,255,255,0.06);
 }
@@ -3974,13 +3974,15 @@ body.onboarding-window {
   align-items: center;
   gap: 6px;
   height: 22px;
-  padding: 0 7px;
+  padding: 0 6px;
   border-radius: 7px;
-  font-size: 9.5px;
-  font-weight: 550;
+  font-size: 9px;
+  font-weight: 560;
   color: rgba(240,236,230,0.58);
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ob-mock-item.active {
@@ -3990,18 +3992,23 @@ body.onboarding-window {
 }
 
 .ob-mock-item-icon {
-  width: 13px; height: 13px;
+  width: 14px; height: 14px;
   border-radius: 4px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  font-size: 7px;
+  overflow: hidden;
 }
+.ob-mock-item-icon svg { width: 10px; height: 10px; display: block; }
 .ob-mock-item-icon.wifi { background: #007aff; }
 .ob-mock-item-icon.bt   { background: #5e5ce6; }
 .ob-mock-item-icon.priv { background: #30d158; }
 .ob-mock-item-icon.disp { background: #64d2ff; }
 .ob-mock-item-icon.gen  { background: #8e8e93; }
+
+.ob-mock {
+  width: min(360px, 100%);
+}
 
 .ob-mock-content {
   display: flex;
