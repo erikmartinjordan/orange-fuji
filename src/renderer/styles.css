@@ -3915,7 +3915,7 @@ body.onboarding-window {
 
 /* ── macOS System Settings mockup ──────────────────────────────────────── */
 .ob-mock {
-  width: min(320px, 100%);
+  width: min(340px, 100%);
   border-radius: 12px;
   overflow: hidden;
   background: linear-gradient(180deg, #2a2a2e, #232327);
@@ -3924,6 +3924,8 @@ body.onboarding-window {
     0 14px 34px rgba(0,0,0,0.38),
     0 1px 0 rgba(255,255,255,0.08) inset;
   text-align: left;
+  display: flex;
+  flex-direction: column;
 }
 
 .ob-mock-bar {
@@ -3952,15 +3954,82 @@ body.onboarding-window {
   color: rgba(240,236,230,0.55);
 }
 
+.ob-mock-body {
+  display: grid;
+  grid-template-columns: 116px 1fr;
+  min-height: 88px;
+}
+
+.ob-mock-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 7px;
+  background: rgba(255,255,255,0.04);
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.ob-mock-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 7px;
+  font-size: 9.5px;
+  font-weight: 550;
+  color: rgba(240,236,230,0.58);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.ob-mock-item.active {
+  background: linear-gradient(135deg, #0a64e8, #2a72f3);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(10,100,232,0.45);
+}
+
+.ob-mock-item-icon {
+  width: 13px; height: 13px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 7px;
+}
+.ob-mock-item-icon.wifi { background: #007aff; }
+.ob-mock-item-icon.bt   { background: #5e5ce6; }
+.ob-mock-item-icon.priv { background: #30d158; }
+.ob-mock-item-icon.disp { background: #64d2ff; }
+.ob-mock-item-icon.gen  { background: #8e8e93; }
+
+.ob-mock-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 11px 11px;
+}
+
+.ob-mock-section {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(240,236,230,0.42);
+}
+
 .ob-mock-row {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 13px 14px;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.06);
 }
 
 .ob-mock-icon {
-  width: 34px; height: 34px;
+  width: 30px; height: 30px;
   flex-shrink: 0;
 }
 
@@ -3973,14 +4042,14 @@ body.onboarding-window {
 }
 
 .ob-mock-name {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 640;
   color: #f4f1ec;
   letter-spacing: -0.01em;
 }
 
 .ob-mock-sub {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 550;
   color: rgba(240,236,230,0.45);
   transition: color .3s ease;

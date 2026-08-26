@@ -58,7 +58,7 @@ function render(next) {
     els.copy.textContent = 'macOS requires one approval before Orange Fuji can capture or record your screen.';
     els.statusText.textContent = 'Waiting for you';
     els.action.textContent = 'Grant Access';
-    els.secondary.hidden = false;
+    els.secondary.hidden = true;
     els.hint.textContent = 'A macOS dialog will appear — nothing is shared until you allow it.';
     return;
   }

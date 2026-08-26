@@ -1010,7 +1010,7 @@ function openOnboardingWindow(options = {}) {
 
   onboardingWindow = new BrowserWindow({
     width: 460,
-    height: 680,
+    height: 740,
     resizable: false,
     minimizable: false,
     maximizable: false,
