@@ -12,6 +12,7 @@ const els = {
   statusText: document.getElementById('ob-status-text'),
   dot: document.getElementById('ob-dot'),
   action: document.getElementById('ob-action'),
+  secondary: document.getElementById('ob-secondary'),
   hint: document.getElementById('ob-hint'),
   skip: document.getElementById('ob-skip'),
   steps: Array.from(document.querySelectorAll('.ob-step')),
@@ -19,7 +20,6 @@ const els = {
 };
 
 const MOCK_SUB_TEXT = {
-  checking: 'Off',
   ask: 'Off',
   enable: 'Waiting for you…',
   granted: 'On ✓',
@@ -46,21 +46,8 @@ function render(next) {
   els.action.disabled = false;
   els.skip.hidden = false;
   els.hint.hidden = false;
+  els.secondary.hidden = true;
   if (els.mockSub) els.mockSub.textContent = MOCK_SUB_TEXT[state] || '';
-
-  if (state === 'checking') {
-    setSteps('grant');
-    els.card.classList.add('is-checking');
-    els.stage.classList.add('st-wait');
-    els.dot.classList.add('pulse');
-    els.title.textContent = 'Checking permissions…';
-    els.copy.textContent = 'One moment while we look at your macOS settings.';
-    els.statusText.textContent = 'Reading system state';
-    els.action.textContent = '…';
-    els.action.disabled = true;
-    els.hint.hidden = true;
-    return;
-  }
 
   if (state === 'ask') {
     setSteps('grant');
@@ -71,6 +58,7 @@ function render(next) {
     els.copy.textContent = 'macOS requires one approval before Orange Fuji can capture or record your screen.';
     els.statusText.textContent = 'Waiting for you';
     els.action.textContent = 'Grant Access';
+    els.secondary.hidden = false;
     els.hint.textContent = 'A macOS dialog will appear — nothing is shared until you allow it.';
     return;
   }
@@ -180,8 +168,17 @@ document.addEventListener('keydown', (e) => {
 window.addEventListener('focus', refresh);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 
-render('checking');
-refresh().then(() => {
+// Secondary action (ask state): jump straight to System Settings.
+els.secondary.addEventListener('click', async () => {
+  els.secondary.disabled = true;
+  try { await window.pico.openScreenRecordingSettings(); } catch (_) {}
+  render('enable');
+  startPolling();
+  els.secondary.disabled = false;
+});
+
+// Boot straight into the real state — no intermediate "checking" screen.
+refresh().catch(() => {}).then(() => {
   if (state === 'checking') render('ask');
   startPolling();
 });
