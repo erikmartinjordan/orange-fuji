@@ -4002,7 +4002,7 @@ body.onboarding-window {
 .ob-mock-item-icon svg { width: 10px; height: 10px; display: block; }
 .ob-mock-item-icon.wifi { background: #0a84ff; }
 .ob-mock-item-icon.bt   { background: #0a84ff; }
-.ob-mock-item-icon.priv { background: #636366; }
+.ob-mock-item-icon.priv { background: #0a84ff; }
 .ob-mock-item-icon.disp { background: #5ac8fa; }
 .ob-mock-item-icon.gen  { background: #8e8e93; }
 
@@ -4013,6 +4013,8 @@ body.onboarding-window {
 .ob-mock-item.active .ob-mock-item-icon svg {
   stroke: #fff;
   fill: #fff;
+  width: 13px;
+  height: 13px;
 }
 
 .ob-mock {
