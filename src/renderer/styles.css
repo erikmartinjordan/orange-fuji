@@ -4000,10 +4000,10 @@ body.onboarding-window {
   overflow: hidden;
 }
 .ob-mock-item-icon svg { width: 10px; height: 10px; display: block; }
-.ob-mock-item-icon.wifi { background: #007aff; }
-.ob-mock-item-icon.bt   { background: #5e5ce6; }
-.ob-mock-item-icon.priv { background: #30d158; }
-.ob-mock-item-icon.disp { background: #64d2ff; }
+.ob-mock-item-icon.wifi { background: #0a84ff; }
+.ob-mock-item-icon.bt   { background: #0a84ff; }
+.ob-mock-item-icon.priv { background: #8e8e93; }
+.ob-mock-item-icon.disp { background: #5ac8fa; }
 .ob-mock-item-icon.gen  { background: #8e8e93; }
 
 .ob-mock {
