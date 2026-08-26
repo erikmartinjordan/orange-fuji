@@ -2,10 +2,16 @@
  * Helpers for resolving bundled Pro media binaries.
  *
  * Packaged builds can resolve executables from:
- *   - resources/bin/ffmpeg(.exe) and resources/bin/gifski(.exe)
+ *   - resources/bin/ffmpeg(-arch)(.exe) and resources/bin/gifski(.exe)
  *   - unpacked npm dependencies bundled by electron-builder
  *   - src/bin/* during development or manual overrides
  *   - the user's PATH as a final development fallback
+ *
+ * macOS note: ffmpeg-static installs a single binary matching the build
+ * machine's architecture, so x64 DMGs built on arm64 CI runners would bundle
+ * an unusable ffmpeg ("Bad CPU type"). The fetch-media-binaries script ships
+ * per-arch copies (ffmpeg-arm64 / ffmpeg-x64) in resources/bin, and they are
+ * resolved first based on process.arch.
  */
 
 const path = require('path');
@@ -14,6 +20,7 @@ const { app } = require('electron');
 const { spawnSync } = require('child_process');
 
 const isWindows = process.platform === 'win32';
+const isDarwin = process.platform === 'darwin';
 const extension = isWindows ? '.exe' : '';
 const gifskiPlatformDir = {
   win32: 'windows',
@@ -59,12 +66,29 @@ function packageCandidatePaths(name) {
   return [];
 }
 
+function archSuffixedCandidatePaths(name) {
+  if (!isDarwin) return [];
+  const executable = `${name}-${process.arch}${extension}`;
+  const resourcePath = process.resourcesPath || '';
+  const appPath = app.getAppPath();
+
+  return uniq([
+    path.join(resourcePath, 'bin', executable),
+    path.join(resourcePath, 'app.asar.unpacked', 'bin', executable),
+    path.join(resourcePath, 'app.asar.unpacked', 'src', 'bin', executable),
+    path.join(appPath, 'bin', executable),
+    path.join(appPath, 'src', 'bin', executable),
+    path.join(__dirname, '..', 'bin', executable),
+  ]);
+}
+
 function candidatePaths(name) {
   const executable = `${name}${extension}`;
   const resourcePath = process.resourcesPath || '';
   const appPath = app.getAppPath();
 
   return uniq([
+    ...archSuffixedCandidatePaths(name),
     path.join(resourcePath, 'bin', executable),
     path.join(resourcePath, 'app.asar.unpacked', 'bin', executable),
     path.join(resourcePath, 'app.asar.unpacked', 'src', 'bin', executable),
