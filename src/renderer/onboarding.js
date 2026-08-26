@@ -15,6 +15,14 @@ const els = {
   hint: document.getElementById('ob-hint'),
   skip: document.getElementById('ob-skip'),
   steps: Array.from(document.querySelectorAll('.ob-step')),
+  mockSub: document.getElementById('ob-mock-sub'),
+};
+
+const MOCK_SUB_TEXT = {
+  checking: 'Off',
+  ask: 'Off',
+  enable: 'Waiting for you…',
+  granted: 'On ✓',
 };
 
 let pollTimer = null;
@@ -38,6 +46,7 @@ function render(next) {
   els.action.disabled = false;
   els.skip.hidden = false;
   els.hint.hidden = false;
+  if (els.mockSub) els.mockSub.textContent = MOCK_SUB_TEXT[state] || '';
 
   if (state === 'checking') {
     setSteps('grant');
@@ -55,6 +64,7 @@ function render(next) {
 
   if (state === 'ask') {
     setSteps('grant');
+    els.card.classList.add('is-ask');
     els.stage.classList.add('st-ask');
     els.dot.classList.add('amber');
     els.title.textContent = 'Allow screen access';
@@ -67,10 +77,11 @@ function render(next) {
 
   if (state === 'enable') {
     setSteps('enable');
+    els.card.classList.add('is-enable');
     els.stage.classList.add('st-wait');
     els.dot.classList.add('amber', 'pulse');
     els.title.textContent = 'Enable Orange Fuji';
-    els.copy.innerHTML = 'In <strong>System Settings → Privacy &amp; Security → Screen Recording</strong>, turn on <strong>Orange Fuji</strong>. We are watching for the change — this panel updates by itself.';
+    els.copy.innerHTML = 'In <strong>System Settings → Privacy &amp; Security → Screen Recording</strong>, flip the switch like in the preview above. This panel updates by itself.';
     els.statusText.textContent = 'Monitoring Settings…';
     els.action.textContent = 'Open System Settings';
     els.hint.textContent = 'Leave this window open. As soon as you flip the switch, we continue automatically.';
