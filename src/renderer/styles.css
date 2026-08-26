@@ -3839,7 +3839,7 @@ body.onboarding-window {
   border: 1px solid rgba(255,255,255,0.09);
   background: rgba(255,255,255,0.05);
   box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
-  transition: border-color .3s ease, background .3s ease;
+  transition: border-color .4s ease, background .4s ease, box-shadow .4s ease;
 }
 
 .ob-card.is-granted {
@@ -4002,13 +4002,16 @@ body.onboarding-window {
 .ob-mock-item-icon svg { width: 10px; height: 10px; display: block; }
 .ob-mock-item-icon.wifi { background: #0a84ff; }
 .ob-mock-item-icon.bt   { background: #0a84ff; }
-.ob-mock-item-icon.priv { background: #0a84ff; }
+.ob-mock-item-icon.priv {
+  background: linear-gradient(180deg, #71b2f8, #5299f7);
+  box-shadow: inset 0 0 0 .5px rgba(255,255,255,0.25);
+}
 .ob-mock-item-icon.disp { background: #5ac8fa; }
 .ob-mock-item-icon.gen  { background: #8e8e93; }
 
 .ob-mock-item.active .ob-mock-item-icon {
-  background: transparent !important;
-  box-shadow: none;
+  background: linear-gradient(180deg, #71b2f8, #5299f7) !important;
+  box-shadow: inset 0 0 0 .5px rgba(255,255,255,0.25);
 }
 .ob-mock-item.active .ob-mock-item-icon svg {
   stroke: #fff;
