@@ -773,18 +773,27 @@ function applyEditorWindowMode(options = {}) {
       return;
     }
     if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
-    mainWindow.moveTop();
-    mainWindow.focus();
+    // macOS: options.noFocus evita robar el foco de la app del usuario
+    if (process.platform === 'darwin' && options.noFocus) {
+      mainWindow.showInactive();
+    } else {
+      mainWindow.show();
+      mainWindow.moveTop();
+      mainWindow.focus();
+    }
   }
 }
 
+// noFocus: no robar el foco de la app del usuario (flujos de cancelación/error)
 function showMainWindowForCurrentMode() {
+  return showMainWindowForCurrentModeInner(...arguments);
+}
+function showMainWindowForCurrentModeInner(noFocus = false) {
   if (recordingInProgress && mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.hide();
     return;
   }
-  if (mainWindowMode === 'editor') applyEditorWindowMode({ show: true });
+  if (mainWindowMode === 'editor') applyEditorWindowMode({ show: true, noFocus });
   else applyToolbarWindowMode({ show: true });
 }
 
@@ -906,15 +915,15 @@ function cancelActiveCapture() {
     recordingRegionSelection.resolve(null);
     recordingRegionSelection = null;
     notifyRendererCaptureFinished();
-    if (mainWindow) showMainWindowForCurrentMode();
+    if (mainWindow) showMainWindowForCurrentMode(true);
     return;
   }
   const returnMode = pendingCaptureReturnMode;
   pendingCaptureReturnMode = null;
   notifyRendererCaptureFinished();
   if (mainWindow) {
-    if (returnMode === 'editor') applyEditorWindowMode({ show: true });
-    else showMainWindowForCurrentMode();
+    if (returnMode === 'editor') applyEditorWindowMode({ show: true, noFocus: true });
+    else showMainWindowForCurrentMode(true);
   }
 }
 
@@ -2593,12 +2602,12 @@ async function captureRegion(options = {}) {
   try {
     if (!await requireLicense()) {
       notifyRendererCaptureFinished();
-      if (mainWindow) showMainWindowForCurrentMode();
+      if (mainWindow) showMainWindowForCurrentMode(true);
       return { success: false, error: 'Trial expired. Activate a license to continue.' };
     }
     if (!await ensureMacScreenRecordingPermission()) {
       notifyRendererCaptureFinished();
-      if (mainWindow) showMainWindowForCurrentMode();
+      if (mainWindow) showMainWindowForCurrentMode(true);
       return { success: false, error: 'Screen Recording permission is required.' };
     }
     await hideOrangeFujiWindowsBeforeCapture(options);
@@ -2610,7 +2619,7 @@ async function captureRegion(options = {}) {
     pendingCaptureReturnMode = null;
     notifyRendererCaptureFinished();
     console.error('[orange-fuji][capture] capture failed:', err.message);
-    if (mainWindow) showMainWindowForCurrentMode();
+    if (mainWindow) showMainWindowForCurrentMode(true);
     return { success: false, error: err.message };
   }
 }
@@ -2663,7 +2672,7 @@ async function captureWindow(options = {}) {
   notifyRendererCaptureModeStarted();
   if (!await requireLicense()) {
     notifyRendererCaptureFinished();
-    if (mainWindow) showMainWindowForCurrentMode();
+    if (mainWindow) showMainWindowForCurrentMode(true);
     return { success: false, error: 'Trial expired. Activate a license to continue.' };
   }
   const includeOrangeFuji = shouldCaptureOrangeFuji(options);
@@ -2709,7 +2718,7 @@ async function captureWindow(options = {}) {
     return { success: true };
   } catch (err) {
     notifyRendererCaptureFinished();
-    if (mainWindow) showMainWindowForCurrentMode();
+    if (mainWindow) showMainWindowForCurrentMode(true);
     return { success: false, error: err.message };
   }
 }
@@ -2720,14 +2729,14 @@ async function captureFullscreen(options = {}) {
   notifyRendererCaptureModeStarted();
   if (!await requireLicense()) {
     notifyRendererCaptureFinished();
-    if (mainWindow) showMainWindowForCurrentMode();
+    if (mainWindow) showMainWindowForCurrentMode(true);
     return { success: false, error: 'Trial expired. Activate a license to continue.' };
   }
   await hideOrangeFujiWindowsBeforeCapture(options);
   try {
     if (!await ensureMacScreenRecordingPermission()) {
       notifyRendererCaptureFinished();
-      if (mainWindow) showMainWindowForCurrentMode();
+      if (mainWindow) showMainWindowForCurrentMode(true);
       return { success: false, error: 'Screen Recording permission is required.' };
     }
     const captureData = await withHiddenDesktopIcons(options, async () => captureAllScreens());
@@ -2741,7 +2750,7 @@ async function captureFullscreen(options = {}) {
     return { success: true };
   } catch (err) {
     notifyRendererCaptureFinished();
-    if (mainWindow) showMainWindowForCurrentMode();
+    if (mainWindow) showMainWindowForCurrentMode(true);
     return { success: false, error: err.message };
   }
 }
