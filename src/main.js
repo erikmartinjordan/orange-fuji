@@ -1010,7 +1010,7 @@ function openOnboardingWindow(options = {}) {
 
   onboardingWindow = new BrowserWindow({
     width: 460,
-    height: 620,
+    height: 680,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -1047,16 +1047,16 @@ function closeOnboardingWindow() {
 
 async function getScreenRecordingStatusForOnboarding() {
   const status = getMacScreenRecordingStatus();
+  const asked = Boolean(readSettings().screenPermissionPromptedAt);
   if (status === 'granted') {
     const canCapture = await canReadMacScreenCapture();
-    return { status, canCapture, granted: true };
+    return { status, canCapture, granted: true, asked };
   }
   // Nunca sondear automáticamente antes de haber mostrado el prompt una vez:
   // el probe en estado fresco dispara la ventana nativa de macOS.
-  const asked = Boolean(readSettings().screenPermissionPromptedAt);
-  if (!asked) return { status, canCapture: false, granted: false };
+  if (!asked) return { status, canCapture: false, granted: false, asked: false };
   const canCapture = await canReadMacScreenCapture();
-  return { status, canCapture, granted: canCapture };
+  return { status, canCapture, granted: canCapture, asked: true };
 }
 
 async function requestScreenRecordingPermission() {
@@ -2944,7 +2944,17 @@ ipcMain.handle('get-screen-recording-status', async () => getScreenRecordingStat
 
 ipcMain.handle('request-screen-recording-permission', async () => requestScreenRecordingPermission());
 
+ipcMain.handle('mark-permission-asked', async () => {
+  if (!readSettings().screenPermissionPromptedAt) {
+    writeSettings({ screenPermissionPromptedAt: nowIso() });
+  }
+  return { success: true };
+});
+
 ipcMain.handle('open-screen-recording-settings', async () => {
+  if (!readSettings().screenPermissionPromptedAt) {
+    writeSettings({ screenPermissionPromptedAt: nowIso() });
+  }
   pendingPermissionRelaunch = true;
   await openMacScreenRecordingSettings();
   return { success: true };

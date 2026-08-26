@@ -1029,6 +1029,7 @@ contextBridge.exposeInMainWorld('pico', {
   getScreenRecordingStatus: () => ipcRenderer.invoke('get-screen-recording-status'),
   requestScreenRecordingPermission: () => ipcRenderer.invoke('request-screen-recording-permission'),
   openScreenRecordingSettings: () => ipcRenderer.invoke('open-screen-recording-settings'),
+  markPermissionAsked: () => ipcRenderer.invoke('mark-permission-asked'),
   openOnboarding: () => ipcRenderer.invoke('open-onboarding-window'),
   closeOnboarding: () => ipcRenderer.send('close-onboarding'),
   relaunchApp: () => ipcRenderer.invoke('relaunch-app'),

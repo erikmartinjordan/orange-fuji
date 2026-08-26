@@ -97,6 +97,12 @@ async function refresh() {
       if (state !== 'granted') render('granted');
       return;
     }
+    // Fresh install (never asked) must stay on "ask" so both buttons are visible,
+    // even when TCC confusingly reports 'denied' without an entry.
+    if (r.asked === false) {
+      if (state !== 'ask') render('ask');
+      return;
+    }
     if (r.status === 'denied') {
       if (state !== 'enable' && state !== 'granted') render('enable');
       return;
@@ -171,6 +177,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) refr
 // Secondary action (ask state): jump straight to System Settings.
 els.secondary.addEventListener('click', async () => {
   els.secondary.disabled = true;
+  try { await window.pico.markPermissionAsked(); } catch (_) {}
   try { await window.pico.openScreenRecordingSettings(); } catch (_) {}
   render('enable');
   startPolling();

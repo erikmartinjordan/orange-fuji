@@ -3743,8 +3743,8 @@ body.onboarding-window {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 18px;
-  padding: 14px 26px 20px;
+  gap: 14px;
+  padding: 10px 26px 16px;
   background:
     linear-gradient(145deg, rgba(255,255,255,0.05), transparent 34%),
     rgba(28,28,31,0.55);
@@ -3829,12 +3829,12 @@ body.onboarding-window {
 /* ── Card / Stage ──────────────────────────────────────────────────────── */
 .ob-card {
   width: min(380px, 100%);
-  min-height: 268px;
+  min-height: 230px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 22px 20px 18px;
+  gap: 10px;
+  padding: 18px 20px 16px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.09);
   background: rgba(255,255,255,0.05);
@@ -4043,6 +4043,10 @@ body.onboarding-window {
 }
 .ob-card.is-granted .ob-knob { transform: translateX(16px); animation:none; }
 .ob-card.is-granted .ob-toggle::after { display:none; }
+
+/* In enable (monitoring) the top clock stage is redundant — the animated
+   toggle in the mock already tells the story. Hide it to save height. */
+.ob-card.is-enable .ob-stage { display: none; }
 
 .ob-status {
   display: inline-flex;
