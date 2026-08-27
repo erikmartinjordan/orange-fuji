@@ -3915,7 +3915,7 @@ body.onboarding-window {
 
 /* ── macOS System Settings mockup ──────────────────────────────────────── */
 .ob-mock {
-  width: min(360px, 100%);
+  width: min(380px, 100%);
   border-radius: 12px;
   overflow: hidden;
   background: linear-gradient(180deg, #2a2a2e, #232327);
@@ -4029,6 +4029,7 @@ body.onboarding-window {
   flex-direction: column;
   gap: 8px;
   padding: 10px 11px 11px;
+  min-width: 0;
 }
 
 .ob-mock-section {
@@ -4041,13 +4042,14 @@ body.onboarding-window {
 
 .ob-mock-row {
   display: grid;
-  grid-template-columns: 28px 1fr 40px;
+  grid-template-columns: 28px minmax(0, 1fr) 44px;
   align-items: center;
-  gap: 8px;
-  padding: 8px 9px;
+  gap: 10px;
+  padding: 9px 10px;
   border-radius: 9px;
   background: rgba(255,255,255,0.045);
   border: 1px solid rgba(255,255,255,0.06);
+  min-width: 0;
 }
 
 .ob-mock-icon {
@@ -4060,6 +4062,7 @@ body.onboarding-window {
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .ob-mock-name {
@@ -4085,20 +4088,21 @@ body.onboarding-window {
 
 .ob-toggle {
   position: relative;
-  width: 36px; height: 16px;
+  width: 44px; height: 20px;
   border-radius: 999px;
   flex-shrink: 0;
-  background: rgba(120,120,128,0.32);
-  transition: background .4s cubic-bezier(.2,.8,.2,1);
+  background: #38383a;
+  transition: background .22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ob-knob {
   position: absolute;
-  top: 2px; left: 2px;
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25), 0 .5px 1px rgba(0,0,0,0.12);
+  top: 3px; left: 3px;
+  width: 24px; height: 14px;
+  border-radius: 999px;
+  background: #e3e3e5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: transform .22s cubic-bezier(0.16, 1, 0.3, 1), background-color .22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Enable (monitoring): flip ON solo tras una pausa, para contar la historia */
@@ -4120,7 +4124,7 @@ body.onboarding-window {
 }
 
 @keyframes obToggleOn { to { background:#3974e0; } }
-@keyframes obKnobFlip { to { transform: translateX(20px); } }
+@keyframes obKnobFlip { to { transform: translateX(14px); background-color: #dceaff; } }
 @keyframes obHalo {
   0%   { opacity:.85; transform:scale(.92); }
   70%  { opacity:0;   transform:scale(1.22); }
@@ -4134,7 +4138,7 @@ body.onboarding-window {
   animation: none;
   background: #3974e0;
 }
-.ob-card.is-granted .ob-knob { transform: translateX(20px); animation:none; }
+.ob-card.is-granted .ob-knob { transform: translateX(14px); background-color: #dceaff; animation:none; }
 .ob-card.is-granted .ob-toggle::after { display:none; }
 
 /* In enable (monitoring) the top clock stage is redundant — the animated
