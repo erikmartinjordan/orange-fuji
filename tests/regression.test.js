@@ -748,6 +748,13 @@ test('Capture Focus Preservation', () => {
     'region capture must keep the pill visible via contentProtection to preserve source focus',
   );
 
+  // Region capture must NEVER kill Finder via withHiddenDesktopIcons — that is
+  // what caused Desktop→OpenCode Space switches when the desktop was bare.
+  assert.ok(
+    /async function captureRegion\([\s\S]*hideOrangeFujiWindowsBeforeCapture\(\{ \.\.\.options, mode: 'region' \}\)[\s\S]*await captureAllScreens\(\)/.test(mainSource),
+    'region capture must bypass withHiddenDesktopIcons to avoid killall Finder Space switches',
+  );
+
   // Capture overlays must not use visibleOnAllWorkspaces — they should stay on
   // the current display without causing a Space switch on close.
   assert.ok(
