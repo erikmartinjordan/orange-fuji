@@ -2621,8 +2621,10 @@ async function captureRegion(options = {}) {
       if (mainWindow) showMainWindowForCurrentMode(true);
       return { success: false, error: 'Screen Recording permission is required.' };
     }
-    await hideOrangeFujiWindowsBeforeCapture(options);
-    const captureData = await withHiddenDesktopIcons(options, async () => captureAllScreens());
+    await hideOrangeFujiWindowsBeforeCapture({ ...options, mode: 'region' });
+    // Region never hides desktop icons: killall Finder forces a Space switch
+    // when the desktop is bare and the next window (OpenCode) is on another Space.
+    const captureData = await captureAllScreens();
     console.log('[orange-fuji][capture] capture data ready; creating overlays');
     await createCaptureOverlays(captureData, 'region', [], { showToolbar: options?.showToolbar !== false });
     return { success: true };
