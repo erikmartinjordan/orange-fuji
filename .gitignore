@@ -27,5 +27,9 @@ Thumbs.db
 *.dmg
 *.exe
 *.AppImage
+
+# Fetched per-arch media binaries (scripts/fetch-media-binaries.js)
+src/bin/ffmpeg-arm64
+src/bin/ffmpeg-x64
 supabase/.temp/
 test-results/
