@@ -2585,6 +2585,12 @@ async function hideOrangeFujiWindowsBeforeCapture(options = {}) {
     setOrangeFujiWindowsContentProtection(true);
     return false;
   }
+  // window/fullscreen: ocultar la pill NUNCA (evita el ciclo hide/show que
+  // quita foco y cambia de Space en macOS). En su lugar usamos contentProtection.
+  if (process.platform === 'darwin') {
+    setOrangeFujiWindowsContentProtection(true);
+    return false;
+  }
 
   const windowsToHide = getOrangeFujiAppWindows();
 
@@ -3120,6 +3126,15 @@ ipcMain.handle('pro-recording-indicator-hide', async (event, payload = {}) => {
 });
 
 async function hideOrangeFujiWindowsBeforeRecording() {
+  // No ocultar ventanas en macOS: el hide/show provoca salto de Space y robo
+  // de foco. Con contentProtection las ventanas no salen en la grabación y el
+  // usuario mantiene su app/espacio actual.
+  if (process.platform === 'darwin') {
+    setOrangeFujiWindowsContentProtection(true);
+    await new Promise((resolve) => setTimeout(resolve, 260));
+    return;
+  }
+
   const windowsToHide = [mainWindow, preferencesWindow, windowPickerWindow]
     .filter((win) => win && !win.isDestroyed());
 
