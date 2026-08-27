@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.10.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.9.0...v1.10.0) (2026-08-27)
+
+
+### ✨ Features
+
+* **capture:** keep source window focused after capture ([15c4c98](https://github.com/erikmartinjordan/orange-fuji/commit/15c4c98779a99fc39196bbb3a544501e5469ac20))
+* **onboarding:** blocking first-run flow with live monitoring ([898f526](https://github.com/erikmartinjordan/orange-fuji/commit/898f526e08f0575b9ca28234c8cf68cc209c48a7))
+* **onboarding:** clean first run - no native prompt at boot, two-button entry ([fb360a7](https://github.com/erikmartinjordan/orange-fuji/commit/fb360a7318512aa6fa08e55c374b84a2e0f656d7))
+* **onboarding:** drop checking screen, add direct Open System Settings ([2056a43](https://github.com/erikmartinjordan/orange-fuji/commit/2056a43e1b25a0c91a5881b502c905fc4e0607da))
+* **onboarding:** macOS Settings mockup with animated green toggle ([93c4b2e](https://github.com/erikmartinjordan/orange-fuji/commit/93c4b2e15ef684e7f3c7b8ceaf5b7b27f891263b))
+* **onboarding:** real Settings icons + fix Privacy cut ([8d2fdcb](https://github.com/erikmartinjordan/orange-fuji/commit/8d2fdcb09d8b96c560c2b3c3be694b95e3c0b2a2))
+* **onboarding:** single-button flow + Settings mockup with sidebar ([680b711](https://github.com/erikmartinjordan/orange-fuji/commit/680b711fa8aee3746b9c1cd2381ba1cd4b322312))
+* **onboarding:** Tahoe fidelity - hand, toggle, no double prompt ([1c21fdc](https://github.com/erikmartinjordan/orange-fuji/commit/1c21fdc754bcf1569bcde132360b53b02b3ced7a))
+* **preferences:** default pill auto-hide to 3s on fresh installs ([51d2646](https://github.com/erikmartinjordan/orange-fuji/commit/51d2646d500efb22751bbe48e9854442ee8d50d7))
+* **settings:** Tahoe blue mini toggle 36x16 for Orange Fuji ([81619bb](https://github.com/erikmartinjordan/orange-fuji/commit/81619bb9871e2ffa6f9b76f0653b639c26ce6cf6))
+* **settings:** Tahoe capsule toggles in orange for Settings ([9a5a8ee](https://github.com/erikmartinjordan/orange-fuji/commit/9a5a8ee7bcd204e5570c73dec24727c3005cee62))
+
+
+### 🐛 Fixes
+
+* **capture:** keep editor on current Space after region capture ([27c1896](https://github.com/erikmartinjordan/orange-fuji/commit/27c1896bcda989825d01a9d6787b16de9a5b6b32))
+* **capture:** keep focus on source app after capture ([504f65a](https://github.com/erikmartinjordan/orange-fuji/commit/504f65a2642c59cca944bc099cbacd32f353e46a))
+* **capture:** never hide windows on macOS - contentProtection only ([4d730fd](https://github.com/erikmartinjordan/orange-fuji/commit/4d730fd40f1b344fa9c482f27c74cd083827f719))
+* **capture:** region never kills Finder - eliminates Desktop→OpenCode Space switch ([30dd57e](https://github.com/erikmartinjordan/orange-fuji/commit/30dd57e27563482b42b4cbd2d721a3703eb2b02c))
+* **capture:** stop stealing app focus during capture flows ([e5c8c1d](https://github.com/erikmartinjordan/orange-fuji/commit/e5c8c1dd2dfe030a89cc4a38498898bdccbe3df8))
+* **onboarding:** boot gate trusts real capture probe after restart ([1bc6451](https://github.com/erikmartinjordan/orange-fuji/commit/1bc6451ae1bed73af65c0eeed803f2ad40747679))
+* **onboarding:** faithful Tahoe hand for Privacy & fit toggle row ([bf05b08](https://github.com/erikmartinjordan/orange-fuji/commit/bf05b0822dc4f4f1c1ad4544224db49547bcdd65))
+* **onboarding:** keep Settings toggles orange, onboarding mock blue ([2b960f3](https://github.com/erikmartinjordan/orange-fuji/commit/2b960f32cb5bc73230c104321d8ed4b2af5c2d20))
+* **onboarding:** make Quit and Reopen actually restart and show Restart Now ([1764b13](https://github.com/erikmartinjordan/orange-fuji/commit/1764b134aaa271e745896dce84c5fc289f690fd8))
+* **onboarding:** never fire native prompt at launch ([0d1a899](https://github.com/erikmartinjordan/orange-fuji/commit/0d1a8996cef007765de72e53b1b9a876f7650cac))
+* **onboarding:** proper palm glyph for Privacy (Material back_hand) ([b604705](https://github.com/erikmartinjordan/orange-fuji/commit/b60470588f3471653e1d6eee6adc05d1b0b393a6))
+* **onboarding:** retry capture probe after grant to avoid bounce ([65771e8](https://github.com/erikmartinjordan/orange-fuji/commit/65771e89d2cf02eae5a17f8a2783eea068a469df))
+* **onboarding:** smaller Tahoe toggle 44x20 keeps Orange Fuji single line ([d358c5c](https://github.com/erikmartinjordan/orange-fuji/commit/d358c5c011a4e1efa016f2a3680c00a0a5a168d5))
+* **onboarding:** stable, non-focus-stealing flow ([1abecab](https://github.com/erikmartinjordan/orange-fuji/commit/1abecabfd238dde4532c5e6a721ac4f5ee7ed204))
+* **onboarding:** Tahoe hand icon + no-wrap toggle row ([9705f55](https://github.com/erikmartinjordan/orange-fuji/commit/9705f55bc666196b8993274adc13f3f94ff694a2))
+* **onboarding:** Tahoe mini toggle 36x16 blue [#3974](https://github.com/erikmartinjordan/orange-fuji/issues/3974)e0 with blue halo ([6d3d858](https://github.com/erikmartinjordan/orange-fuji/commit/6d3d85842b1b7a6da6a9f82187aab48c08721150))
+* **onboarding:** white hand on blue for Privacy (Tahoe) + fit ([2fa2237](https://github.com/erikmartinjordan/orange-fuji/commit/2fa2237bba517f44359b9eb7f7765bf938c4ce26))
+
 ## [1.9.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.8.0...v1.9.0) (2026-08-25)
 
 
