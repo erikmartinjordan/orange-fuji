@@ -4085,27 +4085,20 @@ body.onboarding-window {
 
 .ob-toggle {
   position: relative;
-  width: 40px; height: 26px;
+  width: 36px; height: 16px;
   border-radius: 999px;
   flex-shrink: 0;
-  background: rgba(120,120,128,0.28);
-  border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.08);
-  transition: background .4s cubic-bezier(.2,.8,.2,1), box-shadow .4s ease, border-color .4s ease;
+  background: rgba(120,120,128,0.32);
+  transition: background .4s cubic-bezier(.2,.8,.2,1);
 }
 
 .ob-knob {
   position: absolute;
   top: 2px; left: 2px;
-  width: 20px; height: 20px;
+  width: 12px; height: 12px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #fff, #f5f5f7);
-  box-shadow:
-    0 2px 6px rgba(0,0,0,0.28),
-    0 0 0 .5px rgba(0,0,0,0.08),
-    inset 0 1px 1px rgba(255,255,255,0.9);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25), 0 .5px 1px rgba(0,0,0,0.12);
 }
 
 /* Enable (monitoring): flip ON solo tras una pausa, para contar la historia */
@@ -4121,28 +4114,27 @@ body.onboarding-window {
   position: absolute;
   inset: -7px;
   border-radius: 999px;
-  border: 2px solid rgba(48,209,88,0.45);
+  border: 2px solid rgba(57,116,224,0.45);
   opacity: 0;
   animation: obHalo 1.8s ease-out 1.5s infinite;
 }
 
-@keyframes obToggleOn { to { background:#30d158; box-shadow: inset 0 0 0 .5px rgba(255,255,255,.12), 0 0 16px rgba(48,209,88,.40); } }
-@keyframes obKnobFlip { to { transform: translateX(14px); } }
+@keyframes obToggleOn { to { background:#3974e0; } }
+@keyframes obKnobFlip { to { transform: translateX(20px); } }
 @keyframes obHalo {
   0%   { opacity:.85; transform:scale(.92); }
   70%  { opacity:0;   transform:scale(1.22); }
   100% { opacity:0;   transform:scale(1.22); }
 }
 
-/* Granted: verde sólido estable */
+/* Granted: azul sólido estable (accent Tahoe) */
 .ob-card.is-granted .ob-toggle,
 .ob-card.is-enable .ob-toggle[style] { }
 .ob-card.is-granted .ob-toggle {
   animation: none;
-  background: #30d158;
-  box-shadow: inset 0 0 0 .5px rgba(255,255,255,.12), 0 0 16px rgba(48,209,88,.42);
+  background: #3974e0;
 }
-.ob-card.is-granted .ob-knob { transform: translateX(14px); animation:none; }
+.ob-card.is-granted .ob-knob { transform: translateX(20px); animation:none; }
 .ob-card.is-granted .ob-toggle::after { display:none; }
 
 /* In enable (monitoring) the top clock stage is redundant — the animated
