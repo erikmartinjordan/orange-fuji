@@ -773,8 +773,7 @@ function applyEditorWindowMode(options = {}) {
       return;
     }
     if (mainWindow.isMinimized()) mainWindow.restore();
-    // macOS: options.noFocus evita robar el foco de la app del usuario
-    if (process.platform === 'darwin' && options.noFocus) {
+    if (process.platform === 'darwin') {
       mainWindow.showInactive();
     } else {
       mainWindow.show();
@@ -784,11 +783,7 @@ function applyEditorWindowMode(options = {}) {
   }
 }
 
-// noFocus: no robar el foco de la app del usuario (flujos de cancelación/error)
 function showMainWindowForCurrentMode() {
-  return showMainWindowForCurrentModeInner(...arguments);
-}
-function showMainWindowForCurrentModeInner(noFocus = false) {
   if (recordingInProgress && mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.hide();
     return;
