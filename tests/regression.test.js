@@ -518,7 +518,7 @@ test('Recording Features', () => {
 
   assert.ok(
     /if \(options\.show\) \{[\s\S]*if \(recordingInProgress\) \{[\s\S]*mainWindow\.hide\(\);[\s\S]*return;[\s\S]*\}/.test(mainSource) &&
-    /function showMainWindowForCurrentMode\(\) \{[\s\S]*if \(recordingInProgress && mainWindow && !mainWindow\.isDestroyed\(\)\) \{[\s\S]*mainWindow\.hide\(\);[\s\S]*return;[\s\S]*\}/.test(mainSource),
+    /function showMainWindowForCurrentMode(Inner)?\([^)]*\) \{[\s\S]*?if \(recordingInProgress && mainWindow && !mainWindow\.isDestroyed\(\)\) \{[\s\S]*?mainWindow\.hide\(\);[\s\S]*?return;[\s\S]*?\}/.test(mainSource),
     'main process must refuse to show the app window while a recording is active',
   );
 
@@ -738,6 +738,74 @@ test('Recording Features', () => {
 
   assert.ok(!/pro-feature|pro-badge/.test(indexSource), 'recording UI must not keep pro/trial hooks in markup');
   assert.ok(!/pro-feature|pro-badge/.test(stylesSource), 'recording UI must not keep pro/trial hooks in styles');
+});
+
+test('Capture Focus Preservation', () => {
+  // Region capture must not hide the pill window — it should use contentProtection
+  // to avoid the hide/show cycle that steals focus and switches Spaces.
+  assert.ok(
+    /async function hideOrangeFujiWindowsBeforeCapture\([\s\S]*if \(options\?\.mode === 'region'[\s\S]*setOrangeFujiWindowsContentProtection\(true\)/.test(mainSource),
+    'region capture must keep the pill visible via contentProtection to preserve source focus',
+  );
+
+  // Capture overlays must not use visibleOnAllWorkspaces — they should stay on
+  // the current display without causing a Space switch on close.
+  assert.ok(
+    !/win\.setVisibleOnAllWorkspaces\(true, \{ visibleOnFullScreen: true \}\)[\s\S]*win\.loadFile\(path\.join\(__dirname, 'renderer', 'capture-overlay\.html'\)\)/.test(mainSource),
+    'capture overlays must not use visibleOnAllWorkspaces to avoid Space switches',
+  );
+
+  // Editor restoration must use showInactive on macOS to keep the source app focused.
+  assert.ok(
+    /function applyEditorWindowMode\([\s\S]*if \(process\.platform === 'darwin'\) \{\s*mainWindow\.showInactive\(\)/.test(mainSource),
+    'editor must use showInactive on macOS to keep source window focused after capture',
+  );
+
+  // Global shortcuts must route through main process without bouncing via renderer
+  // (which would switch Spaces).
+  assert.ok(
+    /captureWindow\(\{[\s\S]*showToolbar: false/.test(mainSource),
+    'captureWindow shortcut must not activate the renderer window',
+  );
+  assert.ok(
+    /captureFullscreen\(\{[\s\S]*showToolbar: false/.test(mainSource),
+    'captureFullscreen shortcut must not activate the renderer window',
+  );
+
+  // Verify the Cmd+Shift+S/R/W/F accelerators are registered for all platforms
+  assert.ok(
+    /captureRegion/.test(mainSource) && /Command\+Shift\+S/.test(mainSource),
+    'captureRegion must be bound to Cmd+Shift+S',
+  );
+});
+
+test('Per-arch ffmpeg bundling', () => {
+  const mediaBinariesSource = read('src/pro/media-binaries.js');
+  const fetchScriptSource = read('scripts/fetch-media-binaries.js');
+
+  assert.ok(
+    /function archSuffixedCandidatePaths\(name\)/.test(mediaBinariesSource),
+    'media binary resolution must include per-architecture candidates',
+  );
+  assert.ok(
+    /`\$\{name\}-\$\{process\.arch\}\$\{extension\}`/.test(mediaBinariesSource),
+    'media binary resolution must derive the candidate name from process.arch',
+  );
+  assert.ok(
+    /\.\.\.archSuffixedCandidatePaths\(name\)/.test(mediaBinariesSource),
+    'per-architecture candidates must be resolved before the generic ones',
+  );
+
+  assert.ok(/ffmpeg-darwin-\$\{arch\}\.gz/.test(fetchScriptSource), 'fetch script must download both darwin ffmpeg builds from the ffmpeg-static release');
+  assert.ok(/binary-release-tag/.test(fetchScriptSource), 'fetch script must reuse the installed ffmpeg-static release tag');
+  assert.ok(/process\.platform !== 'darwin'/.test(fetchScriptSource), 'fetch script must skip non-macOS build hosts');
+
+  assert.ok(packageJson.scripts['build:mac'].includes('fetch:media'), 'mac build must fetch per-arch media binaries first');
+  assert.ok(packageJson.scripts['build:mac:legacy'].includes('fetch:media'), 'legacy mac build must fetch per-arch media binaries first');
+  assert.ok(packageJson.scripts['build:all'].includes('fetch:media'), 'all-platform build must fetch per-arch media binaries first');
+
+  const legacyMacConfig = legacyMacBuilderSource.replace(/^.*?const legacyMacBuild = \{/s, '{');
+  assert.ok(legacyMacConfig.includes("arch: ['x64']"), 'legacy mac build must remain Intel-only, so it needs the x64 ffmpeg fallback');
 });
 
 run();

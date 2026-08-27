@@ -2461,9 +2461,6 @@ async function createCaptureOverlays(captureData, mode = 'region', windowBounds 
       });
   
       win.setAlwaysOnTop(true, 'screen-saver');
-      if (process.platform === 'darwin') {
-        try { win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch (_) {}
-      }
       win.loadFile(path.join(__dirname, 'renderer', 'capture-overlay.html'));
       win.webContents.on('before-input-event', (event, input) => {
         if (input.key === 'Escape') {
@@ -2573,6 +2570,13 @@ function setOrangeFujiWindowsContentProtection(enabled) {
 async function hideOrangeFujiWindowsBeforeCapture(options = {}) {
   if (shouldCaptureOrangeFuji(options)) {
     setOrangeFujiWindowsContentProtection(false);
+    return false;
+  }
+
+  // Para captura de región: no ocultar la pill (evita salto de espacio/foco).
+  // El pill queda visible pero con contentProtection para no salir en la captura.
+  if (options?.mode === 'region' || !options?.mode) {
+    setOrangeFujiWindowsContentProtection(true);
     return false;
   }
 
