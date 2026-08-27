@@ -3505,12 +3505,15 @@ async function computeMacPermissionBlocking() {
   const status = getMacScreenRecordingStatus();
   if (status === 'granted') return false;
   if (status === 'denied' || status === 'unknown') {
-    // OJO: tras un reset, TCC reporta 'denied' sin haber preguntado jamás.
-    // Sondear aquí dispararía el aviso nativo en el arranque. Solo sondeamos
-    // si ya mostramos el prompt alguna vez (screenPermissionPromptedAt).
     const asked = Boolean(readSettings().screenPermissionPromptedAt);
     if (!asked) return true;
-    return !(await canReadMacScreenCapture());
+    // Tras conceder y reiniciar, TCC puede seguir en 'denied' unos ms.
+    // Reintentar el probe real 3 veces con pausa para no rebotar al onboarding.
+    for (let i = 0; i < 3; i++) {
+      if (await canReadMacScreenCapture()) return false;
+      await new Promise(r => setTimeout(r, 400));
+    }
+    return true;
   }
   return true; // not-determined: sin decidir, bloqueamos
 }
