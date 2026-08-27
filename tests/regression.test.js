@@ -757,7 +757,7 @@ test('Capture Focus Preservation', () => {
 
   // Editor restoration must use showInactive on macOS to keep the source app focused.
   assert.ok(
-    /function applyEditorWindowMode\([\s\S]*if \(process\.platform === 'darwin'\) \{\s*mainWindow\.showInactive\(\)/.test(mainSource),
+    /function applyEditorWindowMode\([\s\S]*if \(process\.platform === 'darwin'\)[\s\S]*mainWindow\.showInactive\(\)/.test(mainSource),
     'editor must use showInactive on macOS to keep source window focused after capture',
   );
 

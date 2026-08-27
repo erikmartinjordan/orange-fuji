@@ -758,7 +758,9 @@ function applyEditorWindowMode(options = {}) {
   mainWindow.setMinimumSize(EDITOR_MIN_SIZE.width, EDITOR_MIN_SIZE.height);
   mainWindow.setSkipTaskbar(false);
   try { mainWindow.setAlwaysOnTop(false); } catch (_) {}
-  if (process.platform === 'darwin') {
+  // fromCapture: keep visible on all workspaces to avoid Space jump when the
+  // source was the desktop (no app window) and the last active app was elsewhere.
+  if (process.platform === 'darwin' && !options.fromCapture) {
     try { mainWindow.setVisibleOnAllWorkspaces(false); } catch (_) {}
   }
   try { mainWindow.setHasShadow(true); } catch (_) {}
@@ -774,7 +776,11 @@ function applyEditorWindowMode(options = {}) {
     }
     if (mainWindow.isMinimized()) mainWindow.restore();
     if (process.platform === 'darwin') {
+      try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch (_) {}
       mainWindow.showInactive();
+      setTimeout(() => {
+        try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setVisibleOnAllWorkspaces(false); } catch (_) {}
+      }, 600);
     } else {
       mainWindow.show();
       mainWindow.moveTop();
