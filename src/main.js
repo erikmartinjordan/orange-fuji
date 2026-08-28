@@ -829,7 +829,7 @@ function triggerPreviewToast(payload) {
     previewToastWindow.close();
   }
 
-  const toastSize = { width: 240, height: 180 };
+  const toastSize = { width: 240, height: 192 };
   const margin = 18;
   const { workArea } = getPreviewToastDisplay();
   const toastWindow = new BrowserWindow({
@@ -840,7 +840,7 @@ function triggerPreviewToast(payload) {
     frame: false,
     transparent: true,
     resizable: false,
-    movable: false,
+    movable: true,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
@@ -875,15 +875,27 @@ function triggerPreviewToast(payload) {
     if (process.platform === 'darwin') toastWindow.showInactive();
     else toastWindow.show();
   });
-  toastWindow.on('closed', () => {
-    if (previewToastWindow === toastWindow) previewToastWindow = null;
-  });
-
-  setTimeout(() => {
+  let toastCloseTimer = setTimeout(() => {
     if (!toastWindow.isDestroyed()) {
       toastWindow.close();
     }
-  }, 4000);
+  }, 5000);
+
+  toastWindow.on('closed', () => {
+    clearTimeout(toastCloseTimer);
+    if (previewToastWindow === toastWindow) previewToastWindow = null;
+  });
+
+  // Allow renderer to keep toast alive while dragging
+  toastWindow.on('move', () => {
+    // User moved the toast — give them more time to drag it to Desktop/Finder
+    if (toastCloseTimer) {
+      clearTimeout(toastCloseTimer);
+      toastCloseTimer = setTimeout(() => {
+        if (!toastWindow.isDestroyed()) toastWindow.close();
+      }, 8000);
+    }
+  });
 }
 
 
@@ -2665,6 +2677,49 @@ ipcMain.on('preview-toast-clicked', () => {
   } else {
     mainWindow.webContents.send('load-capture', payload);
   }
+});
+
+// Drag the screenshot out of the toast (e.g. drop on Desktop / Finder / Slack)
+ipcMain.on('preview-toast-drag-start', (event) => {
+  const dataUrl = getPreviewToastDataUrl(pendingPreviewToastPayload);
+  if (!dataUrl) return;
+
+  // Don't open the editor when the user drags instead of clicks
+  if (previewToastWindow && !previewToastWindow.isDestroyed()) {
+    // keep toast alive during drag, close shortly after drop
+    setTimeout(() => {
+      if (previewToastWindow && !previewToastWindow.isDestroyed()) previewToastWindow.close();
+    }, 800);
+  }
+
+  try {
+    const buffer = dataUrlToImageBuffer(dataUrl);
+    if (!buffer || buffer.length === 0) return;
+    const tmpFile = path.join(app.getPath('temp'), `OrangeFuji-${Date.now()}.png`);
+    fs.writeFileSync(tmpFile, buffer);
+
+    // Create a thumbnail icon for the native drag (macOS Finder shows it under the cursor)
+    let icon = nativeImage.createFromDataURL(dataUrl);
+    try {
+      const size = icon.getSize();
+      const maxW = 240;
+      if (size.width > maxW) {
+        const ratio = maxW / size.width;
+        icon = icon.resize({ width: Math.round(size.width * ratio), height: Math.round(size.height * ratio), quality: 'better' });
+      }
+    } catch (_) {}
+
+    event.sender.startDrag({
+      file: tmpFile,
+      icon,
+    });
+  } catch (error) {
+    console.error('[orange-fuji][toast] drag failed:', error.message);
+  }
+});
+
+ipcMain.on('preview-toast-keep-alive', () => {
+  // Renderer signals user is hovering/dragging the toast — main already extends on move
 });
 
 ipcMain.handle('start-capture', async (event, options = {}) => {

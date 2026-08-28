@@ -815,4 +815,23 @@ test('Per-arch ffmpeg bundling', () => {
   assert.ok(legacyMacConfig.includes("arch: ['x64']"), 'legacy mac build must remain Intel-only, so it needs the x64 ffmpeg fallback');
 });
 
+test('Preview Toast Drag & Slide', () => {
+  // Toast window must be movable so user can slide the corner pop anywhere (e.g. Desktop)
+  assert.ok(/movable:\s*true/.test(mainSource), 'preview toast window must be movable to let user slide the pop');
+  assert.ok(/toastWindow\.on\('move'/.test(mainSource), 'moving the toast must extend its auto-close timeout');
+
+  // Native file drag: dragging the thumbnail must produce a real file for Desktop/Finder
+  assert.ok(/ipcMain\.on\('preview-toast-drag-start'/.test(mainSource), 'main must handle preview-toast-drag-start');
+  assert.ok(/event\.sender\.startDrag\(\{[\s\S]*file:\s*tmpFile/.test(mainSource), 'drag handler must start native drag with a temp file');
+  assert.ok(/nativeImage\.createFromDataURL\(dataUrl\)/.test(mainSource), 'drag icon must be created from the capture dataUrl');
+
+  // Renderer: window drag via CSS + file drag via JS
+  assert.ok(/\.toast\s*\{[\s\S]*-webkit-app-region:\s*drag/.test(previewToastSource), 'toast must be draggable via -webkit-app-region: drag');
+  assert.ok(/img\s*\{[\s\S]*-webkit-app-region:\s*no-drag/.test(previewToastSource), 'thumbnail must be no-drag so file drag is handled in JS');
+  assert.ok(/preview\.addEventListener\('mousedown'/.test(previewToastSource), 'thumbnail must track mousedown for drag threshold');
+  assert.ok(/preview\.addEventListener\('mousemove'/.test(previewToastSource), 'thumbnail must detect drag distance');
+  assert.ok(/ipcRenderer\.send\('preview-toast-drag-start'\)/.test(previewToastSource), 'renderer must send preview-toast-drag-start on drag');
+  assert.ok(/Drag to Desktop/.test(previewToastSource), 'toast must hint that it can be dragged to Desktop');
+});
+
 run();

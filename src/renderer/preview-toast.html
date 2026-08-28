@@ -21,18 +21,21 @@
       }
       .toast {
         width: 224px;
-        height: 164px;
+        height: 176px;
         padding: 8px;
         border: 1px solid rgba(255,255,255,0.22);
         border-radius: 14px;
         background: rgba(8,10,14,0.78);
         backdrop-filter: blur(16px);
         color: rgba(255,255,255,0.92);
-        cursor: pointer;
+        cursor: grab;
         box-shadow: none;
         outline: none;
         transition: transform 0.15s ease, background 0.15s ease;
+        -webkit-app-region: drag;
       }
+      .toast:active { cursor: grabbing; }
+      .toast.dragging { opacity: 0.92; transform: scale(0.98); }
       .toast:not(.ready) {
         visibility: hidden;
       }
@@ -52,6 +55,9 @@
         box-shadow: none;
         opacity: 0;
         transition: opacity 0.08s ease;
+        -webkit-app-region: no-drag;
+        -webkit-user-drag: none;
+        user-select: none;
       }
       .toast.ready img {
         opacity: 1;
@@ -66,13 +72,23 @@
         font-weight: 600;
         letter-spacing: 0.01em;
         text-align: center;
+        -webkit-app-region: no-drag;
+      }
+      .hint {
+        margin-top: 2px;
+        font-size: 9px;
+        color: rgba(255,255,255,0.55);
+        text-align: center;
+        font-weight: 500;
+        -webkit-app-region: no-drag;
       }
     </style>
   </head>
   <body>
     <div class="toast" id="toast" role="button" tabindex="0" aria-label="Open capture preview">
-      <img id="preview" alt="Capture preview">
+      <img id="preview" alt="Capture preview" draggable="false">
       <div class="label" id="label">Click to edit capture</div>
+      <div class="hint" id="hint">Drag to Desktop • Slide to reposition</div>
     </div>
     <script>
       const { ipcRenderer } = require('electron');
@@ -126,7 +142,19 @@
         setTimeout(() => ctx.close().catch(() => {}), 700);
       }
 
-      const openPreview = () => ipcRenderer.send('preview-toast-clicked');
+      const openPreview = () => {
+        if (didDrag) return;
+        ipcRenderer.send('preview-toast-clicked');
+      };
+      let isDraggingFile = false;
+      let didDrag = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      const DRAG_THRESHOLD = 6;
+
+      // Keep toast alive while user interacts
+      toast.addEventListener('mouseenter', () => ipcRenderer.send('preview-toast-keep-alive'));
+
       toast.addEventListener('click', openPreview);
       toast.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -134,6 +162,48 @@
           openPreview();
         }
       });
+
+      // Native file drag: dragging the thumbnail creates a real file you can drop on Desktop/Finder/etc.
+      function startFileDrag() {
+        if (isDraggingFile) return;
+        isDraggingFile = true;
+        toast.classList.add('dragging');
+        ipcRenderer.send('preview-toast-drag-start');
+        // Reset after drop animation
+        setTimeout(() => {
+          isDraggingFile = false;
+          toast.classList.remove('dragging');
+        }, 900);
+      }
+
+      preview.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        didDrag = false;
+      });
+
+      preview.addEventListener('mousemove', (e) => {
+        if (e.buttons !== 1) return;
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        if (Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+          didDrag = true;
+          startFileDrag();
+        }
+      });
+
+      preview.addEventListener('mouseup', () => {
+        // Click vs drag decision handled by didDrag flag; click handler will bail if didDrag
+        setTimeout(() => { didDrag = false; }, 120);
+      });
+
+      // Also support touch / pointer drag for trackpad
+      preview.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        startFileDrag();
+      });
+
       window.addEventListener('DOMContentLoaded', playCaptureChime);
     </script>
   </body>
