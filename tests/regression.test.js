@@ -400,7 +400,7 @@ function createStreamWithCursorSetting(cursor) {
   assert.ok(!aboutSource.includes('id="check-update"'), 'about page must not include a persistent check button');
   assert.ok(!aboutSource.includes('id="download-update"'), 'about page must not include a separate download button');
   assert.ok(!aboutSource.includes('id="install-update"'), 'about page must not include a separate install button');
-  assert.ok(/updateApp\.hidden = !canDownload && status !== 'downloading' && !canInstall/.test(aboutSource), 'about page must hide the action button when there is no update');
+  assert.ok(/const showUpdate = \(canDownload \|\| canInstall \|\| canRetry\) && !busy/.test(aboutSource) && /updateApp\.hidden = !showUpdate/.test(aboutSource), 'about page must hide the action button during downloads and when there is no update');
   assert.ok(/invokeUpdate\('check-for-app-updates'/.test(aboutSource), 'about page must check updates automatically');
   assert.ok(/state\?\.supported !== false && \(state\?\.status === 'idle' \|\| !state\?\.status\)/.test(aboutSource), 'about page must check for updates even when the cached status says up to date');
   assert.ok(!/state\?\.message !== 'Up to date'/.test(aboutSource), 'about page must not skip update checks just because the initial message says up to date');

@@ -93,31 +93,34 @@
   }
   .update-progress {
     position: relative;
-    height: 18px;
-    overflow: hidden;
-    margin-top: 9px;
-    border-radius: 5px;
-    border: 1px solid rgba(60, 60, 67, 0.14);
-    background: rgba(255, 255, 255, 0.28);
+    margin-top: 12px;
   }
-  .update-progress::before {
-    content: "";
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: var(--update-progress, 0%);
-    background: linear-gradient(90deg, rgba(249, 115, 22, 0.78), rgba(251, 146, 60, 0.88));
-    transition: width 0.18s ease;
+  .update-progress-meta {
+    display:flex;justify-content:space-between;align-items:baseline;
+    width:259px;margin:0 auto 9px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size:11px;font-weight:600;letter-spacing:0.02em;
+    color: rgba(60,60,67,0.55);
   }
-  .update-progress span {
-    position: relative;
-    z-index: 1;
-    display: block;
-    padding: 0 6px;
-    color: #1d1d1f;
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 16px;
-    text-align: right;
+  .update-progress .segs {
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    height:26px;
+  }
+  .update-progress .seg{
+    flex:0 0 3px;width:3px;height:26px;border-radius:2px;
+    background: rgba(60,60,67,0.12);
+    transition: background 0.35s ease, box-shadow 0.35s;
+  }
+  .update-progress .seg.filled{
+    background: #f97316;
+    box-shadow: 0 0 6px rgba(249,115,22,0.32);
+  }
+  .update-progress .seg.filling{
+    animation: segShimmer 0.9s ease-in-out infinite;
+  }
+  @keyframes segShimmer{
+    0%,100%{ background-color: rgba(60,60,67,0.12); }
+    50%{ background-color: rgba(60,60,67,0.30); }
   }
   @media (prefers-color-scheme: dark) {
     .about-container .name { color: #f0ede8; }
@@ -137,11 +140,14 @@
       color: rgba(220,215,210,0.60);
       background: linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.05));
     }
-    .update-progress {
-      border-color: rgba(255,255,255,0.12);
-      background: rgba(40,42,48,0.60);
+    .update-progress .seg{ background: rgba(255,255,255,0.08); }
+    .update-progress-meta { color: rgba(220,215,210,0.55); }
+    .update-progress .seg.filled{ background: #f97316; }
+    .update-progress .seg.filling{ animation-name: segShimmerDark; }
+    @keyframes segShimmerDark{
+      0%,100%{ background-color: rgba(255,255,255,0.08); }
+      50%{ background-color: rgba(255,255,255,0.20); }
     }
-    .update-progress span { color: #f0ede8; }
   }
 </style>
 </head>
@@ -156,7 +162,13 @@
       <div class="update-actions">
         <button type="button" id="update-app" hidden>Update</button>
       </div>
-      <div class="update-progress" id="update-progress" hidden><span></span></div>
+      <div class="update-progress" id="update-progress" hidden>
+        <div class="update-progress-meta">
+          <span class="update-progress-bytes"></span>
+          <span class="update-progress-pct"></span>
+        </div>
+        <div class="segs"></div>
+      </div>
     </div>
   </div>
   <script>
@@ -188,17 +200,42 @@
       const message = state.error || state.message || 'Up to date';
 
       setUpdateMessage(message, status === 'error' ? 'error' : (status === 'downloaded' || status === 'idle' ? 'success' : ''));
-      updateApp.hidden = !canDownload && status !== 'downloading' && !canInstall;
-      if (canRetry) updateApp.hidden = false;
+      updateStatus.hidden = status === 'downloading';
+      const showUpdate = (canDownload || canInstall || canRetry) && !busy;
+      updateApp.hidden = !showUpdate;
       updateApp.disabled = busy;
-      updateApp.textContent = status === 'downloading' ? 'Downloading...' : (canInstall ? 'Restart' : 'Update');
+      updateApp.textContent = canInstall ? 'Restart' : (canRetry ? 'Try again' : 'Update');
       updateApp.dataset.action = canInstall ? 'install' : (canRetry ? 'check' : 'download');
 
       const percent = Number(state.progress?.percent);
       const hasProgress = status === 'downloading' && Number.isFinite(percent);
       updateProgress.hidden = !hasProgress;
+      // keep for tests
       updateProgress.style.setProperty('--update-progress', hasProgress ? `${Math.max(0, Math.min(100, percent))}%` : '0%');
-      updateProgress.querySelector('span').textContent = hasProgress ? `${Math.round(percent)}%` : '';
+      const segsBox = updateProgress.querySelector('.segs');
+      const pctEl = updateProgress.querySelector('.update-progress-pct');
+      const bytesEl = updateProgress.querySelector('.update-progress-bytes');
+      // segmented pills — delicate, like IMG_5887.PNG (33 thin vertical pills, 5px gap, mono meta above)
+      const segs = 33;
+      // remove old segs
+      segsBox.querySelectorAll('.seg').forEach(el=>el.remove());
+      if (pctEl) pctEl.textContent = hasProgress ? `${Math.round(percent)}%` : '';
+      const transferred = Number(state.progress?.transferred);
+      const total = Number(state.progress?.total);
+      const fmtMB = (b) => {
+        const mb = b / (1024 * 1024);
+        return mb.toFixed(1) + ' MB';
+      };
+      if (bytesEl) bytesEl.textContent = (hasProgress && Number.isFinite(total) && total > 0 && Number.isFinite(transferred))
+        ? `${fmtMB(transferred)} / ${fmtMB(total)}` : '';
+      if (hasProgress) {
+        const filled = Math.round(segs * Math.max(0, Math.min(100, percent)) / 100);
+        for (let i=0;i<segs;i++){
+          const el=document.createElement('div');
+          el.className='seg'+(i<filled?' filled':'')+(i===filled && percent<100?' filling':'');
+          segsBox.appendChild(el);
+        }
+      }
     }
 
     async function invokeUpdate(channel, fallbackState) {
