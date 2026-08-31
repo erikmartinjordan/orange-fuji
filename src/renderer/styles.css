@@ -1476,8 +1476,8 @@ body.preferences-window {
   min-height: 100vh;
   background: transparent;
   color: var(--prefs-text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-  letter-spacing: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  letter-spacing: -0.011em;
 }
 
 body.preferences-window .preferences-panel {
@@ -1526,12 +1526,12 @@ body.preferences-window .preferences-tabs {
   --prefs-tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
   width: min(360px, 100%);
-  height: 34px;
+  height: 36px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  gap: 4px;
-  padding: 4px;
+  gap: 3px;
+  padding: 3px;
   margin-bottom: 18px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
@@ -1541,14 +1541,14 @@ body.preferences-window .preferences-tabs {
   -webkit-app-region: no-drag;
 }
 
-/* Transitions.dev — Tabs sliding pill */
+/* Transitions.dev — Tabs sliding pill — exact demo values */
 body.preferences-window .preferences-tabs-pill {
   position: absolute;
-  top: 4px;
+  top: 3px;
   left: 0;
-  height: 26px;
+  height: 30px;
   width: 0;
-  background: rgba(255, 255, 255, 0.90);
+  background: #ffffff;
   border-radius: 999px;
   transform: translateX(0);
   transition:
@@ -1558,18 +1558,18 @@ body.preferences-window .preferences-tabs-pill {
   z-index: 0;
   pointer-events: none;
   box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.18),
-    0 1px 0 rgba(255, 255, 255, 0.80) inset;
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.10);
 }
 
 body.preferences-window .preferences-tabs button {
   position: relative;
   min-width: 0;
-  height: 26px;
+  height: 30px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: rgba(248, 248, 246, 0.52);
+  color: rgba(248, 248, 246, 0.58);
   font: inherit;
   font-size: 12px;
   font-weight: 680;
@@ -1675,6 +1675,11 @@ body.preferences-window .preferences-panel select {
 }
 
 body.preferences-window .preferences-panel input[type="checkbox"] {
+  --toggle-dur: 350ms;
+  --toggle-travel: 14px;
+  --toggle-ov1: 1px;
+  --toggle-ov2: 0px;
+  --toggle-ease: cubic-bezier(0.34, 1.35, 0.64, 1);
   justify-self: end;
   width: 44px;
   height: 20px;
@@ -1691,6 +1696,8 @@ body.preferences-window .preferences-panel input[type="checkbox"]::before {
   border-radius: 999px;
   background: #e3e3e5;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transform: translateX(0);
+  will-change: transform;
 }
 
 body.preferences-window .preferences-panel input[type="checkbox"]:checked {
@@ -1698,8 +1705,34 @@ body.preferences-window .preferences-panel input[type="checkbox"]:checked {
 }
 
 body.preferences-window .preferences-panel input[type="checkbox"]:checked::before {
-  transform: translateX(14px);
+  transform: translateX(var(--toggle-travel));
   background-color: #fff;
+}
+
+body.preferences-window .preferences-panel input[type="checkbox"].is-init:checked::before {
+  animation: t-toggle-on var(--toggle-dur) var(--toggle-ease) both;
+}
+
+body.preferences-window .preferences-panel input[type="checkbox"].is-init:not(:checked)::before {
+  animation: t-toggle-off var(--toggle-dur) var(--toggle-ease) both;
+}
+
+@keyframes t-toggle-on {
+  0% { transform: translateX(0); }
+  55% { transform: translateX(calc(var(--toggle-travel) + var(--toggle-ov1))); }
+  80% { transform: translateX(calc(var(--toggle-travel) - var(--toggle-ov2))); }
+  100% { transform: translateX(var(--toggle-travel)); }
+}
+
+@keyframes t-toggle-off {
+  0% { transform: translateX(var(--toggle-travel)); }
+  55% { transform: translateX(calc(0px - var(--toggle-ov1))); }
+  80% { transform: translateX(var(--toggle-ov2)); }
+  100% { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.preferences-window .preferences-panel input[type="checkbox"]::before { animation: none !important; }
 }
 
 body.preferences-window .preferences-panel input[type="checkbox"]:focus-visible,
@@ -1786,9 +1819,13 @@ body.preferences-window .odometer-control {
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
     0 6px 14px rgba(0, 0, 0, 0.10) inset;
   -webkit-app-region: no-drag;
+  pointer-events: none;
 }
 
 body.preferences-window .odometer-button {
+  position: relative;
+  isolation: isolate;
+  z-index: 1;
   width: 24px;
   height: 24px;
   border: 0;
@@ -1800,11 +1837,17 @@ body.preferences-window .odometer-button {
   font-weight: 650;
   line-height: 1;
   cursor: default;
+  pointer-events: auto;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
-body.preferences-window .odometer-button:not(:disabled):hover {
+body.preferences-window .odometer-button.hovered:not(:disabled) {
   background: rgba(255, 255, 255, 0.10);
   color: rgba(248, 248, 246, 0.86);
+}
+
+body.preferences-window .odometer-value {
+  pointer-events: auto;
 }
 
 body.preferences-window .odometer-button:disabled {
@@ -2112,7 +2155,7 @@ body.preferences-window .license-deactivate-btn:disabled {
     color: rgba(60, 60, 67, 0.58);
   }
 
-  body.preferences-window .odometer-button:not(:disabled):hover {
+  body.preferences-window .odometer-button.hovered:not(:disabled) {
     background: rgba(60, 60, 67, 0.08);
     color: rgba(28, 28, 30, 0.86);
   }

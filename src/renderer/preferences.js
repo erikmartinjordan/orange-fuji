@@ -241,18 +241,29 @@ recordingFormatSetting.addEventListener('change', () => {
 });
 
 recordingAutozoomSetting.addEventListener('change', () => {
+  recordingAutozoomSetting.classList.add('is-init');
   settings.autoZoom = Boolean(recordingAutozoomSetting.checked);
   saveSettings();
 });
 
 hideDesktopIconsSetting.addEventListener('change', () => {
+  hideDesktopIconsSetting.classList.add('is-init');
   settings.hideDesktopIcons = Boolean(hideDesktopIconsSetting.checked);
   saveSettings();
 });
 
 captureOrangeFujiSetting.addEventListener('change', () => {
+  captureOrangeFujiSetting.classList.add('is-init');
   settings.captureOrangeFuji = Boolean(captureOrangeFujiSetting.checked);
   saveSettings();
+});
+
+ // Transitions.dev toggle bounce: gate animation until first interaction
+[recordingAutozoomSetting, hideDesktopIconsSetting, captureOrangeFujiSetting].forEach((cb) => {
+  if (!cb) return;
+  const gate = () => cb.classList.add('is-init');
+  cb.addEventListener('pointerdown', gate, { once: true });
+  cb.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') gate(); }, { once: true });
 });
 
 autoHideDelayDecrement?.addEventListener('click', () => {
@@ -261,6 +272,15 @@ autoHideDelayDecrement?.addEventListener('click', () => {
 
 autoHideDelayIncrement?.addEventListener('click', () => {
   setAutoHideDelay(settings.autoHideDelay + 1);
+});
+
+[autoHideDelayDecrement, autoHideDelayIncrement].forEach((btn) => {
+  if (!btn) return;
+  btn.addEventListener('mouseenter', () => {
+    [autoHideDelayDecrement, autoHideDelayIncrement].forEach((b) => b?.classList.remove('hovered'));
+    btn.classList.add('hovered');
+  });
+  btn.addEventListener('mouseleave', () => btn.classList.remove('hovered'));
 });
 
 document.addEventListener('DOMContentLoaded', loadSettings);
