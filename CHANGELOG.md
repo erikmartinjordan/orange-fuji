@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.12.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.11.0...v1.12.0) (2026-08-31)
+
+
+### ✨ Features
+
+* **about:** success check with coin collect sound on download completed ([6f07b76](https://github.com/erikmartinjordan/orange-fuji/commit/6f07b7647fb51b3cb86a94b6c44dc20bab5dd3ab))
+* **preferences:** add tabs sliding pill from transitions.dev ([a732944](https://github.com/erikmartinjordan/orange-fuji/commit/a7329444e662e9796751f3d4ea3f4604c7473237))
+* **preferences:** Inter font, isolated odometer hover and toggle bounce ([e0331e2](https://github.com/erikmartinjordan/orange-fuji/commit/e0331e2d11419370ff13a79bc2f58d4c857d5f23))
+* **settings:** About-inspired redesign with polished General window ([0af8b6b](https://github.com/erikmartinjordan/orange-fuji/commit/0af8b6b4be58c0287813fdc438323dbce4dafd04))
+
+
+### 🐛 Fixes
+
+* **about:** remove auto-open and infinite download loop ([a732944](https://github.com/erikmartinjordan/orange-fuji/commit/a7329444e662e9796751f3d4ea3f4604c7473237))
+* **settings:** finger cursor on interactive elements and symbol-only odometer hover ([5c9be1a](https://github.com/erikmartinjordan/orange-fuji/commit/5c9be1a325b128fe8b1ed5d36d270d96d1d1dff4))
+
 ## [1.11.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.10.0...v1.11.0) (2026-08-31)
 
 
