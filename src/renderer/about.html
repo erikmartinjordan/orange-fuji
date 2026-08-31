@@ -141,6 +141,75 @@
     .update-progress .seg.filled{ background: #f97316; }
     .update-progress .seg.filling{ background: rgba(255,255,255,0.20); }
   }
+  /* Transitions.dev — Success check */
+  :root {
+    --check-opacity-dur: 500ms;
+    --check-rotate-dur: 500ms;
+    --check-rotate-from: 80deg;
+    --check-bob-dur: 500ms;
+    --check-y-amount: 40px;
+    --check-blur-dur: 500ms;
+    --check-blur-from: 10px;
+    --check-path-dur: 500ms;
+    --check-path-delay: 80ms;
+    --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --check-ease-opacity: cubic-bezier(0.22, 1, 0.36, 1);
+    --check-ease-rotate: cubic-bezier(0.22, 1, 0.36, 1);
+    --check-ease-bob: cubic-bezier(0.34, 1.35, 0.64, 1);
+    --check-ease-path: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .t-success-check {
+    display: inline-block;
+    transform-origin: center;
+    opacity: 0;
+    will-change: transform, opacity, filter;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .t-success-check svg { display: block; overflow: visible; }
+  .t-success-check svg path {
+    stroke-dasharray: 20;
+    stroke-dashoffset: 20;
+  }
+  .t-success-check[data-state="in"] {
+    animation:
+      t-check-fade   var(--check-opacity-dur) var(--check-ease-opacity) forwards,
+      t-check-rotate var(--check-rotate-dur)  var(--check-ease-rotate)  forwards,
+      t-check-blur   var(--check-blur-dur)    var(--check-ease-out)     forwards,
+      t-check-bob    var(--check-bob-dur)     var(--check-ease-bob)     forwards;
+  }
+  .t-success-check[data-state="in"] svg path {
+    animation: t-check-draw var(--check-path-dur) var(--check-ease-path) var(--check-path-delay, 0ms) forwards;
+  }
+  @keyframes t-check-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes t-check-rotate {
+    from { transform: rotate(var(--check-rotate-from)); }
+    to   { transform: rotate(0deg); }
+  }
+  @keyframes t-check-blur {
+    from { filter: blur(var(--check-blur-from)); }
+    to   { filter: blur(0); }
+  }
+  @keyframes t-check-bob {
+    from { translate: 0 var(--check-y-amount); }
+    to   { translate: 0 0; }
+  }
+  @keyframes t-check-draw { to { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .t-success-check { animation: none !important; opacity: 1; }
+    .t-success-check svg path { animation: none !important; stroke-dashoffset: 0 !important; }
+  }
+  .update-success-row {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  [hidden] { display: none !important; }
+  .update-success-row .t-success-check { color: #1e8a3e; }
+  @media (prefers-color-scheme: dark) {
+    .update-success-row .t-success-check { color: #86efac; }
+  }
 </style>
 </head>
 <body class="preferences-window">
@@ -150,7 +219,7 @@
     <div class="version" id="version"></div>
     <div class="desc" id="desc"></div>
     <div class="update-panel" aria-label="Updates">
-      <div class="update-status" id="update-status">Checking update status...</div>
+      <div class="update-status" id="update-status"><span class="update-success-row" id="update-success-row" hidden><span class="t-success-check" data-state="out" id="update-success-check" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 9-9"></path></svg></span><span id="update-status-text">Checking update status...</span></span><span id="update-status-fallback">Checking update status...</span></div>
       <div class="update-actions">
         <button type="button" id="update-app" hidden>Update</button>
       </div>
@@ -173,13 +242,70 @@
     });
 
     const updateStatus = document.getElementById('update-status');
+    const updateSuccessRow = document.getElementById('update-success-row');
+    const updateSuccessCheck = document.getElementById('update-success-check');
+    const updateStatusText = document.getElementById('update-status-text');
+    const updateStatusFallback = document.getElementById('update-status-fallback');
     const updateApp = document.getElementById('update-app');
     const updateProgress = document.getElementById('update-progress');
 
+    function playCling() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        const t = ctx.currentTime;
+        // Coin collect: bright 988Hz -> 1318Hz (Mario-style), short + sparkle
+        const coin = (freq, vol, dur, delay = 0) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          const f = ctx.createBiquadFilter();
+          f.type = 'highshelf'; f.frequency.value = 1200; f.gain.value = 2;
+          o.type = 'sine';
+          o.frequency.value = freq;
+          o.connect(f); f.connect(g); g.connect(ctx.destination);
+          g.gain.setValueAtTime(0, t + delay);
+          g.gain.linearRampToValueAtTime(vol, t + delay + 0.008);
+          g.gain.exponentialRampToValueAtTime(0.001, t + delay + dur);
+          o.start(t + delay); o.stop(t + delay + dur);
+        };
+        coin(988, 0.28, 0.18, 0);
+        coin(1318, 0.32, 0.42, 0.07);
+        // subtle triangle overtone for shine
+        const o2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        o2.type = 'triangle';
+        o2.frequency.value = 2637;
+        o2.connect(g2); g2.connect(ctx.destination);
+        g2.gain.setValueAtTime(0, t + 0.07);
+        g2.gain.linearRampToValueAtTime(0.06, t + 0.078);
+        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+        o2.start(t + 0.07); o2.stop(t + 0.28);
+      } catch(e) {}
+    }
+
+    function triggerSuccessCheck() {
+      if (!updateSuccessCheck) return;
+      updateSuccessCheck.setAttribute('data-state', 'out');
+      void updateSuccessCheck.offsetWidth;
+      requestAnimationFrame(() => {
+        updateSuccessCheck.setAttribute('data-state', 'in');
+        playCling();
+      });
+    }
+
     function setUpdateMessage(message = '', type = '') {
-      updateStatus.textContent = message;
+      if (updateStatusText) updateStatusText.textContent = message;
+      if (updateStatusFallback) updateStatusFallback.textContent = message;
       updateStatus.classList.toggle('error', type === 'error');
       updateStatus.classList.toggle('success', type === 'success');
+      const isDownloaded = type === 'success' && /ready|completed/i.test(message);
+      if (updateSuccessRow && updateStatusFallback) {
+        const showCheck = isDownloaded;
+        updateSuccessRow.hidden = !showCheck;
+        updateStatusFallback.hidden = showCheck;
+        if (showCheck) triggerSuccessCheck();
+        else if (updateSuccessCheck) updateSuccessCheck.setAttribute('data-state', 'out');
+      }
     }
 
     function renderUpdateState(state = {}) {

@@ -1053,7 +1053,7 @@ body.has-content .toolbar-group.capture-modes + .toolbar-separator {
   border-radius: 6px;
   background: rgba(198, 40, 40, 0.08);
   font-size: 11px;
-  font-weight: 560;
+  font-weight: 500;
   color: #b42318;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
@@ -1476,8 +1476,13 @@ body.preferences-window {
   min-height: 100vh;
   background: transparent;
   color: var(--prefs-text);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-  letter-spacing: -0.011em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
+  letter-spacing: 0;
+  line-height: 1.6;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body.preferences-window .preferences-panel {
@@ -1512,9 +1517,9 @@ body.preferences-window .preferences-header {
 body.preferences-window .preferences-header h1 {
   color: var(--prefs-text);
   font-size: 20px;
-  font-weight: 720;
+  font-weight: 600;
   line-height: 1.02;
-  letter-spacing: 0;
+  letter-spacing: -0.02em;
 }
 
 body.preferences-window .preferences-header p {
@@ -1572,7 +1577,7 @@ body.preferences-window .preferences-tabs button {
   color: rgba(248, 248, 246, 0.58);
   font: inherit;
   font-size: 12px;
-  font-weight: 680;
+  font-weight: 500;
   letter-spacing: 0;
   cursor: default;
   z-index: 1;
@@ -1646,7 +1651,7 @@ body.preferences-window .preferences-field label,
 body.preferences-window .preference-title {
   color: var(--prefs-text);
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1.12;
   letter-spacing: 0;
 }
@@ -1655,7 +1660,7 @@ body.preferences-window .preferences-field p,
 body.preferences-window .preference-description {
   color: var(--prefs-muted);
   font-size: 11px;
-  font-weight: 520;
+  font-weight: 400;
   line-height: 1.26;
   letter-spacing: 0;
 }
@@ -1669,7 +1674,7 @@ body.preferences-window .preferences-panel select {
   background: rgba(249, 115, 22, 0.14);
   color: var(--prefs-accent);
   font-size: 11.5px;
-  font-weight: 650;
+  font-weight: 500;
   appearance: auto;
   outline: none;
 }
@@ -1834,7 +1839,7 @@ body.preferences-window .odometer-button {
   color: rgba(248, 248, 246, 0.54);
   font: inherit;
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 500;
   line-height: 1;
   cursor: default;
   pointer-events: auto;
@@ -1864,7 +1869,7 @@ body.preferences-window .odometer-value {
   color: var(--prefs-accent);
   font-variant-numeric: tabular-nums;
   font-size: 11px;
-  font-weight: 720;
+  font-weight: 600;
   line-height: 24px;
   text-align: center;
   box-shadow:
@@ -1919,7 +1924,7 @@ body.preferences-window .license-settings-activation input {
   background: rgba(255, 255, 255, 0.08);
   color: rgba(248, 248, 246, 0.88);
   font-size: 10.5px;
-  font-weight: 560;
+  font-weight: 500;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
 
@@ -1941,7 +1946,7 @@ body.preferences-window .license-settings-activation button {
   background: rgba(249, 115, 22, 0.16);
   color: var(--prefs-accent);
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 500;
   letter-spacing: 0;
   box-shadow: none;
 }
@@ -2001,7 +2006,7 @@ body.preferences-window .license-active-owner {
 
 body.preferences-window .license-active-email {
   font-size: 12.5px;
-  font-weight: 650;
+  font-weight: 500;
   color: var(--prefs-text);
 }
 
@@ -2026,13 +2031,13 @@ body.preferences-window .license-row + .license-row {
 
 body.preferences-window .license-row-label {
   font-size: 12px;
-  font-weight: 520;
+  font-weight: 400;
   color: var(--prefs-dim);
 }
 
 body.preferences-window .license-row-value {
   font-size: 12px;
-  font-weight: 530;
+  font-weight: 400;
   color: var(--prefs-text);
   font-variant-numeric: tabular-nums;
 }
@@ -2045,7 +2050,7 @@ body.preferences-window .license-deactivate-btn {
   background: rgba(252, 165, 165, 0.08);
   color: #fca5a5;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 500;
   letter-spacing: 0;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
@@ -3960,7 +3965,7 @@ body.onboarding-window {
 .ob-title {
   margin: 2px 0 0;
   font-size: 16px;
-  font-weight: 720;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: #f4f1ec;
 }
@@ -3972,7 +3977,7 @@ body.onboarding-window {
   line-height: 1.5;
   color: rgba(240,236,230,0.62);
 }
-.ob-copy strong { color: #f4f1ec; font-weight: 650; }
+.ob-copy strong { color: #f4f1ec; font-weight: 500; }
 
 /* ── macOS System Settings mockup ──────────────────────────────────────── */
 .ob-mock {
@@ -4010,7 +4015,7 @@ body.onboarding-window {
 .ob-mock-title {
   margin-left: 8px;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 500;
   letter-spacing: -0.01em;
   color: rgba(240,236,230,0.55);
 }
@@ -4038,7 +4043,7 @@ body.onboarding-window {
   padding: 0 6px;
   border-radius: 7px;
   font-size: 9px;
-  font-weight: 560;
+  font-weight: 500;
   color: rgba(240,236,230,0.58);
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -4247,7 +4252,7 @@ body.onboarding-window {
   color: #fff;
   font: inherit;
   font-size: 13.5px;
-  font-weight: 680;
+  font-weight: 500;
   letter-spacing: 0;
   cursor: pointer;
   -webkit-app-region: no-drag;
