@@ -957,25 +957,30 @@ function openPreferencesWindow() {
   }
 
   preferencesWindow = new BrowserWindow({
-    width: 760,
-    height: 520,
-    minWidth: 640,
-    minHeight: 460,
-    resizable: true,
+    width: 420,
+    height: 560,
+    minWidth: 420,
+    minHeight: 560,
+    maxWidth: 420,
+    maxHeight: 560,
+    resizable: false,
     minimizable: false,
     maximizable: false,
     closable: true,
     movable: true,
+    center: true,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 14, y: 14 },
     vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
     visualEffectState: 'active',
     transparent: process.platform === 'darwin',
-    backgroundColor: process.platform === 'darwin' ? '#00000000' : '#252525',
+    backgroundColor: process.platform === 'darwin' ? '#00000000' : '#f5f1ec',
     autoHideMenuBar: true,
-    title: 'Orange Fuji Preferences',
+    title: 'Orange Fuji Settings',
+    show: false,
     webPreferences: getAppWebPreferences(),
   });
+  preferencesWindow.once('ready-to-show', () => preferencesWindow.show());
 
   preferencesWindow.loadFile(path.join(__dirname, 'renderer', 'preferences.html'));
   preferencesWindow.on('closed', () => {

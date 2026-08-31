@@ -1491,11 +1491,15 @@ body.preferences-window .preferences-panel {
   max-width: none;
   max-height: none;
   margin: 0;
-  padding: 48px 36px 32px;
+  padding: 36px 28px 28px;
   gap: 0;
-  overflow: hidden;
+  overflow: auto;
   border: 0;
   border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.045), transparent 34%),
     var(--prefs-glass);
@@ -1506,52 +1510,82 @@ body.preferences-window .preferences-panel {
 }
 
 body.preferences-window .preferences-titlebar {
-  height: 44px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
 body.preferences-window .preferences-header {
-  margin: 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: 0 0 16px;
+  gap: 0;
   -webkit-app-region: drag;
+}
+
+body.preferences-window .preferences-icon {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 8px 16px rgba(82, 52, 28, 0.18));
+  -webkit-app-region: no-drag;
 }
 
 body.preferences-window .preferences-header h1 {
   color: var(--prefs-text);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 760;
   line-height: 1.02;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
+  margin-bottom: 2px;
+}
+
+body.preferences-window .preferences-subtitle {
+  color: var(--prefs-muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+  max-width: 260px;
+  text-align: center;
 }
 
 body.preferences-window .preferences-header p {
   display: none;
+}
+body.preferences-window .preferences-header .preferences-subtitle {
+  display: block;
 }
 
 body.preferences-window .preferences-tabs {
   --prefs-tabs-dur: 250ms;
   --prefs-tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
-  width: min(360px, 100%);
-  height: 36px;
+  width: 100%;
+  max-width: 286px;
+  height: 34px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 3px;
   padding: 3px;
-  margin-bottom: 18px;
+  margin: 0 auto 16px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
     0 12px 26px rgba(0, 0, 0, 0.10) inset;
   -webkit-app-region: no-drag;
+  flex-shrink: 0;
 }
 
-/* Transitions.dev — Tabs sliding pill — exact demo values */
+/* Transitions.dev — Tabs sliding pill — About-sized */
 body.preferences-window .preferences-tabs-pill {
   position: absolute;
   top: 3px;
   left: 0;
-  height: 30px;
+  height: 28px;
   width: 0;
   background: #ffffff;
   border-radius: 999px;
@@ -1570,13 +1604,13 @@ body.preferences-window .preferences-tabs-pill {
 body.preferences-window .preferences-tabs button {
   position: relative;
   min-width: 0;
-  height: 30px;
+  height: 28px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: rgba(248, 248, 246, 0.58);
+  color: var(--prefs-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
   cursor: default;
@@ -1595,9 +1629,15 @@ body.preferences-window .preferences-tabs button[aria-selected="true"] {
 }
 
 body.preferences-window .preferences-content {
+  width: 100%;
+  max-width: 340px;
   min-height: 0;
-  overflow: auto;
-  padding-right: 2px;
+  overflow: visible;
+  padding-top: 16px;
+  border-top: 1px solid var(--prefs-line);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 body.preferences-window .preferences-section {
@@ -1623,15 +1663,35 @@ body.preferences-window .preferences-group + .preferences-group {
 }
 
 body.preferences-window .preferences-group > label,
-body.preferences-window .preferences-group > label.range-row,
-body.preferences-window .preferences-field {
-  min-height: 54px;
-  padding: 10px 0;
+body.preferences-window .preferences-group > label.range-row {
+  min-height: 52px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--prefs-line);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(132px, auto);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
-  gap: 22px;
+  gap: 16px;
+}
+body.preferences-window .preferences-group > label .preferences-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+body.preferences-window .preferences-group > label input[type="checkbox"],
+body.preferences-window .preferences-group > label select {
+  flex: 0 0 auto;
+}
+body.preferences-window .preferences-field {
+  min-height: 52px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--prefs-line);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+body.preferences-window .preferences-field--path {
+  gap: 10px;
 }
 
 body.preferences-window .preferences-group > label:last-child,
@@ -1666,17 +1726,18 @@ body.preferences-window .preference-description {
 }
 
 body.preferences-window .preferences-panel select {
-  min-width: 92px;
-  height: 26px;
-  border: 1px solid rgba(249, 115, 22, 0.26);
-  border-radius: 7px;
-  padding: 0 8px;
-  background: rgba(249, 115, 22, 0.14);
-  color: var(--prefs-accent);
-  font-size: 11.5px;
+  min-width: 88px;
+  height: 28px;
+  border: 1px solid var(--prefs-line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--prefs-text);
+  font-size: 11px;
   font-weight: 500;
   appearance: auto;
   outline: none;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
 }
 
 body.preferences-window .preferences-panel input[type="checkbox"] {
@@ -1815,14 +1876,14 @@ body.preferences-window .odometer-control {
   display: grid;
   grid-template-columns: 24px minmax(56px, auto) 24px;
   align-items: center;
-  gap: 2px;
-  height: 28px;
-  padding: 2px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.075);
+  gap: 3px;
+  height: 30px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 6px 14px rgba(0, 0, 0, 0.10) inset;
+    0 12px 26px rgba(0, 0, 0, 0.10) inset;
   -webkit-app-region: no-drag;
   pointer-events: none;
 }
@@ -1864,17 +1925,18 @@ body.preferences-window .odometer-value {
   min-width: 56px;
   height: 24px;
   overflow: hidden;
-  border-radius: 7px;
-  background: rgba(249, 115, 22, 0.14);
-  color: var(--prefs-accent);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d1d1f;
   font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
   font-weight: 600;
   line-height: 24px;
   text-align: center;
   box-shadow:
-    0 0 0 1px rgba(249, 115, 22, 0.18) inset,
-    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.10);
 }
 
 body.preferences-window .odometer-digit {
@@ -1905,25 +1967,43 @@ body.preferences-window .odometer-value.is-decreasing .odometer-digit {
   to { opacity: 1; transform: translateY(0); }
 }
 
-body.preferences-window .path-picker,
-body.preferences-window .license-settings-activation {
-  min-width: min(280px, 42vw);
+body.preferences-window .path-picker {
+  width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  gap: 8px;
+}
+body.preferences-window .license-settings-activation {
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
+  margin-top: 4px;
 }
 
-body.preferences-window .path-picker input,
-body.preferences-window .license-settings-activation input {
+body.preferences-window .path-picker input {
   min-width: 0;
-  height: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  height: 28px;
+  border: 1px solid var(--prefs-line);
   border-radius: 8px;
   padding: 0 10px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(248, 248, 246, 0.88);
-  font-size: 10.5px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--prefs-text);
+  font-size: 11px;
+  font-weight: 400;
+}
+body.preferences-window .license-settings-activation input {
+  min-width: 0;
+  height: 28px;
+  border: 1px solid var(--prefs-line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--prefs-text);
+  font-size: 11px;
   font-weight: 500;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
@@ -1938,24 +2018,25 @@ body.preferences-window .license-settings-actions {
 body.preferences-window .path-picker button,
 body.preferences-window .license-settings-actions button,
 body.preferences-window .license-settings-activation button {
-  min-width: 58px;
-  height: 26px;
-  border: 0;
-  border-radius: 7px;
-  padding: 0 10px;
-  background: rgba(249, 115, 22, 0.16);
-  color: var(--prefs-accent);
+  min-width: 64px;
+  height: 28px;
+  border: 1px solid var(--prefs-line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--prefs-text);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
-  box-shadow: none;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
 }
 
 body.preferences-window .path-picker button.secondary,
 body.preferences-window .license-settings-actions button.secondary {
-  min-width: 48px;
-  color: rgba(248, 248, 246, 0.62);
-  background: rgba(255, 255, 255, 0.08);
+  min-width: 58px;
+  color: var(--prefs-muted);
+  background: transparent;
+  border-color: var(--prefs-line);
 }
 
 body.preferences-window .path-picker button:hover,
@@ -1986,33 +2067,59 @@ body.preferences-window .preferences-field--license.license-field--active {
 }
 
 body.preferences-window .license-settings-active {
-  gap: 16px;
+  gap: 14px;
+  align-items: center;
 }
 
-body.preferences-window .license-active-header {
-  gap: 12px;
-}
-
-body.preferences-window .license-active-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 9px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-}
-
-body.preferences-window .license-active-owner {
-  gap: 3px;
-}
-
-body.preferences-window .license-active-email {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--prefs-text);
-}
-
-body.preferences-window .license-active-thanks {
+/* Transitions.dev — Thinking states shimmer for license thanks */
+body.preferences-window .license-thanks {
+  --think-base: var(--prefs-muted);
+  --think-highlight: var(--prefs-text);
+  --think-shimmer: 2000ms;
+  position: relative;
+  display: inline-block;
+  text-align: center;
   font-size: 11.5px;
-  color: var(--prefs-muted);
+  font-weight: 500;
+  line-height: 1.4;
+}
+body.preferences-window .license-thanks .t-think-sizer {
+  display: block;
+  visibility: hidden;
+  white-space: nowrap;
+}
+body.preferences-window .license-thanks .t-think-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: block;
+  color: var(--think-base);
+  white-space: nowrap;
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+}
+body.preferences-window .license-thanks .t-think-text::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(90deg, transparent 0%, transparent 40%, var(--think-highlight) 50%, transparent 60%, transparent 100%);
+  background-size: 400% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: t-think-shimmer var(--think-shimmer) linear infinite;
+}
+@keyframes t-think-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.preferences-window .license-thanks .t-think-text::before { display: none !important; }
 }
 
 body.preferences-window .license-active-table {
@@ -2043,27 +2150,37 @@ body.preferences-window .license-row-value {
 }
 
 body.preferences-window .license-deactivate-btn {
-  height: 26px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 7px;
-  background: rgba(252, 165, 165, 0.08);
+  width: 100%;
+  height: 28px;
+  margin-top: 2px;
+  padding: 0 12px;
+  border: 1px solid rgba(252, 165, 165, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
   color: #fca5a5;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.12s ease;
 }
 
 body.preferences-window .license-deactivate-btn:hover {
-  background: rgba(252, 165, 165, 0.16);
-  color: #fed7d7;
+  background: rgba(252, 165, 165, 0.12);
+  border-color: rgba(252, 165, 165, 0.28);
+  color: #fecaca;
+  transform: translateY(-0.5px);
 }
 
 body.preferences-window .license-deactivate-btn:active {
-  background: rgba(252, 165, 165, 0.24);
+  background: rgba(252, 165, 165, 0.18);
+  border-color: rgba(252, 165, 165, 0.32);
   color: #fee2e2;
+  transform: translateY(0);
 }
 
 body.preferences-window .license-deactivate-btn:disabled {
@@ -2203,12 +2320,14 @@ body.preferences-window .license-deactivate-btn:disabled {
   }
 
   body.preferences-window .license-deactivate-btn {
-    background: rgba(198, 40, 40, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(198, 40, 40, 0.18);
     color: #b42318;
   }
 
   body.preferences-window .license-deactivate-btn:hover {
-    background: rgba(198, 40, 40, 0.14);
+    background: rgba(198, 40, 40, 0.08);
+    border-color: rgba(198, 40, 40, 0.28);
     color: #8b1e14;
   }
 

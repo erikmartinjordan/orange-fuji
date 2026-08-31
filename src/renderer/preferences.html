@@ -15,10 +15,9 @@
     <div class="preferences-titlebar" aria-hidden="true"></div>
 
     <header class="preferences-header">
-      <div>
-        <h1>Settings</h1>
-        <p>Orange Fuji</p>
-      </div>
+      <img class="preferences-icon" src="../assets/icons/macos/256x256.png" alt="">
+      <h1>Settings</h1>
+      <p class="preferences-subtitle">Orange Fuji — Capture, annotate, share.</p>
     </header>
 
     <nav class="preferences-tabs" aria-label="Settings sections">
@@ -106,14 +105,11 @@
             <p id="license-status-setting">Checking license status...</p>
           </div>
           <div class="license-settings-active" id="license-active-state" hidden>
-            <div class="license-active-header">
-              <img class="license-active-icon" src="../assets/icons/macos/256x256.png" alt="">
-              <div class="license-active-owner">
-                <span class="license-active-email" id="license-active-email"></span>
-                <span class="license-active-thanks">Thank you for your support!</span>
-              </div>
-            </div>
             <div class="license-active-table">
+              <div class="license-row">
+                <span class="license-row-label">Email</span>
+                <span class="license-row-value" id="license-active-email"></span>
+              </div>
               <div class="license-row">
                 <span class="license-row-label">Plan</span>
                 <span class="license-row-value">Lifetime access</span>
