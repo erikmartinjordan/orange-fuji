@@ -30,6 +30,8 @@ const licenseDevicesDisplay = document.querySelector('#license-devices-display')
 const licenseDeactivateBtn = document.querySelector('#license-deactivate-btn');
 const preferencesTabs = Array.from(document.querySelectorAll('[data-preferences-tab]'));
 const preferencesSections = Array.from(document.querySelectorAll('[data-preferences-section]'));
+const preferencesTabsContainer = document.querySelector('.preferences-tabs');
+const preferencesTabsPill = document.querySelector('.preferences-tabs-pill');
 
 
 const settings = {
@@ -45,18 +47,45 @@ const RECORDING_SETTINGS_KEY = 'orangefuji-recording-settings';
 // Legacy key retained for one-time migration from builds branded as Pico.
 const LEGACY_RECORDING_SETTINGS_KEY = 'pico-recording-settings';
 
-function activatePreferencesTab(tabName = 'general') {
+function movePreferencesPill(targetTab, animate = true) {
+  if (!targetTab || !preferencesTabsPill) return;
+  const left = targetTab.offsetLeft;
+  const width = targetTab.offsetWidth;
+  if (!animate) {
+    const prev = preferencesTabsPill.style.transition;
+    preferencesTabsPill.style.transition = 'none';
+    preferencesTabsPill.style.transform = `translateX(${left}px)`;
+    preferencesTabsPill.style.width = `${width}px`;
+    void preferencesTabsPill.offsetWidth;
+    preferencesTabsPill.style.transition = prev;
+  } else {
+    preferencesTabsPill.style.transform = `translateX(${left}px)`;
+    preferencesTabsPill.style.width = `${width}px`;
+  }
+}
+
+function activatePreferencesTab(tabName = 'general', options = {}) {
+  const animate = options.animate !== false;
+  let activeTab = null;
   preferencesTabs.forEach((tab) => {
     const isActive = tab.dataset.preferencesTab === tabName;
     tab.classList.toggle('active', isActive);
     tab.setAttribute('aria-selected', String(isActive));
+    if (isActive) activeTab = tab;
   });
 
   preferencesSections.forEach((section) => {
     section.classList.toggle('active', section.dataset.preferencesSection === tabName);
   });
 
+  if (activeTab) movePreferencesPill(activeTab, animate);
+
   renderAutoHideDelay();
+}
+
+function syncPreferencesPill() {
+  const activeTab = preferencesTabs.find((tab) => tab.classList.contains('active')) || preferencesTabs[0];
+  if (activeTab) movePreferencesPill(activeTab, false);
 }
 
 function clampAutoHideDelay(value) {
@@ -236,7 +265,11 @@ autoHideDelayIncrement?.addEventListener('click', () => {
 
 document.addEventListener('DOMContentLoaded', loadSettings);
 document.addEventListener('DOMContentLoaded', loadLicenseState);
-document.addEventListener('DOMContentLoaded', () => activatePreferencesTab('general'));
+document.addEventListener('DOMContentLoaded', () => {
+  activatePreferencesTab('general', { animate: false });
+  requestAnimationFrame(() => syncPreferencesPill());
+});
+window.addEventListener('resize', () => syncPreferencesPill());
 
 preferencesTabs.forEach((tab) => {
   tab.addEventListener('click', () => activatePreferencesTab(tab.dataset.preferencesTab));

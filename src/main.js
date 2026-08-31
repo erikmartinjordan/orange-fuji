@@ -2273,30 +2273,6 @@ function showAboutDialog() {
   });
 
   aboutWindow.setMenuBarVisibility(false);
-
-  // DEMO: auto-cycle download progress like IMG_5887.PNG (0% → 50% → Completed) for live preview
-  if (!aboutWindow._demoStarted) {
-    aboutWindow._demoStarted = true;
-    let pct = 0;
-    const totalBytes = 20 * 1024 * 1024;
-    const tick = () => {
-      if (!aboutWindow || aboutWindow.isDestroyed()) return;
-      const status = pct >= 100 ? 'downloaded' : 'downloading';
-      const message = pct >= 100 ? 'Completed' : `Downloading... ${Math.round(pct)}%`;
-      aboutWindow.webContents.send('app-update-state', {
-        status,
-        supported: true,
-        message,
-        progress: { percent: pct, transferred: Math.round(totalBytes * pct / 100), total: totalBytes },
-        availableVersion: '1.11.0',
-      });
-      pct += 0.7;
-      if (pct > 100) pct = 0;
-    };
-    const iv = setInterval(tick, 40);
-    aboutWindow.on('closed', () => clearInterval(iv));
-    tick();
-  }
 }
 
 function createMainWindow(focusOnReady = false) {
@@ -2348,8 +2324,6 @@ function createMainWindow(focusOnReady = false) {
       mainWindow.focus();
       mainWindow.webContents.send('toolbar-open-requested');
     }
-    // DEMO live: auto-open About to show segmented download bar (IMG_5887.PNG)
-    setTimeout(() => { try{ showAboutDialog(); }catch(_){} }, 700);
   });
   mainWindow.webContents.on('did-finish-load', () => console.log('[orange-fuji][main] did-finish-load'));
   mainWindow.webContents.on('render-process-gone', (_, details) => console.error('[orange-fuji][main] render-process-gone', details));
