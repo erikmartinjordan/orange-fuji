@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/github/downloads/erikmartinjordan/orange-fuji/total?label=Total%20downloads&style=flat-square" alt="Total downloads" />
 </p>
 
-Orange Fuji is a minimal screen capture and annotation app for Windows, Linux, and macOS.
+Orange Fuji is a minimal screen capture and annotation app for macOS, Windows and Linux.
 
 ## Download
 
@@ -77,7 +77,7 @@ npm run build:desktop  # Windows and Linux launch artifacts
 npm run build:win      # Windows portable EXE
 npm run build:linux    # Linux AppImage
 npm run build:mac      # macOS artifacts; notarized when Apple credentials are configured
-npm run build:all      # macOS, Windows, and Linux
+npm run build:all      # macOS, Windows and Linux
 ```
 
 Builds are written to `dist/`.
