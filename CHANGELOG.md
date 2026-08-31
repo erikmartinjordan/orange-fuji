@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.11.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.10.0...v1.11.0) (2026-08-31)
+
+
+### ✨ Features
+
+* **about:** orange segmented pill download progress with mono stats ([070431f](https://github.com/erikmartinjordan/orange-fuji/commit/070431f8ad8beccaec873f3a90e288fc20015e81))
+* **toast:** make screenshot preview draggable to Desktop ([f114482](https://github.com/erikmartinjordan/orange-fuji/commit/f114482687467cb412adc7f42f0054a25965187f))
+
+
+### 📝 Documentation
+
+* unify platform description to macOS, Windows and Linux ([b5d72f0](https://github.com/erikmartinjordan/orange-fuji/commit/b5d72f0ac611f73c918a291ae25972fb998f2c80))
+
 ## [1.10.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.9.0...v1.10.0) (2026-08-27)
 
 
