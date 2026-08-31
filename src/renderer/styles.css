@@ -1613,7 +1613,7 @@ body.preferences-window .preferences-tabs button {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
-  cursor: default;
+  cursor: pointer;
   z-index: 1;
   transition: color var(--prefs-tabs-dur) var(--prefs-tabs-ease);
 }
@@ -1737,6 +1737,7 @@ body.preferences-window .preferences-panel select {
   font-weight: 500;
   appearance: auto;
   outline: none;
+  cursor: pointer;
   box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
 }
 
@@ -1752,6 +1753,7 @@ body.preferences-window .preferences-panel input[type="checkbox"] {
   flex: 0 0 44px;
   border-radius: 999px;
   background: #38383a;
+  cursor: pointer;
 }
 
 body.preferences-window .preferences-panel input[type="checkbox"]::before {
@@ -1902,14 +1904,14 @@ body.preferences-window .odometer-button {
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
-  cursor: default;
+  cursor: pointer;
   pointer-events: auto;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
 body.preferences-window .odometer-button.hovered:not(:disabled) {
-  background: rgba(255, 255, 255, 0.10);
-  color: rgba(248, 248, 246, 0.86);
+  background: transparent;
+  color: rgba(248, 248, 246, 0.95);
 }
 
 body.preferences-window .odometer-value {
@@ -2028,6 +2030,7 @@ body.preferences-window .license-settings-activation button {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
+  cursor: pointer;
   box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
 }
 
@@ -2278,8 +2281,8 @@ body.preferences-window .license-deactivate-btn:disabled {
   }
 
   body.preferences-window .odometer-button.hovered:not(:disabled) {
-    background: rgba(60, 60, 67, 0.08);
-    color: rgba(28, 28, 30, 0.86);
+    background: transparent;
+    color: rgba(28, 28, 30, 0.95);
   }
 
   body.preferences-window .odometer-value {
