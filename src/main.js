@@ -181,6 +181,10 @@ function trialStateFromSettings(settings) {
 
 function shouldValidateLicense(settings) {
   if (settings.licenseStatus !== 'active' || !settings.licenseEmail) return false;
+  // Legacy activations from before devices tracking have devicesUsed=0 but are
+  // already licensed — force a revalidation to fetch the real count and fix
+  // the "2 of 2 available" display when 1 device is already in use.
+  if (settings.licenseDevicesUsed === 0) return true;
   const lastValidatedAt = parseDate(settings.licenseLastValidatedAt);
   if (!lastValidatedAt) return true;
   return Date.now() - lastValidatedAt.getTime() >= LICENSE_CHECK_INTERVAL_DAYS * 24 * 60 * 60 * 1000;
@@ -237,7 +241,7 @@ async function validateLicenseIfNeeded(settings) {
       licenseKey: result.licenseId || settings.licenseKey || settings.licenseActivationId || '',
       licensePurchasedAt: result.activatedAt || settings.licensePurchasedAt || '',
       licenseDevicesTotal: result.devicesTotal ?? result.maxActivations ?? settings.licenseDevicesTotal,
-      licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? settings.licenseDevicesUsed,
+      licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? (settings.licenseDevicesUsed || 1),
     });
   } catch (error) {
     console.error('[orange-fuji][license] validation failed:', error.message);
@@ -288,7 +292,9 @@ async function activateLicense(email) {
     licenseKey: result.licenseId || result.activationId || '',
     licensePurchasedAt: result.activatedAt || '',
     licenseDevicesTotal: result.devicesTotal ?? result.maxActivations ?? 2,
-    licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? 0,
+    // If activation succeeded, at least this device is active — avoid stale "2 of 2"
+    // when the API response omits the count (legacy payload / network race).
+    licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? 1,
   });
 
   return getLicenseState();
@@ -2999,7 +3005,7 @@ ipcMain.handle('revalidate-license', async () => {
       licenseKey: result.licenseId || settings.licenseKey || settings.licenseActivationId || '',
       licensePurchasedAt: result.activatedAt || settings.licensePurchasedAt || '',
       licenseDevicesTotal: result.devicesTotal ?? result.maxActivations ?? settings.licenseDevicesTotal,
-      licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? settings.licenseDevicesUsed,
+      licenseDevicesUsed: result.devicesUsed ?? result.activeDevices ?? (settings.licenseDevicesUsed || 1),
     });
     return { ok: true, state: await getLicenseState() };
   } catch (error) {

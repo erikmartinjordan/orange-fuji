@@ -214,8 +214,19 @@ function renderLicenseState(state) {
 async function loadLicenseState() {
   try {
     const result = await window.pico.revalidateLicense?.();
-    const state = result?.ok ? result.state : await window.pico.getLicenseState();
+    if (result?.ok) {
+      renderLicenseState(result.state);
+      return;
+    }
+    // Revalidation failed (offline, activation_not_found, etc.) — don't silently
+    // fall back to stale cached "2 of 2 available". Show the error so the bug
+    // is visible and retry with cached state.
+    const state = await window.pico.getLicenseState();
     renderLicenseState(state);
+    if (result?.error) {
+      // Keep the devices row but surface that the count may be stale.
+      setLicenseMessage(`Could not refresh license (${result.error}). Showing cached status.`, 'error');
+    }
   } catch (error) {
     if (licenseStatusSetting) licenseStatusSetting.textContent = 'Could not load license status.';
     setLicenseMessage(error?.message || 'License status unavailable.', 'error');
