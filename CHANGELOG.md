@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.12.0...v1.12.1) (2026-09-01)
+
+
+### 🐛 Fixes
+
+* **license:** correct devices count display from cached 2/2 to 1/2 ([ededfaf](https://github.com/erikmartinjordan/orange-fuji/commit/ededfafaa6effb24227cd4127c1740e490912691))
+
 ## [1.12.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.11.0...v1.12.0) (2026-08-31)
 
 
