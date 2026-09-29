@@ -2811,14 +2811,17 @@ async function captureFullscreen(options = {}) {
     if (mainWindow) showMainWindowForCurrentMode(true);
     return { success: false, error: 'Trial expired. Activate a license to continue.' };
   }
-  await hideOrangeFujiWindowsBeforeCapture(options);
+  await hideOrangeFujiWindowsBeforeCapture({ ...options, mode: 'fullscreen' });
   try {
     if (!await ensureMacScreenRecordingPermission()) {
       notifyRendererCaptureFinished();
       if (mainWindow) showMainWindowForCurrentMode(true);
       return { success: false, error: 'Screen Recording permission is required.' };
     }
-    const captureData = await withHiddenDesktopIcons(options, async () => captureAllScreens());
+    // Fullscreen never kills Finder: killall Finder forces a Space switch when
+    // the desktop is bare and the next window (OpenCode) is on another Space,
+    // which made the capture come back empty. Same fix as region.
+    const captureData = await captureAllScreens();
     copyCaptureDataToClipboard(captureData);
     autoSaveCaptureData(captureData, 'fullscreen');
     if (mainWindow) {
