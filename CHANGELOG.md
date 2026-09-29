@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.2](https://github.com/erikmartinjordan/orange-fuji/compare/v1.12.1...v1.12.2) (2026-09-29)
+
+
+### 🐛 Fixes
+
+* **capture:** stop killing Finder on fullscreen to avoid Space switches ([7f3448f](https://github.com/erikmartinjordan/orange-fuji/commit/7f3448f8b34e3dfc288de6f69ecab828403b357c))
+
 ## [1.12.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.12.0...v1.12.1) (2026-09-01)
 
 
