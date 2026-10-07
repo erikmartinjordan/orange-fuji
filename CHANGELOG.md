@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.13.0...v1.13.1) (2026-10-07)
+
+
+### 🐛 Fixes
+
+* **metrics:** avoid stale active-user counts with cache busting and auto-refresh ([b6c9058](https://github.com/erikmartinjordan/orange-fuji/commit/b6c905807a11f8cdec036edb91c45ca96149dc95))
+* **web:** align metric cards and drop .html from internal links ([fa45913](https://github.com/erikmartinjordan/orange-fuji/commit/fa459137d81c8798802216167a66c4b7a96788a7))
+
 ## [1.13.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.12.2...v1.13.0) (2026-10-07)
 
 
