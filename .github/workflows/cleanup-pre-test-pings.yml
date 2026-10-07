@@ -1,0 +1,20 @@
+name: Cleanup PRE test pings
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete test rows from app_pings (PRE)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          curl -fsS -X POST "https://api.supabase.com/v1/projects/xnppcugncigaiycrvmpk/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\":\"with del as (delete from public.app_pings where platform = 'test' returning 1) select count(*)::int as deleted from del\"}"
