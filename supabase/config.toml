@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.validate-license]
 verify_jwt = false
+
+[functions.usage-ping]
+verify_jwt = false
+
+[functions.public-metrics]
+verify_jwt = false

@@ -9,6 +9,7 @@ const recordingFormatSetting = document.querySelector('#recording-format-setting
 const recordingAutozoomSetting = document.querySelector('#recording-autozoom-setting');
 const hideDesktopIconsSetting = document.querySelector('#hide-desktop-icons-setting');
 const captureOrangeFujiSetting = document.querySelector('#capture-orangefuji-setting');
+const telemetrySetting = document.querySelector('#telemetry-setting');
 const autoHideDelaySetting = document.querySelector('#auto-hide-delay-setting');
 const autoHideDelaySettingValue = document.querySelector('#auto-hide-delay-setting-value');
 const autoHideDelayDecrement = document.querySelector('#auto-hide-delay-decrement');
@@ -41,6 +42,7 @@ const settings = {
   captureOrangeFuji: false,
   autoHideDelay: 3,
   defaultSavePath: '',
+  telemetryEnabled: true,
 };
 
 const RECORDING_SETTINGS_KEY = 'orangefuji-recording-settings';
@@ -131,12 +133,14 @@ async function loadSettings() {
   try {
     const persistedSettings = await window.pico.getSettings();
     settings.defaultSavePath = typeof persistedSettings?.defaultSavePath === 'string' ? persistedSettings.defaultSavePath : settings.defaultSavePath;
+    settings.telemetryEnabled = persistedSettings?.telemetryEnabled !== false;
   } catch (_) {}
 
   recordingFormatSetting.value = settings.format;
   recordingAutozoomSetting.checked = settings.autoZoom;
   hideDesktopIconsSetting.checked = settings.hideDesktopIcons;
   captureOrangeFujiSetting.checked = settings.captureOrangeFuji;
+  if (telemetrySetting) telemetrySetting.checked = settings.telemetryEnabled;
   renderAutoHideDelay();
   defaultSavePathSetting.value = settings.defaultSavePath;
 }
@@ -241,6 +245,7 @@ async function saveSettings() {
       defaultSavePath: settings.defaultSavePath,
       hideDesktopIcons: settings.hideDesktopIcons,
       captureOrangeFuji: settings.captureOrangeFuji,
+      telemetryEnabled: settings.telemetryEnabled,
     });
   } catch (_) {}
   window.pico.notifySettingsChanged?.();
@@ -269,8 +274,14 @@ captureOrangeFujiSetting.addEventListener('change', () => {
   saveSettings();
 });
 
+telemetrySetting?.addEventListener('change', () => {
+  telemetrySetting.classList.add('is-init');
+  settings.telemetryEnabled = Boolean(telemetrySetting.checked);
+  saveSettings();
+});
+
  // Transitions.dev toggle bounce: gate animation until first interaction
-[recordingAutozoomSetting, hideDesktopIconsSetting, captureOrangeFujiSetting].forEach((cb) => {
+[recordingAutozoomSetting, hideDesktopIconsSetting, captureOrangeFujiSetting, telemetrySetting].forEach((cb) => {
   if (!cb) return;
   const gate = () => cb.classList.add('is-init');
   cb.addEventListener('pointerdown', gate, { once: true });

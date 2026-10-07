@@ -24,6 +24,12 @@ jobs:
       - name: Link project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
+      - name: Show migration status
+        run: supabase migration list
+
+      - name: Preview migrations (dry run)
+        run: supabase db push --dry-run
+
       - name: Push database migrations
         run: supabase db push --yes
 
@@ -32,3 +38,8 @@ jobs:
           supabase functions deploy stripe-webhook --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy activate-license --project-ref "$SUPABASE_PROJECT_REF"
           supabase functions deploy validate-license --project-ref "$SUPABASE_PROJECT_REF"
+          supabase functions deploy usage-ping --project-ref "$SUPABASE_PROJECT_REF"
+          supabase functions deploy public-metrics --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Smoke test public metrics
+        run: curl -fsS "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/public-metrics?days=7"

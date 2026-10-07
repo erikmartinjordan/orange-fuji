@@ -8,6 +8,7 @@ const { execSync, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const os = require('os');
 const https = require('https');
 const { tempRecordingPath, convertWebmToMp4, convertMp4ToGif } = require('./pro/recording');
 const nativeRecorder = require('./pro/native-recorder');
@@ -62,6 +63,7 @@ const SETTINGS_FILE = 'settings.json';
 const PRODUCT_NAME = 'Orange Fuji';
 const TRIAL_DAYS = 30;
 const LICENSE_CHECK_INTERVAL_DAYS = 7;
+const USAGE_PING_INTERVAL_HOURS = 24;
 const licenseConfig = require('./license-config');
 const BUY_LICENSE_URL = licenseConfig.buyLicenseUrl;
 const LICENSE_API_BASE_URL = licenseConfig.licenseApiBaseUrl;
@@ -83,6 +85,8 @@ const DEFAULT_SETTINGS = {
   licenseDevicesTotal: 2,
   licenseDevicesUsed: 0,
   screenPermissionPromptedAt: '',
+  telemetryEnabled: true,
+  lastHeartbeatAt: '',
 };
 const updateState = {
   status: 'idle',
@@ -123,6 +127,8 @@ function normalizeSettings(candidate = {}) {
     licenseDevicesTotal: typeof candidate.licenseDevicesTotal === 'number' ? candidate.licenseDevicesTotal : DEFAULT_SETTINGS.licenseDevicesTotal,
     licenseDevicesUsed: typeof candidate.licenseDevicesUsed === 'number' ? candidate.licenseDevicesUsed : DEFAULT_SETTINGS.licenseDevicesUsed,
     screenPermissionPromptedAt: typeof candidate.screenPermissionPromptedAt === 'string' ? candidate.screenPermissionPromptedAt : DEFAULT_SETTINGS.screenPermissionPromptedAt,
+    telemetryEnabled: typeof candidate.telemetryEnabled === 'boolean' ? candidate.telemetryEnabled : DEFAULT_SETTINGS.telemetryEnabled,
+    lastHeartbeatAt: typeof candidate.lastHeartbeatAt === 'string' ? candidate.lastHeartbeatAt : DEFAULT_SETTINGS.lastHeartbeatAt,
   };
 }
 
@@ -246,6 +252,35 @@ async function validateLicenseIfNeeded(settings) {
   } catch (error) {
     console.error('[orange-fuji][license] validation failed:', error.message);
     return settings;
+  }
+}
+
+async function sendUsagePingIfNeeded(settings) {
+  if (settings.telemetryEnabled === false) return settings;
+  const lastPing = parseDate(settings.lastHeartbeatAt);
+  if (lastPing && Date.now() - lastPing.getTime() < USAGE_PING_INTERVAL_HOURS * 60 * 60 * 1000) return settings;
+  try {
+    const { statusCode, data } = await postJson(`${LICENSE_API_BASE_URL}/usage-ping`, {
+      deviceId: settings.deviceId,
+      appVersion: app.getVersion(),
+      platform: process.platform,
+      osVersion: os.release(),
+    });
+    if (statusCode >= 200 && statusCode < 300 && data && data.ok !== false) {
+      return writeSettings({ lastHeartbeatAt: data.receivedAt || nowIso() });
+    }
+  } catch (error) {
+    console.error('[orange-fuji][telemetry] ping failed:', error.message);
+  }
+  return settings;
+}
+
+async function maybeSendUsagePing() {
+  try {
+    const settings = ensureLocalLicenseSettings();
+    await sendUsagePingIfNeeded(settings);
+  } catch (error) {
+    console.error('[orange-fuji][telemetry] unexpected error:', error.message);
   }
 }
 
@@ -3611,6 +3646,7 @@ async function computeMacPermissionBlocking() {
 
 app.whenReady().then(async () => {
   ensureLocalLicenseSettings();
+  void maybeSendUsagePing();
   setupRecordingDisplayMediaHandler();
 
   // NUEVO FLUJO: sin permiso, el onboarding ES la app. No se crea el pill,
