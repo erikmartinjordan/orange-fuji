@@ -24,16 +24,16 @@ stable
 security definer
 set search_path = public
 as $$
-  with bounds as (
+  with b as (
     select (now() at time zone 'utc')::date as today
   ),
   daily as (
-    select p.day, count(distinct p.device_hash)::int as devices
-    from public.app_pings p, bounds b
-    where p.day >= b.today - (greatest(days, 1) - 1)
-      and p.day <= b.today
-    group by p.day
-    order by p.day
+    select a.day, count(distinct a.device_hash)::int as devices
+    from public.app_pings a, b
+    where a.day >= b.today - (greatest(days, 1) - 1)
+      and a.day <= b.today
+    group by a.day
+    order by a.day
   ),
   platforms as (
     select platform, count(distinct device_hash)::int as devices
@@ -46,10 +46,10 @@ as $$
     group by app_version
   )
   select jsonb_build_object(
-    'dau', (select count(distinct device_hash)::int from public.app_pings, bounds where day = b.today),
-    'wau', (select count(distinct device_hash)::int from public.app_pings, bounds where day >= b.today - 6),
-    'mau', (select count(distinct device_hash)::int from public.app_pings, bounds where day >= b.today - 29),
-    'total_devices', (select count(distinct device_hash)::int from public.app_pings),
+    'dau', (select count(distinct a.device_hash)::int from public.app_pings a, b where a.day = b.today),
+    'wau', (select count(distinct a.device_hash)::int from public.app_pings a, b where a.day >= b.today - 6),
+    'mau', (select count(distinct a.device_hash)::int from public.app_pings a, b where a.day >= b.today - 29),
+    'total_devices', (select count(distinct a.device_hash)::int from public.app_pings a),
     'daily', (
       select coalesce(jsonb_agg(jsonb_build_object('day', day, 'devices', devices) order by day), '[]'::jsonb)
       from daily
