@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.12.2...v1.13.0) (2026-10-07)
+
+
+### ✨ Features
+
+* **metrics:** public metrics page and anonymous active-user telemetry ([376f960](https://github.com/erikmartinjordan/orange-fuji/commit/376f96037a6a417129782197ed86e3a038e3e27a))
+
+
+### 🐛 Fixes
+
+* **supabase:** correct metrics_active_snapshot alias in scalar subqueries ([57b346d](https://github.com/erikmartinjordan/orange-fuji/commit/57b346d1553fa23fabbd9c52981e18869adf9c82))
+
 ## [1.12.2](https://github.com/erikmartinjordan/orange-fuji/compare/v1.12.1...v1.12.2) (2026-09-29)
 
 
