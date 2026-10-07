@@ -748,6 +748,7 @@
     }).join('');
   }
 
+  var usageLoaded = false;
   function renderUsage(u){
     var values = {
       dau: u.dau || 0,
@@ -757,8 +758,10 @@
     };
     document.querySelectorAll('[data-usage]').forEach(function(el){
       var key = el.getAttribute('data-usage');
-      animateCount(el, values[key] || 0, fmt);
+      if (usageLoaded) el.textContent = fmt(values[key] || 0);
+      else animateCount(el, values[key] || 0, fmt);
     });
+    usageLoaded = true;
     var daily = Array.isArray(u.daily) ? u.daily : [];
     var wrap = document.getElementById('usage-timeline');
     var empty = document.getElementById('usage-empty');
@@ -798,13 +801,13 @@
   }
 
   function loadUsage(){
-    fetch(METRICS_URL + '?days=90', { headers:{ Accept:'application/json' } })
+    fetch(METRICS_URL + '?days=90&t=' + Date.now(), { headers:{ Accept:'application/json' } })
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(res){
         if (res && res.ok && res.metrics) renderUsage(res.metrics);
-        else showUsageUnavailable();
+        else if (!usageLoaded) showUsageUnavailable();
       })
-      .catch(function(){ showUsageUnavailable(); });
+      .catch(function(){ if (!usageLoaded) showUsageUnavailable(); });
   }
 
   function render(m){
@@ -876,6 +879,8 @@
 
   markReveal();
   loadUsage();
+  setInterval(function(){ if (!document.hidden) loadUsage(); }, 60000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadUsage(); });
 
   Promise.all([
     getJSON(API).catch(function(){ return null; }),

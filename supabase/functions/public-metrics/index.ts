@@ -6,7 +6,7 @@ const CORS = {
   "access-control-allow-methods": "GET, OPTIONS",
 };
 
-function respond(body: unknown, status = 200, cache = "public, max-age=300") {
+function respond(body: unknown, status = 200, cache = "public, max-age=60") {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
