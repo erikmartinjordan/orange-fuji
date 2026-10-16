@@ -300,6 +300,55 @@
     .faq-a{max-height:0;overflow:hidden;transition:max-height .45s var(--ease)}
     .faq-a p{padding:0 40px 24px 4px;color:var(--ink-dim);font-size:.91rem;line-height:1.65;max-width:660px}
 
+    /* ───────────────────────── Juice game ───────────────────────── */
+    .game-card{max-width:560px;margin:0 auto;padding:40px 34px 34px;text-align:center;overflow:hidden}
+    .juice-stage{position:relative;display:flex;flex-direction:column;align-items:center;
+      min-height:398px;padding-top:6px;user-select:none;touch-action:manipulation}
+    .orange-press{position:relative;z-index:2;background:none;border:0;padding:6px;cursor:pointer;
+      border-radius:28px;-webkit-tap-highlight-color:transparent;
+      transition:transform .25s var(--ease),opacity .35s var(--ease)}
+    .orange-press img{width:clamp(88px,15vw,116px);display:block;border-radius:25%;
+      filter:drop-shadow(0 14px 24px rgba(0,0,0,.5)) drop-shadow(0 0 30px rgba(255,140,50,.42));
+      will-change:transform}
+    .orange-press.spent{opacity:.32}
+    .orange-press .hint{display:block;margin-top:8px;font-size:.7rem;color:var(--ink-faint);
+      letter-spacing:.16em;text-transform:uppercase;font-weight:650}
+    .pour-gap{flex:0 0 auto;height:42px;width:2px;margin:6px auto 0;position:relative;z-index:1;
+      background:linear-gradient(180deg,transparent,rgba(255,140,50,.34),transparent)}
+    .glass{position:relative;z-index:2;width:120px;height:152px;margin-top:auto;
+      border:3px solid rgba(255,255,255,.16);border-top:0;border-radius:9px 9px 20px 20px;
+      background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
+      box-shadow:inset 0 10px 26px rgba(0,0,0,.35),0 18px 44px rgba(0,0,0,.4);overflow:hidden}
+    .glass-juice{position:absolute;left:0;right:0;bottom:0;height:0;
+      background:linear-gradient(180deg,#ffc06b,#ff8a2a 52%,#ff5e3a);
+      box-shadow:0 0 26px rgba(255,122,26,.55);transition:height .5s var(--ease)}
+    .glass-juice::after{content:"";position:absolute;left:0;right:0;top:-5px;height:10px;border-radius:50%;
+      background:radial-gradient(closest-side,rgba(255,226,180,.95),rgba(255,160,70,.35))}
+    .glass::after{content:"";position:absolute;top:14px;bottom:16px;left:16px;width:9px;border-radius:99px;
+      background:linear-gradient(180deg,rgba(255,255,255,.55),transparent);opacity:.45;pointer-events:none}
+    .glass.pulse{animation:glasspulse .6s var(--ease)}
+    @keyframes glasspulse{0%{transform:scale(1)}35%{transform:scale(1.08) rotate(-1.5deg)}70%{transform:scale(.97)}100%{transform:scale(1)}}
+    .drop{position:absolute;top:0;left:0;width:8px;height:10px;z-index:1;pointer-events:none;
+      border-radius:50% 50% 50% 50%/62% 62% 40% 40%;
+      background:radial-gradient(circle at 36% 30%,#ffe0b0,#ff8a2a 58%,#f26310);will-change:transform}
+    .juice-toast{position:absolute;left:50%;top:30%;z-index:6;padding:10px 20px;border-radius:99px;
+      font-size:.82rem;font-weight:700;color:#1d0e04;letter-spacing:-.01em;white-space:nowrap;
+      background:linear-gradient(135deg,#ffd9a3,#ff9a3c);box-shadow:0 14px 36px rgba(255,110,20,.5);
+      opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.88);
+      transition:opacity .28s,transform .32s var(--ease)}
+    .juice-toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .game-stats{display:flex;justify-content:center;gap:38px;margin-top:26px}
+    .game-stat{min-width:74px}
+    .game-stat b{display:block;font-size:1.55rem;font-weight:750;letter-spacing:-.03em;line-height:1.1;
+      background:linear-gradient(120deg,#ffd9a3,#ff7a1a);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .game-stat span{font-size:.7rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.15em;font-weight:650}
+    .game-foot{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:24px;flex-wrap:wrap}
+    .game-hint{font-size:.82rem;color:var(--ink-dim)}
+    .game-reset{font-family:inherit;font-size:.8rem;font-weight:600;color:var(--ink-dim);cursor:pointer;
+      background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 16px;
+      transition:color .2s,border-color .2s,background .2s}
+    .game-reset:hover{color:var(--ink);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.26)}
+
     /* ─────────────────────────── Final CTA ──────────────────────── */
     .cta-card{position:relative;text-align:center;padding:84px 36px;border-radius:28px;overflow:hidden;
       border:1px solid rgba(255,122,26,.2);
@@ -335,6 +384,9 @@
       .why-grid,.feat-grid,.plat-grid{grid-template-columns:1fr}
       .feat-wide{grid-column:span 1}
       .shot-title{display:none}
+      .game-card{padding:34px 22px 30px}
+      .juice-stage{min-height:352px}
+      .game-stats{gap:26px}
       footer .inner{flex-direction:column;text-align:center}
       .hero-meta{gap:12px}
       .hero-meta span{gap:12px}
@@ -568,6 +620,34 @@
         <div class="icon"><svg viewBox="0 0 256 300" fill="rgba(246,240,231,.85)"><path d="M127.8 5.2c-18.4 0-34 7-44.2 19.8-9 11.3-13.7 26.7-13.7 44.1 0 10.4 1.6 19.4 4.4 27.2-10.7 5.8-19.5 14-26.2 23.8C39.4 133.7 34 151 34 170c0 22.4 6.1 40.8 17.1 54 10.2 12.2 24.4 19.6 40.3 21.6l-3.2 9.7c-2.2 6.7 1.5 13.8 8.2 16l22.4 7.3c6.7 2.2 13.8-1.5 16-8.2l2.6-8h-.5 1.4l2.6 8c2.2 6.7 9.3 10.4 16 8.2l22.4-7.3c6.7-2.2 10.4-9.3 8.2-16l-3.2-9.7c15.9-2 30.1-9.4 40.3-21.6 11-13.2 17.1-31.6 17.1-54 0-19-5.4-36.3-14.2-49.8-6.7-9.8-15.5-18-26.2-23.8 2.8-7.8 4.4-16.8 4.4-27.2 0-17.4-4.7-32.8-13.7-44.1C161.8 12.2 146.2 5.2 127.8 5.2zm.2 17.6c23.6 0 39.6 18.6 39.6 46.3 0 27.6-16 49.8-39.6 49.8s-39.6-22.2-39.6-49.8c0-27.7 16-46.3 39.6-46.3zm-12 22c-5.2 0-9.4 4.2-9.4 9.4s4.2 9.4 9.4 9.4 9.4-4.2 9.4-9.4-4.2-9.4-9.4-9.4zm23.8 0c-5.2 0-9.4 4.2-9.4 9.4s4.2 9.4 9.4 9.4 9.4-4.2 9.4-9.4-4.2-9.4-9.4-9.4zm-11.8 14.2c4.4 0 8.2 1.8 10 4.4.8 1.2.4 2.8-.8 3.6-1.2.8-2.8.4-3.6-.8-.8-1.2-3-2-5.6-2s-4.8.8-5.6 2c-.8 1.2-2.4 1.6-3.6.8-1.2-.8-1.6-2.4-.8-3.6 1.8-2.6 5.6-4.4 10-4.4zM128 133.2c33.4 0 59.8 21.6 59.8 56.2 0 20.6-7.6 34-18.6 42.8-9.4 7.4-21.4 11.4-34.4 12.4H121c-13-.8-25-4.8-34.4-12.4C75.6 223.2 68 210 68 189.4c0-34.6 26.4-56.2 59.8-56.2h.2z"/></svg></div>
         <h3>Linux</h3>
         <p>AppImage support. X11 and Wayland with PipeWire.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Juice break ── -->
+  <div class="section" id="juice">
+    <div class="sec-head center" data-reveal>
+      <div class="section-label">Play · Juice break</div>
+      <h2>Squeeze the orange.</h2>
+      <p>Tap the Orange Fuji to squeeze out fresh juice and fill the glass.</p>
+    </div>
+    <div class="game-card spot" data-reveal style="--d:.1s">
+      <div class="juice-stage" id="juice-stage">
+        <button class="orange-press" id="orange-press" type="button" aria-label="Squeeze the orange">
+          <img src="256x256.png" alt="" width="116" height="116" />
+          <span class="hint" aria-hidden="true">Tap or hold</span>
+        </button>
+        <div class="pour-gap" aria-hidden="true"></div>
+        <div class="glass" id="glass" aria-hidden="true"><div class="glass-juice" id="glass-juice"></div></div>
+        <div class="juice-toast" id="juice-toast" role="status" aria-live="polite"></div>
+      </div>
+      <div class="game-stats">
+        <div class="game-stat"><b id="stat-oranges">0</b><span>Oranges</span></div>
+        <div class="game-stat"><b id="stat-glasses">0</b><span>Glasses</span></div>
+      </div>
+      <div class="game-foot">
+        <span class="game-hint" id="game-hint">Tap or hold the orange to squeeze.</span>
+        <button class="game-reset" id="game-reset" type="button">Reset</button>
       </div>
     </div>
   </div>
@@ -897,6 +977,221 @@
     window.addEventListener('resize', function(){ fit(current); });
     var autoplay = setInterval(function(){ show((current + 1) % slides.length); }, 4500);
     slideshow.addEventListener('click', function(){ clearInterval(autoplay); });
+  })();
+
+  /* ── Juice squeeze game ── */
+  (function(){
+    var stage = document.getElementById('juice-stage');
+    var press = document.getElementById('orange-press');
+    var juice = document.getElementById('glass-juice');
+    var glass = document.getElementById('glass');
+    var toast = document.getElementById('juice-toast');
+    var hint = document.getElementById('game-hint');
+    var reset = document.getElementById('game-reset');
+    var orangesEl = document.getElementById('stat-oranges');
+    var glassesEl = document.getElementById('stat-glasses');
+    if (!stage || !press || !juice || !glass) return;
+
+    var ORANGE_CAP = 8;
+    var GLASS_CAP = 8;
+    var remaining = ORANGE_CAP;
+    var fill = 0;
+    var oranges = 0;
+    var glasses = 0;
+    var busy = false;
+    var drops = [];
+    var raf = null;
+    var toastTimer = null;
+    var holding = false;
+    var holdTimer = null;
+    var holdStart = 0;
+    var HOLD_START = 220;
+    var HOLD_MIN = 55;
+    var HOLD_RAMP = 1500;
+
+    function updateOrange(){
+      var ratio = remaining / ORANGE_CAP;
+      press.style.transform = 'scale(' + (0.72 + ratio * 0.28).toFixed(3) + ')';
+      press.classList.toggle('spent', remaining <= 0);
+    }
+    function updateGlass(){ juice.style.height = (fill / GLASS_CAP * 100) + '%'; }
+    function setHint(msg){ if (hint) hint.textContent = msg; }
+    function showToast(msg){
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 1400);
+    }
+
+    function spawnDrops(){
+      if (reduceMotion) return;
+      var sRect = stage.getBoundingClientRect();
+      var pRect = press.getBoundingClientRect();
+      var gRect = glass.getBoundingClientRect();
+      var cx = pRect.left + pRect.width / 2 - sRect.left;
+      var cy = pRect.bottom - sRect.top - 10;
+      var floor = gRect.top - sRect.top + 10;
+      var n = 9 + Math.floor(Math.random() * 5);
+      for (var i = 0; i < n; i++){
+        var d = document.createElement('span');
+        d.className = 'drop';
+        var size = 6 + Math.random() * 4;
+        d.style.width = size + 'px';
+        d.style.height = (size * 1.25).toFixed(1) + 'px';
+        stage.appendChild(d);
+        drops.push({
+          el: d,
+          x: cx + (Math.random() - .5) * 40,
+          y: cy + Math.random() * 8,
+          vx: (Math.random() - .5) * 2.4,
+          vy: 0.6 + Math.random() * 1.6,
+          floor: floor - size * 1.25
+        });
+      }
+      if (!raf) raf = requestAnimationFrame(step);
+    }
+
+    function step(){
+      var alive = [];
+      for (var i = 0; i < drops.length; i++){
+        var p = drops[i];
+        p.vy += 0.42;
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.y >= p.floor){ p.el.remove(); continue; }
+        p.el.style.transform = 'translate3d(' + p.x.toFixed(1) + 'px,' + p.y.toFixed(1) + 'px,0)';
+        alive.push(p);
+      }
+      drops = alive;
+      raf = drops.length ? requestAnimationFrame(step) : null;
+    }
+
+    function squeezeAnim(){
+      if (reduceMotion || !press.animate) return;
+      var img = press.querySelector('img');
+      if (!img) return;
+      img.animate(
+        [{ transform: 'scale(1.18,.78)' }, { transform: 'scale(1,1)' }],
+        { duration: 230, easing: 'cubic-bezier(.2,.65,.25,1)' }
+      );
+    }
+
+    function freshOrange(){
+      busy = true;
+      setHint('Out of juice - getting a fresh one...');
+      setTimeout(function(){
+        oranges++;
+        orangesEl.textContent = oranges;
+        remaining = ORANGE_CAP;
+        press.classList.remove('spent');
+        updateOrange();
+        if (!reduceMotion && press.animate){
+          press.animate(
+            [{ transform: 'scale(.4)', opacity: 0 }, { transform: press.style.transform, opacity: 1 }],
+            { duration: 320, easing: 'cubic-bezier(.2,.65,.25,1)' }
+          );
+        }
+        setHint('Tap or hold the orange to squeeze.');
+        showToast('Fresh orange!');
+        busy = false;
+      }, 480);
+    }
+
+    function fullGlass(){
+      busy = true;
+      glass.classList.add('pulse');
+      glasses++;
+      glassesEl.textContent = glasses;
+      showToast('Fresh juice!');
+      setHint('Glass full - bottoms up!');
+      setTimeout(function(){ glass.classList.remove('pulse'); }, 650);
+      setTimeout(function(){
+        fill = 0;
+        updateGlass();
+        setHint('Tap or hold the orange to squeeze.');
+        if (remaining <= 0){ freshOrange(); return; }
+        busy = false;
+      }, 820);
+    }
+
+    function squeeze(){
+      if (busy || remaining <= 0) return;
+      remaining--;
+      fill++;
+      squeezeAnim();
+      spawnDrops();
+      updateOrange();
+      updateGlass();
+      if (fill >= GLASS_CAP) fullGlass();
+      else if (remaining <= 0) freshOrange();
+    }
+
+    function tickHold(){
+      if (!holding) return;
+      squeeze();
+      var held = (window.performance && performance.now ? performance.now() : Date.now()) - holdStart;
+      var t = Math.min(1, held / HOLD_RAMP);
+      var interval = HOLD_START - t * (HOLD_START - HOLD_MIN);
+      holdTimer = setTimeout(tickHold, interval);
+    }
+
+    function startHold(){
+      if (holding) return;
+      holding = true;
+      holdStart = window.performance && performance.now ? performance.now() : Date.now();
+      squeeze();
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(tickHold, HOLD_START);
+    }
+
+    function endHold(){
+      holding = false;
+      clearTimeout(holdTimer);
+      holdTimer = null;
+    }
+
+    press.addEventListener('pointerdown', function(e){
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      startHold();
+    });
+    press.addEventListener('pointerup', endHold);
+    press.addEventListener('pointercancel', endHold);
+    press.addEventListener('pointerleave', endHold);
+    window.addEventListener('pointerup', endHold);
+    press.addEventListener('click', function(e){
+      if (holding || e.detail !== 0) return;
+      squeeze();
+    });
+    press.addEventListener('keydown', function(e){
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      squeeze();
+    });
+
+    if (reset){
+      reset.addEventListener('click', function(){
+        endHold();
+        remaining = ORANGE_CAP;
+        fill = 0;
+        oranges = 0;
+        glasses = 0;
+        busy = false;
+        for (var i = 0; i < drops.length; i++) drops[i].el.remove();
+        drops = [];
+        if (raf){ cancelAnimationFrame(raf); raf = null; }
+        orangesEl.textContent = '0';
+        glassesEl.textContent = '0';
+        glass.classList.remove('pulse');
+        updateOrange();
+        updateGlass();
+        setHint('Tap or hold the orange to squeeze.');
+        showToast('Reset!');
+      });
+    }
+
+    updateOrange();
+    updateGlass();
   })();
 
   /* ── GitHub release wiring ── */
