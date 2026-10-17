@@ -4656,3 +4656,98 @@ body .canvas-container.recording-preview-active .toolbar.auto-hidden {
   pointer-events: auto;
   transform: translateX(-50%) translateY(var(--toolbar-offset));
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AI & MCP — Preferences
+   ══════════════════════════════════════════════════════════════════════════ */
+
+body.preferences-window .preferences-field--api {
+  gap: 10px;
+}
+
+body.preferences-window .preferences-field--api[hidden] {
+  display: none;
+}
+
+.api-connection-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--prefs-line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.api-connection-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 14px;
+}
+
+.api-connection-row + .api-connection-row {
+  border-top: 1px solid var(--prefs-line);
+}
+
+.api-connection-label {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--prefs-dim);
+}
+
+.api-connection-value {
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--prefs-text);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-connection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+body.preferences-window .api-connection-actions button {
+  min-width: 64px;
+  height: 28px;
+  border: 1px solid var(--prefs-line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--prefs-text);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+body.preferences-window .api-connection-actions button.secondary {
+  min-width: 58px;
+  color: var(--prefs-muted);
+  background: transparent;
+  border-color: var(--prefs-line);
+}
+
+body.preferences-window .api-connection-actions button:hover {
+  background: rgba(249, 115, 22, 0.24);
+  color: #ffb066;
+}
+
+body.preferences-window .api-connection-actions button.secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(248, 248, 246, 0.84);
+}
+
+body.preferences-window .api-connection-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

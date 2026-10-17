@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "orange-fuji": {
+      "type": "local",
+      "command": ["node", "server.js"],
+      "cwd": "mcp",
+      "enabled": true
+    }
+  }
+}

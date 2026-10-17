@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orange Fuji · MCP — Arquitectura y beneficios</title>
+<style>
+  :root{
+    --bg:#0a0810;
+    --ink:#f6f0e7;
+    --ink-dim:rgba(246,240,231,.60);
+    --ink-faint:rgba(246,240,231,.38);
+    --orange:#ff7a1a;
+    --orange-soft:#ffa552;
+    --card:rgba(255,255,255,.045);
+    --line:rgba(255,255,255,.09);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;
+    --ease:cubic-bezier(.2,.65,.25,1);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:var(--font);
+    background:
+      radial-gradient(1100px 520px at 85% -8%,rgba(255,110,30,.10),transparent 60%),
+      radial-gradient(900px 480px at 8% 8%,rgba(120,60,255,.08),transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    padding:0 24px 100px;
+  }
+  ::selection{background:var(--orange);color:#1d0e04}
+  .wrap{max-width:1040px;margin:0 auto}
+  a{color:var(--orange-soft)}
+
+  /* Header */
+  header{padding:74px 0 40px;text-align:center}
+  .kicker{display:inline-flex;align-items:center;gap:10px;font-size:.72rem;font-weight:650;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--orange);margin-bottom:18px}
+  .kicker::before,.kicker::after{content:"";width:26px;height:1px;background:linear-gradient(90deg,transparent,var(--orange))}
+  .kicker::after{background:linear-gradient(90deg,var(--orange),transparent)}
+  h1{font-size:clamp(2rem,5vw,3.1rem);font-weight:800;letter-spacing:-.04em;line-height:1.06}
+  .grad{background:linear-gradient(94deg,#ffc98a,#ff7a1a 55%,#ff5e3a);-webkit-background-clip:text;background-clip:text;color:transparent}
+  header p{color:var(--ink-dim);max-width:640px;margin:18px auto 0;font-size:1.02rem}
+
+  /* Generic section */
+  section{margin-top:64px}
+  .label{display:flex;align-items:center;gap:12px;color:var(--orange);font-size:.72rem;font-weight:650;
+    letter-spacing:.22em;text-transform:uppercase;margin-bottom:14px}
+  .label::before{content:"";width:24px;height:1px;background:linear-gradient(90deg,var(--orange),transparent)}
+  h2{font-size:clamp(1.4rem,3vw,1.9rem);font-weight:750;letter-spacing:-.03em;line-height:1.15;margin-bottom:10px}
+  .sub{color:var(--ink-dim);max-width:680px;font-size:.95rem}
+
+  /* Architecture stack */
+  .stack{display:flex;flex-direction:column;align-items:stretch;gap:0;margin-top:30px}
+  .node{position:relative;border:1px solid var(--line);border-radius:18px;padding:20px 22px;
+    background:var(--card);display:flex;align-items:center;gap:18px;transition:transform .3s var(--ease),border-color .3s}
+  .node:hover{transform:translateX(4px);border-color:rgba(255,122,26,.35)}
+  .node .ic{flex:0 0 auto;width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,122,26,.12);border:1px solid rgba(255,122,26,.22);font-size:1.3rem}
+  .node .body{min-width:0}
+  .node h3{font-size:1rem;font-weight:680;letter-spacing:-.01em}
+  .node p{font-size:.86rem;color:var(--ink-dim);margin-top:3px}
+  .node .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .tag{font-size:.68rem;font-weight:600;letter-spacing:.02em;padding:3px 9px;border-radius:99px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--ink-dim)}
+  .tag.new{background:rgba(255,122,26,.14);border-color:rgba(255,122,26,.32);color:var(--orange-soft)}
+
+  .connector{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 0;color:var(--ink-faint);
+    font-size:.72rem;font-weight:600;letter-spacing:.05em}
+  .connector .arrow{width:2px;height:26px;background:linear-gradient(180deg,var(--orange),transparent);
+    position:relative}
+  .connector .arrow::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+    border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid var(--orange)}
+
+  /* Flow steps */
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:30px}
+  .step{border:1px solid var(--line);border-radius:16px;padding:18px 16px;background:var(--card);position:relative}
+  .step .num{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:.78rem;font-weight:700;color:#1d0e04;background:linear-gradient(135deg,#ffd9a3,#ff9a3c);margin-bottom:12px}
+  .step h4{font-size:.86rem;font-weight:660;margin-bottom:5px}
+  .step p{font-size:.79rem;color:var(--ink-dim);line-height:1.5}
+  .step code{font-size:.74rem;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);
+    border-radius:6px;padding:1px 6px;color:var(--orange-soft)}
+
+  /* Cards grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:28px}
+  .card{border:1px solid var(--line);border-radius:18px;padding:24px;background:var(--card)}
+  .card .ic{font-size:1.4rem;margin-bottom:12px}
+  .card h3{font-size:.96rem;font-weight:660;margin-bottom:6px}
+  .card p{font-size:.86rem;color:var(--ink-dim)}
+
+  /* Table */
+  .table{margin-top:28px;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:.86rem}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top}
+  th{font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-faint);font-weight:650;
+    background:rgba(255,255,255,.03)}
+  tr:last-child td{border-bottom:0}
+  td code{font-size:.8rem;color:var(--orange-soft)}
+  tbody tr:hover{background:rgba(255,255,255,.02)}
+
+  /* Note */
+  .note{margin-top:34px;border:1px solid rgba(255,122,26,.28);border-radius:16px;padding:20px 22px;
+    background:rgba(255,122,26,.07);font-size:.9rem;color:var(--ink-dim)}
+  .note strong{color:var(--ink)}
+
+  footer{margin-top:70px;text-align:center;color:var(--ink-faint);font-size:.8rem}
+
+  @media(max-width:820px){
+    .steps{grid-template-columns:1fr 1fr}
+  }
+  @media(max-width:560px){
+    .steps{grid-template-columns:1fr}
+    .node{flex-direction:column;align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Orange Fuji · MCP</div>
+    <h1>Cómo se conecta la IA con <span class="grad">Orange Fuji</span></h1>
+    <p>Un servidor <strong>MCP</strong> (Model Context Protocol) permite que un asistente de IA use Orange Fuji —capturar la pantalla, guardar, copiar, ajustar opciones— mediante lenguaje natural. Esta página explica la arquitectura y qué gana el usuario final.</p>
+  </header>
+
+  <!-- ARQUITECTURA -->
+  <section>
+    <div class="label">01 · Arquitectura</div>
+    <h2>La cadena, de la petición al resultado</h2>
+    <p class="sub">Cada capa tiene una responsabilidad clara. El MCP no captura nada por sí solo: solo traduce lenguaje natural a órdenes concretas que ya existen dentro de la app.</p>
+
+    <div class="stack">
+      <div class="node">
+        <div class="ic">🧑‍💻</div>
+        <div class="body">
+          <h3>1 · Usuario final</h3>
+          <p>Pide algo en lenguaje natural: “captura mi pantalla y guárdala en el escritorio”.</p>
+          <div class="tags"><span class="tag">Sin aprender atajos</span><span class="tag">Sin abrir menús</span></div>
+        </div>
+      </div>
+
+      <div class="connector"><span class="arrow"></span>escribes / hablas</div>
+
+      <div class="node">
+        <div class="ic">🤖</div>
+        <div class="body">
+          <h3>2 · Cliente de IA</h3>
+          <p>ChatGPT Desktop, Claude, OpenCode, Cursor… Elige qué herramienta usar y con qué parámetros.</p>
+          <div class="tags"><span class="tag">Cualquier cliente MCP</span></div>
+        </div>
+      </div>
+
+      <div class="connector"><span class="arrow"></span>protocolo MCP (stdio)</div>
+
+      <div class="node">
+        <div class="ic">🔌</div>
+        <div class="body">
+          <h3>3 · Servidor <code>orangefuji-mcp</code></h3>
+          <p>Proceso pequeño que expone “herramientas” y las reenvía a la app. No contiene lógica de captura.</p>
+          <div class="tags"><span class="tag new">NUEVO</span><span class="tag">@modelcontextprotocol/sdk</span></div>
+        </div>
+      </div>
+
+      <div class="connector"><span class="arrow"></span>HTTP local 127.0.0.1 + token</div>
+
+      <div class="node">
+        <div class="ic">🌉</div>
+        <div class="body">
+          <h3>4 · Puente local dentro de Orange Fuji</h3>
+          <p>Un servidor en <code>127.0.0.1</code> protegido con token hace de traductor: convierte cada orden en la función interna correspondiente. Solo escucha en tu máquina.</p>
+          <div class="tags"><span class="tag new">NUEVO</span><span class="tag">Solo localhost</span><span class="tag">Off por defecto</span></div>
+        </div>
+      </div>
+
+      <div class="connector"><span class="arrow"></span>llamadas internas</div>
+
+      <div class="node">
+        <div class="ic">🍊</div>
+        <div class="body">
+          <h3>5 · Orange Fuji (Electron · proceso main)</h3>
+          <p>Ya tiene ~60 funciones internas (capturar región/ventana/pantalla, ajustes, portapapeles, licencia, updates). El puente reutiliza esas, no reinventa nada.</p>
+          <div class="tags"><span class="tag">Ya existe</span><span class="tag">captureRegion · captureFullscreen</span><span class="tag">readSettings · writeSettings</span></div>
+        </div>
+      </div>
+
+      <div class="connector"><span class="arrow"></span>APIs del sistema</div>
+
+      <div class="node">
+        <div class="ic">🖥️</div>
+        <div class="body">
+          <h3>6 · Sistema operativo</h3>
+          <p>Pantalla, portapapeles y disco del equipo del usuario. Los archivos generados se quedan en local.</p>
+          <div class="tags"><span class="tag">desktopCapturer</span><span class="tag">Clipboard</span><span class="tag">File system</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLUJO -->
+  <section>
+    <div class="label">02 · Un ejemplo paso a paso</div>
+    <h2>“Captura mi pantalla y guárdala”</h2>
+    <p class="sub">Lo que ocurre por debajo en menos de un segundo.</p>
+
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h4>Petición</h4><p>El usuario escribe la frase en su cliente de IA.</p></div>
+      <div class="step"><div class="num">2</div><h4>Decisión</h4><p>La IA elige la herramienta <code>capture_fullscreen</code>.</p></div>
+      <div class="step"><div class="num">3</div><h4>Puente</h4><p><code>orangefuji-mcp</code> hace <code>POST 127.0.0.1/…</code> con el token.</p></div>
+      <div class="step"><div class="num">4</div><h4>Captura</h4><p>Orange Fuji captura con <code>desktopCapturer</code> y escribe el PNG.</p></div>
+      <div class="step"><div class="num">5</div><h4>Confirmación</h4><p>La ruta vuelve por la cadena y la IA confirma: “Guardado en …”.</p></div>
+    </div>
+  </section>
+
+  <!-- COMPONENTES -->
+  <section>
+    <div class="label">03 · Qué se construye y qué se reutiliza</div>
+    <h2>Componentes</h2>
+    <div class="table">
+      <table>
+        <thead>
+          <tr><th>Pieza</th><th>Dónde vive</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Servidor MCP</td><td>Carpeta nueva <code>mcp/</code> (paquete aparte)</td><td><span class="tag new">Nuevo</span></td></tr>
+          <tr><td>Puente HTTP local (con token)</td><td><code>src/main.js</code> de la app Electron</td><td><span class="tag new">Nuevo</span></td></tr>
+          <tr><td>Altura de captura sin overlay</td><td><code>src/main.js</code> (reusa <code>captureAllScreens()</code>)</td><td><span class="tag new">Nuevo</span></td></tr>
+          <tr><td>Ajustes + interruptor “Permitir API/MCP”</td><td>Preferencias</td><td><span class="tag new">Nuevo</span></td></tr>
+          <tr><td>Guardar / copiar / capturar / licencia</td><td>Funciones internas existentes</td><td>Se reutiliza</td></tr>
+          <tr><td>Automatización y orquestación</td><td>Cliente de IA del usuario</td><td>Ya existe</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- BENEFICIOS -->
+  <section>
+    <div class="label">04 · Qué gana el usuario final</div>
+    <h2>Beneficios</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="ic">💬</div>
+        <h3>Lenguaje natural</h3>
+        <p>“Hazme un pantallazo de la ventana de al lado y mándalo al chat”. Sin memorizar <kbd>⌘⇧S</kbd> ni buscar en menús.</p>
+      </div>
+      <div class="card">
+        <div class="ic">🔗</div>
+        <h3>Encadena tareas</h3>
+        <p>Capturar → recortar → guardar → describir. La IA puede combinar varias herramientas seguidas en un solo flujo.</p>
+      </div>
+      <div class="card">
+        <div class="ic">🔒</div>
+        <h3>Privado por diseño</h3>
+        <p>Todo ocurre en la máquina: localhost + token y desactivado por defecto. Nada de tus capturas sale a un servidor externo.</p>
+      </div>
+      <div class="card">
+        <div class="ic">⚡</div>
+        <h3>Barato de construir</h3>
+        <p>Se apoya en funciones que ya existen en la app, así que llega rápido y con menos errores.</p>
+      </div>
+      <div class="card">
+        <div class="ic">🧩</div>
+        <h3>Compatible</h3>
+        <p>Funciona con cualquier cliente que soporte MCP: ChatGPT, Claude, OpenCode, Cursor…</p>
+      </div>
+      <div class="card">
+        <div class="ic">🎛️</div>
+        <h3>Tú mandas</h3>
+        <p>Un interruptor lo activa o desactiva y el token se puede rotar o revocar cuando quieras.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEGURIDAD -->
+  <section>
+    <div class="label">05 · Seguridad y requisitos</div>
+    <h2>Para que sea seguro</h2>
+    <div class="grid">
+      <div class="card"><h3>Solo localhost</h3><p>El puente escucha únicamente en <code>127.0.0.1</code>, nunca en la red.</p></div>
+      <div class="card"><h3>Token obligatorio</h3><p>Cada petición debe llevar un token secreto; sin él, se rechaza.</p></div>
+      <div class="card"><h3>Desactivado por defecto</h3><p>Se enciende desde Preferencias y se apaga con el mismo interruptor.</p></div>
+      <div class="card"><h3>Permiso de macOS</h3><p>En macOS sigue haciendo falta el permiso de grabación de pantalla del sistema.</p></div>
+    </div>
+    <div class="note">
+      <strong>Estado actual:</strong> esto es una <strong>propuesta de arquitectura</strong>. Hoy la app no tiene servidor local, ni protocolo <code>orangefuji://</code>, ni modo de captura por línea de comandos; habría que añadirlos. El resto (capturar, guardar, copiar, ajustes, licencia) ya existe dentro de Orange Fuji.
+    </div>
+  </section>
+
+  <footer>
+    Orange Fuji · Documento de arquitectura MCP — borrador interno
+  </footer>
+
+</div>
+</body>
+</html>

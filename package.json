@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "test": "node tests/regression.test.js && node tests/e2e-focus.test.js",
+    "test": "node tests/regression.test.js && node tests/e2e-focus.test.js && node tests/api-bridge.test.js",
     "test:recording": "node tests/regression.test.js",
     "configure-license": "node scripts/configure-license.js",
     "build": "electron-builder",

@@ -966,6 +966,9 @@ contextBridge.exposeInMainWorld('pico', {
   confirmAppWindowClose: (payload = {}) => ipcRenderer.send('app-window-close-cleaned-up', payload),
   onSettingsChanged: (callback) => ipcRenderer.on('settings-changed', () => callback()),
   notifySettingsChanged: () => ipcRenderer.send('settings-changed'),
+  getApiInfo: () => ipcRenderer.invoke('get-api-info'),
+  rotateApiToken: () => ipcRenderer.invoke('rotate-api-token'),
+  resizePreferences: (height) => ipcRenderer.invoke('resize-preferences', height),
   onAppUpdateState: (callback) => ipcRenderer.on('app-update-state', (_, state) => callback(state)),
 
   // Capture overlay communication

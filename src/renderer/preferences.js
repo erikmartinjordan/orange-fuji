@@ -10,6 +10,13 @@ const recordingAutozoomSetting = document.querySelector('#recording-autozoom-set
 const hideDesktopIconsSetting = document.querySelector('#hide-desktop-icons-setting');
 const captureOrangeFujiSetting = document.querySelector('#capture-orangefuji-setting');
 const telemetrySetting = document.querySelector('#telemetry-setting');
+const apiEnabledSetting = document.querySelector('#api-enabled-setting');
+const apiConnection = document.querySelector('#api-connection');
+const apiEndpointValue = document.querySelector('#api-endpoint-value');
+const apiTokenValue = document.querySelector('#api-token-value');
+const apiCopyEndpoint = document.querySelector('#api-copy-endpoint');
+const apiCopyToken = document.querySelector('#api-copy-token');
+const apiRotateToken = document.querySelector('#api-rotate-token');
 const autoHideDelaySetting = document.querySelector('#auto-hide-delay-setting');
 const autoHideDelaySettingValue = document.querySelector('#auto-hide-delay-setting-value');
 const autoHideDelayDecrement = document.querySelector('#auto-hide-delay-decrement');
@@ -43,6 +50,7 @@ const settings = {
   autoHideDelay: 3,
   defaultSavePath: '',
   telemetryEnabled: true,
+  apiEnabled: false,
 };
 
 const RECORDING_SETTINGS_KEY = 'orangefuji-recording-settings';
@@ -134,6 +142,7 @@ async function loadSettings() {
     const persistedSettings = await window.pico.getSettings();
     settings.defaultSavePath = typeof persistedSettings?.defaultSavePath === 'string' ? persistedSettings.defaultSavePath : settings.defaultSavePath;
     settings.telemetryEnabled = persistedSettings?.telemetryEnabled !== false;
+    settings.apiEnabled = persistedSettings?.apiEnabled === true;
   } catch (_) {}
 
   recordingFormatSetting.value = settings.format;
@@ -141,8 +150,84 @@ async function loadSettings() {
   hideDesktopIconsSetting.checked = settings.hideDesktopIcons;
   captureOrangeFujiSetting.checked = settings.captureOrangeFuji;
   if (telemetrySetting) telemetrySetting.checked = settings.telemetryEnabled;
+  if (apiEnabledSetting) apiEnabledSetting.checked = settings.apiEnabled;
+  refreshApiInfo();
   renderAutoHideDelay();
   defaultSavePathSetting.value = settings.defaultSavePath;
+  syncPreferencesSize();
+}
+
+let apiInfo = null;
+
+function measurePreferencesHeight() {
+  const panel = document.querySelector('.preferences-panel');
+  if (!panel) return 0;
+  const previousHeight = panel.style.height;
+  panel.style.height = 'auto';
+  const sections = Array.from(document.querySelectorAll('.preferences-section'));
+  const previouslyActive = sections.filter((section) => section.classList.contains('active'));
+  let max = 0;
+  for (const section of sections) {
+    sections.forEach((s) => s.classList.remove('active'));
+    section.classList.add('active');
+    max = Math.max(max, panel.scrollHeight);
+  }
+  sections.forEach((s) => s.classList.remove('active'));
+  previouslyActive.forEach((s) => s.classList.add('active'));
+  panel.style.height = previousHeight;
+  return Math.ceil(max);
+}
+
+let preferencesResizeFrame = null;
+function syncPreferencesSize() {
+  if (preferencesResizeFrame) cancelAnimationFrame(preferencesResizeFrame);
+  preferencesResizeFrame = requestAnimationFrame(() => {
+    preferencesResizeFrame = null;
+    const height = measurePreferencesHeight();
+    if (height > 0) window.pico.resizePreferences?.(height);
+  });
+}
+
+async function refreshApiInfo() {
+  if (!apiConnection) return;
+  apiInfo = null;
+  try {
+    apiInfo = await window.pico.getApiInfo?.();
+  } catch (_) {}
+  const running = Boolean(apiInfo?.running);
+  apiConnection.hidden = !(settings.apiEnabled && running);
+  if (apiEndpointValue) apiEndpointValue.textContent = apiInfo?.url || '—';
+  if (apiTokenValue) {
+    const token = apiInfo?.token || '';
+    apiTokenValue.textContent = token ? `${token.slice(0, 8)}…${token.slice(-4)}` : '—';
+    apiTokenValue.title = token;
+  }
+  syncPreferencesSize();
+}
+
+async function copyToClipboard(value, button, label) {
+  if (!value || !button) return;
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(value);
+    ok = true;
+  } catch (_) {
+    try {
+      const field = document.createElement('textarea');
+      field.value = value;
+      field.style.position = 'fixed';
+      field.style.opacity = '0';
+      document.body.appendChild(field);
+      field.select();
+      ok = document.execCommand('copy');
+      document.body.removeChild(field);
+    } catch (_) {
+      ok = false;
+    }
+  }
+  const original = button.textContent;
+  button.textContent = ok ? 'Copied' : 'Copy failed';
+  setTimeout(() => { button.textContent = label || original; }, 1200);
 }
 
 function setLicenseMessage(message = '', type = '') {
@@ -220,6 +305,7 @@ async function loadLicenseState() {
     const result = await window.pico.revalidateLicense?.();
     if (result?.ok) {
       renderLicenseState(result.state);
+      syncPreferencesSize();
       return;
     }
     // Revalidation failed (offline, activation_not_found, etc.) — don't silently
@@ -227,6 +313,7 @@ async function loadLicenseState() {
     // is visible and retry with cached state.
     const state = await window.pico.getLicenseState();
     renderLicenseState(state);
+    syncPreferencesSize();
     if (result?.error) {
       // Keep the devices row but surface that the count may be stale.
       setLicenseMessage(`Could not refresh license (${result.error}). Showing cached status.`, 'error');
@@ -246,6 +333,7 @@ async function saveSettings() {
       hideDesktopIcons: settings.hideDesktopIcons,
       captureOrangeFuji: settings.captureOrangeFuji,
       telemetryEnabled: settings.telemetryEnabled,
+      apiEnabled: settings.apiEnabled,
     });
   } catch (_) {}
   window.pico.notifySettingsChanged?.();
@@ -280,8 +368,32 @@ telemetrySetting?.addEventListener('change', () => {
   saveSettings();
 });
 
+apiEnabledSetting?.addEventListener('change', () => {
+  apiEnabledSetting.classList.add('is-init');
+  settings.apiEnabled = Boolean(apiEnabledSetting.checked);
+  saveSettings();
+  setTimeout(refreshApiInfo, 400);
+});
+
+apiRotateToken?.addEventListener('click', async () => {
+  apiRotateToken.disabled = true;
+  try {
+    await window.pico.rotateApiToken?.();
+  } catch (_) {}
+  await refreshApiInfo();
+  apiRotateToken.disabled = false;
+});
+
+apiCopyEndpoint?.addEventListener('click', () => {
+  copyToClipboard(apiInfo?.url, apiCopyEndpoint, 'Copy endpoint');
+});
+
+apiCopyToken?.addEventListener('click', () => {
+  copyToClipboard(apiInfo?.token, apiCopyToken, 'Copy token');
+});
+
  // Transitions.dev toggle bounce: gate animation until first interaction
-[recordingAutozoomSetting, hideDesktopIconsSetting, captureOrangeFujiSetting, telemetrySetting].forEach((cb) => {
+[recordingAutozoomSetting, hideDesktopIconsSetting, captureOrangeFujiSetting, telemetrySetting, apiEnabledSetting].forEach((cb) => {
   if (!cb) return;
   const gate = () => cb.classList.add('is-init');
   cb.addEventListener('pointerdown', gate, { once: true });
@@ -310,6 +422,10 @@ document.addEventListener('DOMContentLoaded', loadLicenseState);
 document.addEventListener('DOMContentLoaded', () => {
   activatePreferencesTab('general', { animate: false });
   requestAnimationFrame(() => syncPreferencesPill());
+});
+document.addEventListener('DOMContentLoaded', () => {
+  requestAnimationFrame(() => syncPreferencesSize());
+  if (document.fonts?.ready) document.fonts.ready.then(() => syncPreferencesSize());
 });
 window.addEventListener('resize', () => syncPreferencesPill());
 

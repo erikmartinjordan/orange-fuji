@@ -12,6 +12,7 @@ const os = require('os');
 const https = require('https');
 const { tempRecordingPath, convertWebmToMp4, convertMp4ToGif } = require('./pro/recording');
 const nativeRecorder = require('./pro/native-recorder');
+const { createApiBridge } = require('./api-bridge');
 let autoUpdater = null;
 try {
   ({ autoUpdater } = require('electron-updater'));
@@ -53,6 +54,8 @@ let lastEditorBounds = null;
 let lastToolbarBounds = null;
 let updateCheckInProgress = false;
 let pendingCaptureReturnMode = null;
+let apiBridge = null;
+let apiBridgeInfo = null;
 
 const TOOLBAR_WINDOW_SIZE = { width: 260, height: 110 };
 const TOOLBAR_MIN_SIZE = { width: 200, height: 110 };
@@ -87,6 +90,8 @@ const DEFAULT_SETTINGS = {
   screenPermissionPromptedAt: '',
   telemetryEnabled: true,
   lastHeartbeatAt: '',
+  apiEnabled: false,
+  apiToken: '',
 };
 const updateState = {
   status: 'idle',
@@ -129,6 +134,8 @@ function normalizeSettings(candidate = {}) {
     screenPermissionPromptedAt: typeof candidate.screenPermissionPromptedAt === 'string' ? candidate.screenPermissionPromptedAt : DEFAULT_SETTINGS.screenPermissionPromptedAt,
     telemetryEnabled: typeof candidate.telemetryEnabled === 'boolean' ? candidate.telemetryEnabled : DEFAULT_SETTINGS.telemetryEnabled,
     lastHeartbeatAt: typeof candidate.lastHeartbeatAt === 'string' ? candidate.lastHeartbeatAt : DEFAULT_SETTINGS.lastHeartbeatAt,
+    apiEnabled: typeof candidate.apiEnabled === 'boolean' ? candidate.apiEnabled : DEFAULT_SETTINGS.apiEnabled,
+    apiToken: typeof candidate.apiToken === 'string' ? candidate.apiToken : DEFAULT_SETTINGS.apiToken,
   };
 }
 
@@ -999,11 +1006,10 @@ function openPreferencesWindow() {
 
   preferencesWindow = new BrowserWindow({
     width: 420,
-    height: 560,
+    height: 700,
     minWidth: 420,
-    minHeight: 560,
+    minHeight: 320,
     maxWidth: 420,
-    maxHeight: 560,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -1021,12 +1027,31 @@ function openPreferencesWindow() {
     show: false,
     webPreferences: getAppWebPreferences(),
   });
-  preferencesWindow.once('ready-to-show', () => preferencesWindow.show());
+
+  // The renderer measures its tallest tab and asks us to resize (see
+  // `resize-preferences`). Show once that arrives, with a safety fallback.
+  const showFallback = setTimeout(() => {
+    if (preferencesWindow && !preferencesWindow.isDestroyed() && !preferencesWindow.isVisible()) {
+      preferencesWindow.show();
+    }
+  }, 800);
 
   preferencesWindow.loadFile(path.join(__dirname, 'renderer', 'preferences.html'));
   preferencesWindow.on('closed', () => {
+    clearTimeout(showFallback);
     preferencesWindow = null;
   });
+}
+
+function applyPreferencesSize(height) {
+  if (!preferencesWindow || preferencesWindow.isDestroyed()) return { height: 0 };
+  const display = screen.getPrimaryDisplay();
+  const maxHeight = Math.max(420, display.workAreaSize.height - 40);
+  const target = Math.min(Math.max(Math.round(Number(height) || 0), 360), maxHeight);
+  if (!target) return { height: 0 };
+  preferencesWindow.setContentSize(420, target);
+  if (!preferencesWindow.isVisible()) preferencesWindow.show();
+  return { height: target };
 }
 
 function openLicenseWindow() {
@@ -2695,6 +2720,229 @@ async function captureRegion(options = {}) {
   }
 }
 
+// ── Local API bridge (AI / MCP integration) ─────────────────────────────────
+
+const API_ENDPOINT_FILE = 'api-endpoint.json';
+
+function ensureApiToken() {
+  const settings = readSettings();
+  if (settings.apiToken) return settings.apiToken;
+  const token = crypto.randomUUID();
+  writeSettings({ apiToken: token });
+  return token;
+}
+
+function apiEndpointFilePath() {
+  return path.join(app.getPath('userData'), API_ENDPOINT_FILE);
+}
+
+function writeApiEndpointFile(info) {
+  try {
+    fs.writeFileSync(apiEndpointFilePath(), JSON.stringify(info, null, 2));
+  } catch (error) {
+    console.error('[orange-fuji][api] failed to write endpoint file:', error.message);
+  }
+}
+
+function removeApiEndpointFile() {
+  try {
+    fs.rmSync(apiEndpointFilePath(), { force: true });
+  } catch (_) {}
+}
+
+function listDisplaysForApi() {
+  const primaryId = screen.getPrimaryDisplay().id;
+  return screen.getAllDisplays().map((display) => ({
+    id: display.id,
+    label: display.label,
+    primary: display.id === primaryId,
+    bounds: display.bounds,
+    workArea: display.workArea,
+    scaleFactor: display.scaleFactor,
+    rotation: display.rotation,
+  }));
+}
+
+function pickSourceForDisplay(sources, display) {
+  if (!sources || !sources.length) return null;
+  const byDisplayId = new Map();
+  for (const source of sources) {
+    if (source.display_id) byDisplayId.set(String(source.display_id), source);
+  }
+  return byDisplayId.get(String(display.id)) || sources[0] || null;
+}
+
+function normalizeApiRegion(rect, display, scale) {
+  const b = display.bounds;
+  const x = Number(rect.x);
+  const y = Number(rect.y);
+  const width = Number(rect.width);
+  const height = Number(rect.height);
+  if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return null;
+
+  const x0 = Math.max(x, b.x);
+  const y0 = Math.max(y, b.y);
+  const x1 = Math.min(x + width, b.x + b.width);
+  const y1 = Math.min(y + height, b.y + b.height);
+  if (x1 <= x0 || y1 <= y0) return null;
+
+  return {
+    x: Math.round((x0 - b.x) * scale),
+    y: Math.round((y0 - b.y) * scale),
+    width: Math.max(1, Math.round((x1 - x0) * scale)),
+    height: Math.max(1, Math.round((y1 - y0) * scale)),
+  };
+}
+
+async function captureForApi({ mode, rect, options = {} } = {}) {
+  if (!await requireLicense()) {
+    return { success: false, error: 'Trial expired. Activate a license to continue.' };
+  }
+  if (!await ensureMacScreenRecordingPermission()) {
+    return { success: false, error: 'Screen Recording permission is required.' };
+  }
+
+  const display = screen.getPrimaryDisplay();
+  const scaleFactor = display.scaleFactor || 1;
+  const sources = await desktopCapturer.getSources({
+    types: ['screen'],
+    thumbnailSize: {
+      width: Math.ceil(display.bounds.width * scaleFactor),
+      height: Math.ceil(display.bounds.height * scaleFactor),
+    },
+    fetchWindowIcons: false,
+  });
+
+  const source = pickSourceForDisplay(sources, display);
+  if (!source || !source.thumbnail || source.thumbnail.isEmpty()) {
+    return { success: false, error: 'No capturable screen source was returned.' };
+  }
+
+  let image = source.thumbnail;
+  const sourceSize = getNativeImagePixelSize(image);
+  const realScale = display.bounds.width > 0 ? sourceSize.width / display.bounds.width : scaleFactor;
+
+  let region = null;
+  if (mode === 'region') {
+    region = normalizeApiRegion(rect || {}, display, realScale);
+    if (!region) return { success: false, error: 'The requested region is empty or outside the primary display.' };
+    image = image.crop(region);
+  }
+
+  const size = getNativeImagePixelSize(image);
+  const dataUrl = image.toDataURL();
+  const result = {
+    success: true,
+    mode: mode === 'region' ? 'region' : 'fullscreen',
+    dataUrl,
+    width: size.width,
+    height: size.height,
+    display: { id: display.id, bounds: display.bounds, scaleFactor: realScale },
+    region,
+  };
+
+  if (options.save) {
+    try {
+      const filename = typeof options.filename === 'string' && options.filename
+        ? String(options.filename).replace(/[\\/]/g, '_').replace(/\.\./g, '_')
+        : `orange-fuji-mcp-${result.mode}-${Date.now()}.png`;
+      const outputPath = uniqueSavePath(defaultSaveDirectory('pictures'), filename);
+      fs.writeFileSync(outputPath, dataUrlToImageBuffer(dataUrl));
+      result.savedPath = outputPath;
+    } catch (error) {
+      result.saveError = error.message;
+    }
+  }
+
+  if (options.copy) {
+    try {
+      clipboard.writeImage(nativeImage.createFromDataURL(dataUrl));
+      result.copied = true;
+    } catch (error) {
+      result.copyError = error.message;
+    }
+  }
+
+  return result;
+}
+
+function saveImageForApi(dataUrl, filename) {
+  const safeName = typeof filename === 'string' && filename
+    ? String(filename).replace(/[\\/]/g, '_').replace(/\.\./g, '_')
+    : `orange-fuji-mcp-${Date.now()}.png`;
+  const outputPath = uniqueSavePath(defaultSaveDirectory('pictures'), safeName);
+  fs.writeFileSync(outputPath, dataUrlToImageBuffer(dataUrl));
+  return { success: true, path: outputPath };
+}
+
+function copyImageForApi(dataUrl) {
+  clipboard.writeImage(nativeImage.createFromDataURL(dataUrl));
+  return { success: true };
+}
+
+async function startApiBridge() {
+  if (apiBridge) return apiBridgeInfo;
+  const settings = readSettings();
+  if (!settings.apiEnabled) return null;
+
+  const token = settings.apiToken || ensureApiToken();
+  apiBridge = createApiBridge({
+    token,
+    appName: PRODUCT_NAME,
+    version: app.getVersion(),
+    handlers: {
+      listDisplays: () => listDisplaysForApi(),
+      getSettings: () => readSettings(),
+      updateSettings: (patch) => writeSettings(patch),
+      capture: (params) => captureForApi(params),
+      copyToClipboard: (dataUrl) => copyImageForApi(dataUrl),
+      saveFile: (dataUrl, filename) => saveImageForApi(dataUrl, filename),
+    },
+  });
+
+  try {
+    const address = await apiBridge.listen({ host: '127.0.0.1', port: 0 });
+    apiBridgeInfo = {
+      host: address.host,
+      port: address.port,
+      url: `http://${address.host}:${address.port}`,
+      token,
+      app: PRODUCT_NAME,
+      version: app.getVersion(),
+      apiVersion: 1,
+    };
+    writeApiEndpointFile(apiBridgeInfo);
+    console.log('[orange-fuji][api] bridge listening on', apiBridgeInfo.url);
+    return apiBridgeInfo;
+  } catch (error) {
+    console.error('[orange-fuji][api] failed to start bridge:', error.message);
+    apiBridge = null;
+    apiBridgeInfo = null;
+    return null;
+  }
+}
+
+async function stopApiBridge() {
+  const bridge = apiBridge;
+  apiBridge = null;
+  apiBridgeInfo = null;
+  removeApiEndpointFile();
+  if (bridge) {
+    try {
+      await bridge.close();
+      console.log('[orange-fuji][api] bridge stopped');
+    } catch (error) {
+      console.error('[orange-fuji][api] failed to stop bridge:', error.message);
+    }
+  }
+}
+
+async function syncApiBridge() {
+  const settings = readSettings();
+  if (settings.apiEnabled) await startApiBridge();
+  else await stopApiBridge();
+}
+
 // ── IPC Handlers ────────────────────────────────────────────────────────────
 
 
@@ -3002,6 +3250,25 @@ ipcMain.handle('get-settings', async () => readSettings());
 
 ipcMain.handle('save-settings', async (event, nextSettings = {}) => writeSettings(nextSettings));
 
+ipcMain.handle('get-api-info', async () => ({
+  enabled: readSettings().apiEnabled,
+  running: Boolean(apiBridgeInfo),
+  url: apiBridgeInfo ? apiBridgeInfo.url : '',
+  token: apiBridgeInfo ? apiBridgeInfo.token : '',
+  version: app.getVersion(),
+}));
+
+ipcMain.handle('rotate-api-token', async () => {
+  const token = crypto.randomUUID();
+  writeSettings({ apiToken: token });
+  if (apiBridgeInfo) await stopApiBridge();
+  const settings = readSettings();
+  if (settings.apiEnabled) await startApiBridge();
+  return { url: apiBridgeInfo ? apiBridgeInfo.url : '', token };
+});
+
+ipcMain.handle('resize-preferences', (event, height) => applyPreferencesSize(height));
+
 ipcMain.handle('get-license-state', async () => getLicenseState());
 
 ipcMain.handle('activate-license', async (event, email) => {
@@ -3115,6 +3382,7 @@ ipcMain.on('settings-changed', () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('settings-changed');
   }
+  void syncApiBridge();
 });
 
 ipcMain.handle('choose-default-save-path', async (event, currentPath = '') => {
@@ -3648,6 +3916,7 @@ app.whenReady().then(async () => {
   ensureLocalLicenseSettings();
   void maybeSendUsagePing();
   setupRecordingDisplayMediaHandler();
+  void syncApiBridge();
 
   // NUEVO FLUJO: sin permiso, el onboarding ES la app. No se crea el pill,
   // ni tray, ni atajos: el usuario no puede hacer nada hasta conceder.
@@ -3802,4 +4071,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+  void stopApiBridge();
+});
