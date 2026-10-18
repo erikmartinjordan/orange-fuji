@@ -379,13 +379,23 @@
       .price-card{grid-template-columns:1fr;gap:30px;padding:38px 32px}
     }
     @media(max-width:640px){
+      .nav-inner{padding:12px 16px;gap:10px}
+      .brand{font-size:.9rem;gap:8px;min-width:0}
+      .brand img{width:24px;height:24px}
+      .brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .nav-links{gap:10px;min-width:0}
       .nav-links a.link{display:none}
+      .nav-github{font-size:.82rem}
+      .nav-cta{padding:8px 14px;font-size:.8rem}
+      .dl-badge{display:none}
       .section{padding:78px 0}
       .why-grid,.feat-grid,.plat-grid{grid-template-columns:1fr}
       .feat-wide{grid-column:span 1}
       .shot-title{display:none}
-      .game-card{padding:34px 22px 30px}
-      .juice-stage{min-height:352px}
+      .game-card{padding:30px 18px 26px}
+      .juice-stage{min-height:322px}
+      .orange-press img{width:clamp(84px,24vw,104px)}
+      .glass{width:108px;height:138px}
       .game-stats{gap:26px}
       footer .inner{flex-direction:column;text-align:center}
       .hero-meta{gap:12px}
@@ -542,7 +552,7 @@
 
   <!-- ── 01 · Features ── -->
   <div class="section" id="features">
-    <div class="ambient" style="width:560px;height:560px;top:-8%;right:-16%;background:rgba(255,110,30,.05)"></div>
+    <div class="ambient" style="width:560px;height:560px;top:-8%;right:0;background:rgba(255,110,30,.05)"></div>
     <div class="sec-head" data-reveal>
       <div class="section-label">01 · Features</div>
       <h2>Capture anything, annotate fast.</h2>
@@ -1246,6 +1256,7 @@
   }
 
   function downloadLabel(platform = currentPlatform(), hasAsset = true) {
+    if (window.innerWidth < 640) return 'Download';
     if (!hasAsset) return 'View downloads';
     if (platform === 'windows') return 'Download for Windows';
     if (platform === 'macos') return isLegacyMacOS() ? 'Download for older macOS' : 'Download for macOS';
