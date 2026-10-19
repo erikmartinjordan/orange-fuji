@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" xmlns:c2pa="http://c2pa.org/manifest">
+  <defs>
+    <clipPath id="mtn">
+      <path id="mtn-shape" d="M112,64 C118,60 124,62 130,68 C135,70 140,66 147,63 C153,62 156,66 160,72 L186,115 C198,134 208,150 216,164 C224,175 238,185 244,196 L252,213 C254,219 251,222 245,222 L11,222 C6,222 5,218 8,213 L19,196 C28,183 38,172 46,161 L72,120 C88,96 100,78 112,64 Z"/>
+    </clipPath>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8bbd2f"/>
+      <stop offset="1" stop-color="#5a9b24"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tallo -->
+  <path d="M133,67 C132,56 128,47 121,39" fill="none" stroke="#247117" stroke-width="9" stroke-linecap="round"/>
+  <path d="M133,67 C132,56 128,47 121,39" fill="none" stroke="#4e9c1f" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Hoja -->
+  <path d="M137,54 C146,34 170,22 198,32 C193,52 168,62 148,60 C142,59 139,57 137,54 Z"
+        fill="url(#leaf)" stroke="#247117" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M141,55 C158,45 175,38 190,34" fill="none" stroke="#247117" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+
+  <!-- Montaña -->
+  <use href="#mtn-shape" fill="#fd8305"/>
+
+  <g clip-path="url(#mtn)">
+    <!-- Facetas oscuras de la base -->
+    <path d="M8,217 L55,175 L54,190 L63,195 L68,188 L80,207 L92,199 L107,218 L112,224 L8,224 Z" fill="#ef6c02"/>
+    <path d="M147,224 L162,208 L174,198 L182,203 L190,193 L200,200 L204,172 L212,187 L230,207 L254,217 L254,224 Z" fill="#f27405"/>
+    <path d="M216,166 L232,200 L240,224 L254,224 L254,205 L244,190 Z" fill="#ef6c02" opacity=".8"/>
+
+    <!-- Nieve: sombra + capa -->
+    <path d="M40,50 L210,50 L210,123 L187,121 L170,115 L157,105 L148,106 L143,126 L137,118 L128,108 L115,115 L108,101 L74,123 L40,133 Z"
+          fill="#f9d3bf" stroke="#f9d3bf" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M40,50 L210,50 L210,120 L187,118 L170,112 L157,102 L148,103 L143,123 L137,115 L128,105 L115,112 L108,98 L74,120 L40,130 Z"
+          fill="#fdf6f0" stroke="#fdf6f0" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Contorno -->
+  <use href="#mtn-shape" fill="none" stroke="#ef6c02" stroke-width="2.6" stroke-linejoin="round"/>
+
+  <!-- Mejillas -->
+  <ellipse cx="83" cy="178" rx="8.5" ry="5.2" fill="#fa7a63" opacity=".85"/>
+  <ellipse cx="175" cy="178" rx="8.5" ry="5.2" fill="#fa7a63" opacity=".85"/>
+
+  <!-- Cejas (tensas) -->
+  <path d="M90,138 L102,143" fill="none" stroke="#3a1d12" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M172,138 L160,143" fill="none" stroke="#3a1d12" stroke-width="2.4" stroke-linecap="round"/>
+
+  <!-- Ojos apretados (>_<) -->
+  <path d="M92,155 L99,161 L92,167" fill="none" stroke="#3a1d12" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M170,155 L163,161 L170,167" fill="none" stroke="#3a1d12" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Boca abierta -->
+  <ellipse cx="130" cy="175" rx="4.6" ry="5.6" fill="#3a1d12"/>
+
+  <!-- Gota de sudor -->
+  <path d="M151,131 C147,137 145,141 145,145 a6.2,6.2 0 0 0 12.4,0 C157.4,141 155,137 151,131 Z" fill="#5cb8ff" stroke="#3a8fd0" stroke-width="1"/>
+</svg>

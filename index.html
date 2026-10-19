@@ -68,7 +68,7 @@
       border-color:rgba(255,255,255,.07)}
     .nav-inner{max-width:1160px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}
     .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:700;letter-spacing:-.02em;font-size:.98rem}
-    .brand img{width:27px;height:27px;border-radius:8px;box-shadow:0 0 18px rgba(255,122,26,.35)}
+    .brand img{width:27px;height:27px}
     .nav-links{display:flex;align-items:center;gap:26px}
     .nav-links a.link{color:var(--ink-dim);text-decoration:none;font-size:.86rem;font-weight:550;transition:color .2s}
     .nav-links a.link:hover{color:var(--ink)}
@@ -122,9 +122,9 @@
     .hero-in{opacity:0;animation:rise .95s var(--ease) forwards;animation-delay:var(--d,0s)}
     @keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
     .mascot-wrap{display:inline-block;will-change:transform}
+    .mascot-float{position:relative;display:inline-block;animation:float 6s ease-in-out infinite}
     .mascot{width:clamp(96px,11vw,134px);border-radius:27%;display:block;
-      filter:drop-shadow(0 20px 32px rgba(0,0,0,.5)) drop-shadow(0 0 36px rgba(255,140,50,.38));
-      animation:float 6s ease-in-out infinite}
+      filter:drop-shadow(0 20px 32px rgba(0,0,0,.5)) drop-shadow(0 0 36px rgba(255,140,50,.38))}
     @keyframes float{0%,100%{transform:translateY(0) rotate(-1.4deg)}50%{transform:translateY(-13px) rotate(1.4deg)}}
     #hero h1{font-size:clamp(3rem,8.4vw,5.7rem);font-weight:800;letter-spacing:-.045em;line-height:1.03;margin-top:26px}
     .grad{background:linear-gradient(94deg,#ffc98a 0%,#ff7a1a 46%,#ff5e3a 100%);
@@ -307,9 +307,14 @@
     .orange-press{position:relative;z-index:2;background:none;border:0;padding:6px;cursor:pointer;
       border-radius:28px;-webkit-tap-highlight-color:transparent;
       transition:transform .25s var(--ease),opacity .35s var(--ease)}
-    .orange-press img{width:clamp(88px,15vw,116px);display:block;border-radius:25%;
+    .orange-press .press-art{display:block;position:relative;
+      width:clamp(88px,15vw,116px);height:clamp(88px,15vw,116px);
       filter:drop-shadow(0 14px 24px rgba(0,0,0,.5)) drop-shadow(0 0 30px rgba(255,140,50,.42));
       will-change:transform}
+    .orange-press .face{position:absolute;inset:0;display:block;width:100%;height:100%;border-radius:25%}
+    .orange-press .face-ouch{opacity:0}
+    .orange-press.squeezing .face-normal{opacity:0}
+    .orange-press.squeezing .face-ouch{opacity:1}
     .orange-press.spent{opacity:.32}
     .orange-press .hint{display:block;margin-top:8px;font-size:.7rem;color:var(--ink-faint);
       letter-spacing:.16em;text-transform:uppercase;font-weight:650}
@@ -394,7 +399,7 @@
       .shot-title{display:none}
       .game-card{padding:30px 18px 26px}
       .juice-stage{min-height:322px}
-      .orange-press img{width:clamp(84px,24vw,104px)}
+      .orange-press .press-art{width:clamp(84px,24vw,104px);height:clamp(84px,24vw,104px)}
       .glass{width:108px;height:138px}
       .game-stats{gap:26px}
       footer .inner{flex-direction:column;text-align:center}
@@ -417,7 +422,7 @@
 <header class="nav" id="nav">
   <div class="nav-inner">
     <a class="brand" href="#hero">
-      <img src="256x256.png" alt="" width="27" height="27" />
+      <img src="mascot.svg" alt="Orange Fuji" width="27" height="27" />
       <span>Orange Fuji</span>
     </a>
     <nav class="nav-links" aria-label="Primary">
@@ -462,7 +467,7 @@
 
   <div class="hero-scroll" id="hero-scroll">
     <div class="hero-in" style="--d:.05s">
-      <span class="mascot-wrap" data-depth="1.5"><img class="mascot" src="256x256.png" alt="Orange Fuji mascot" /></span>
+      <span class="mascot-wrap" data-depth="1.5"><span class="mascot-float"><img class="mascot" src="mascot.svg" alt="Orange Fuji mascot" /></span></span>
     </div>
     <h1 class="hero-in" style="--d:.16s">Capture. Annotate.<br /><span class="grad">Share.</span><span class="version" id="latest-version">v1.1.0</span></h1>
     <p class="tagline hero-in" style="--d:.26s">Fast captures. Clean marks. Zero friction.</p>
@@ -644,7 +649,10 @@
     <div class="game-card spot" data-reveal style="--d:.1s">
       <div class="juice-stage" id="juice-stage">
         <button class="orange-press" id="orange-press" type="button" aria-label="Squeeze the orange">
-          <img src="256x256.png" alt="" width="116" height="116" />
+          <span class="press-art">
+            <img class="face face-normal" src="mascot.svg" alt="" width="116" height="116" />
+            <img class="face face-ouch" src="mascot-squeeze.svg" alt="" width="116" height="116" />
+          </span>
           <span class="hint" aria-hidden="true">Tap or hold</span>
         </button>
         <div class="pour-gap" aria-hidden="true"></div>
@@ -735,7 +743,7 @@
   <!-- ── Final CTA ── -->
   <div class="section" id="download">
     <div class="cta-card" data-reveal>
-      <img src="256x256.png" alt="" />
+      <img src="mascot.svg" alt="Orange Fuji mascot" />
       <h2>Your screen, <span class="grad">captured beautifully.</span></h2>
       <p>Download Orange Fuji and take your first capture in under a minute.</p>
       <div class="actions">
@@ -754,7 +762,7 @@
 <footer>
   <div class="container">
     <div class="inner">
-      <div class="copy"><img src="256x256.png" alt="" />Orange Fuji · Capture, annotate, share.</div>
+      <div class="copy"><img src="mascot.svg" alt="" />Orange Fuji · Capture, annotate, share.</div>
       <div class="links">
         <a href="/open">Metrics</a>
         <a href="https://github.com/erikmartinjordan/orange-fuji" target="_blank" rel="noopener">GitHub</a>
@@ -1077,11 +1085,14 @@
       raf = drops.length ? requestAnimationFrame(step) : null;
     }
 
+    var pressArt = press.querySelector('.press-art');
+    var squeezeTimer = null;
     function squeezeAnim(){
-      if (reduceMotion || !press.animate) return;
-      var img = press.querySelector('img');
-      if (!img) return;
-      img.animate(
+      press.classList.add('squeezing');
+      clearTimeout(squeezeTimer);
+      squeezeTimer = setTimeout(function(){ press.classList.remove('squeezing'); }, 260);
+      if (reduceMotion || !pressArt || !pressArt.animate) return;
+      pressArt.animate(
         [{ transform: 'scale(1.18,.78)' }, { transform: 'scale(1,1)' }],
         { duration: 230, easing: 'cubic-bezier(.2,.65,.25,1)' }
       );

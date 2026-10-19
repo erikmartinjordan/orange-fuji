@@ -64,7 +64,7 @@
       border-color:rgba(255,255,255,.07)}
     .nav-inner{max-width:1160px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}
     .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-weight:700;letter-spacing:-.02em;font-size:.98rem}
-    .brand img{width:27px;height:27px;border-radius:8px;box-shadow:0 0 18px rgba(255,122,26,.35)}
+    .brand img{width:27px;height:27px}
     .nav-links{display:flex;align-items:center;gap:26px}
     .nav-links a.link{color:var(--ink-dim);text-decoration:none;font-size:.86rem;font-weight:550;transition:color .2s}
     .nav-links a.link:hover{color:var(--ink)}
@@ -113,6 +113,17 @@
     .minibars{display:flex;align-items:flex-end;gap:2px;height:190px}
     .minibars i{flex:1 1 0;min-width:1px;max-width:14px;border-radius:2px 2px 0 0;
       background:linear-gradient(180deg,#ffb066,#ff5e3a);min-height:2px;transition:height .8s var(--ease)}
+    .minibars i[data-t]{cursor:crosshair}
+    .minibars i[data-t]:hover{background:linear-gradient(180deg,#ffd39a,#ff6a3a);
+      box-shadow:0 0 0 1px rgba(255,190,120,.7),0 0 12px rgba(255,120,40,.5)}
+    .chart-tip{position:fixed;top:0;left:0;z-index:80;pointer-events:none;opacity:0;
+      padding:8px 11px;border-radius:10px;background:rgba(18,14,24,.94);
+      border:1px solid rgba(255,255,255,.13);box-shadow:0 12px 30px rgba(0,0,0,.5);
+      backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:nowrap;
+      transition:opacity .12s var(--ease)}
+    .chart-tip.show{opacity:1}
+    .chart-tip .t{display:block;font-size:.68rem;color:var(--ink-faint);letter-spacing:.05em;text-transform:uppercase}
+    .chart-tip .v{display:block;font-size:.88rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
     .chart-x{display:flex;justify-content:space-between;font-size:.72rem;color:var(--ink-faint);margin-top:8px}
     .chart-empty{color:var(--ink-faint);font-size:.82rem;margin-top:14px}
 
@@ -169,7 +180,7 @@
 <header class="nav" id="nav">
   <div class="nav-inner">
     <a class="brand" href="/">
-      <img src="256x256.png" alt="" width="27" height="27" />
+      <img src="mascot.svg" alt="Orange Fuji" width="27" height="27" />
       <span>Orange Fuji</span>
     </a>
     <nav class="nav-links" aria-label="Primary">
@@ -237,7 +248,7 @@
 <footer>
   <div class="container">
     <div class="inner">
-      <div class="copy"><img src="256x256.png" alt="" />Orange Fuji · Capture, annotate, share.</div>
+      <div class="copy"><img src="mascot.svg" alt="" />Orange Fuji · Capture, annotate, share.</div>
       <div class="links">
         <a href="/">Home</a>
         <a href="https://github.com/erikmartinjordan/orange-fuji" target="_blank" rel="noopener">GitHub</a>
@@ -310,13 +321,59 @@
     return out;
   }
 
-  function drawBars(el, data){
+  function escAttr(s){
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+  function dayLabel(ago){
+    if (ago <= 0) return 'Today';
+    if (ago === 1) return 'Yesterday';
+    return new Date(Date.now() - ago * DAY_MS).toLocaleDateString('en-US',
+      { weekday:'short', month:'short', day:'numeric' });
+  }
+
+  function drawBars(el, data, meta){
     if (!el) return;
     var max = Math.max.apply(null, data) || 1;
-    el.innerHTML = data.map(function(v){
+    el.innerHTML = data.map(function(v, i){
       var h = Math.max((v / max) * 100, v > 0 ? 4 : 2);
-      return '<i style="height:' + h.toFixed(1) + '%"></i>';
+      var attrs = '';
+      if (meta){
+        var m = meta(i, v);
+        attrs = ' data-t="' + escAttr(m.t) + '" data-v="' + escAttr(m.v) + '"';
+      }
+      return '<i style="height:' + h.toFixed(1) + '%"' + attrs + '></i>';
     }).join('');
+  }
+
+  /* ── Hover tooltip for the charts (mouse only) ── */
+  var finePointer = window.matchMedia('(pointer: fine)').matches;
+  var chartTip = document.createElement('div');
+  chartTip.className = 'chart-tip';
+  chartTip.innerHTML = '<span class="t"></span><span class="v"></span>';
+  document.body.appendChild(chartTip);
+  var tipBar = null;
+  function hideTip(){ chartTip.classList.remove('show'); tipBar = null; }
+  function moveTip(e){
+    var pad = 14, r = chartTip.getBoundingClientRect();
+    var x = e.clientX + pad, y = e.clientY + pad;
+    if (x + r.width > window.innerWidth - 10) x = e.clientX - r.width - pad;
+    if (y + r.height > window.innerHeight - 10) y = e.clientY - r.height - pad;
+    chartTip.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+  }
+  if (finePointer){
+    document.addEventListener('pointermove', function(e){
+      var t = e.target && e.target.closest ? e.target.closest('.minibars i[data-t]') : null;
+      if (!t){ if (tipBar) hideTip(); return; }
+      if (t !== tipBar){
+        tipBar = t;
+        chartTip.querySelector('.t').textContent = t.getAttribute('data-t') || '';
+        chartTip.querySelector('.v').textContent = t.getAttribute('data-v') || '';
+        chartTip.classList.add('show');
+      }
+      moveTip(e);
+    }, { passive:true });
+    document.addEventListener('pointerdown', hideTip);
+    window.addEventListener('scroll', hideTip, { passive:true });
   }
 
   var FALLBACK = {
@@ -388,7 +445,10 @@
 
   function renderDownloads(m){
     var daily = dailyDownloads(m.perRelease, WINDOW_DAYS);
-    drawBars(document.getElementById('downloads-bars'), daily);
+    drawBars(document.getElementById('downloads-bars'), daily, function(i, v){
+      var n = Math.round(v);
+      return { t: dayLabel(WINDOW_DAYS - 1 - i), v: '≈ ' + fmt(n) + ' download' + (n === 1 ? '' : 's') + ' (est.)' };
+    });
     var sum30 = daily.slice(-30).reduce(function(a, b){ return a + b; }, 0);
     var s30 = document.getElementById('stat-30d');
     if (s30) s30.textContent = fmt(Math.round(sum30));
@@ -423,7 +483,9 @@
       var key = new Date(Date.now() - i * DAY_MS).toISOString().slice(0, 10);
       series.push(byDay[key] || 0);
     }
-    drawBars(document.getElementById('usage-bars'), series);
+    drawBars(document.getElementById('usage-bars'), series, function(i, v){
+      return { t: dayLabel(WINDOW_DAYS - 1 - i), v: fmt(v) + ' device' + (v === 1 ? '' : 's') };
+    });
     if (axis) axis.textContent = WINDOW_DAYS + ' days ago';
     var td = document.querySelector('[data-usage="total_devices"]');
     if (td) animateCount(td, u.total_devices || 0, fmt);
