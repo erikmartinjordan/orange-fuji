@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.15.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.14.0...v1.15.0) (2026-10-20)
+
+
+### ✨ Features
+
+* **editor:** add paper-style highlighter tool ([415909c](https://github.com/erikmartinjordan/orange-fuji/commit/415909c1d92ad3e7845328ed42db0ab0f6f760a3))
+* **web:** new vector mascot with blink, squeeze-o face and chart tooltips ([85d90b9](https://github.com/erikmartinjordan/orange-fuji/commit/85d90b9f020481ced96258509a52e3fb4e8f5241))
+* **web:** redesign /open metrics page in a Yaak-style layout ([9ff2a00](https://github.com/erikmartinjordan/orange-fuji/commit/9ff2a007f98b7b015dbb5630b04bb9ffb89d29ff))
+
+
+### 🐛 Fixes
+
+* **web:** prevent horizontal overflow breaking mobile symmetry ([d061010](https://github.com/erikmartinjordan/orange-fuji/commit/d061010bcc076605766e492c4a86a49822ffb151))
+
 ## [1.14.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.13.0...v1.14.0) (2026-10-17)
 
 
