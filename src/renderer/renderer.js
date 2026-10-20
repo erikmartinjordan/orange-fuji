@@ -20,6 +20,9 @@ const state = {
   textBold: false,
   textItalic: false,
   isDrawing: false,
+  highlightPoints: [],
+  highlightMode: 'freehand',
+  highlightTip: null,
   startX: 0,
   startY: 0,
   annotations: [],
@@ -151,6 +154,9 @@ const elements = {
   textStyleSeparator: $('#text-style-separator'),
   textStyleBold: $('#text-style-bold'),
   textStyleItalic: $('#text-style-italic'),
+  highlightStyleGroup: $('#highlight-style-group'),
+  highlightStyleSeparator: $('#highlight-style-separator'),
+  highlightModeBtns: $$('.highlight-mode-btn'),
   cropOverlay: $('#crop-overlay'),
   cropBox: $('#crop-box'),
   cropHint: $('#crop-hint'),
@@ -195,6 +201,7 @@ function init() {
   bindFontPicker();
   bindSizePicker();
   toggleTextStyleControls();
+  toggleHighlightStyleControls();
   updateStatus();
   document.activeElement?.blur();
 
@@ -319,6 +326,9 @@ function bindToolbar() {
   on(elements.recordingPreviewVideo, 'ended', stopRecordingPreviewTimeline);
   on(elements.textStyleBold, 'click', () => selectTextBold());
   on(elements.textStyleItalic, 'click', () => selectTextItalic());
+  elements.highlightModeBtns.forEach((btn) => {
+    btn.addEventListener('click', () => selectHighlightMode(btn.dataset.highlightMode));
+  });
 }
 
 
@@ -496,6 +506,7 @@ function bindKeyboard() {
       case 'a': selectTool('arrow'); break;
       case 'l': selectTool('line'); break;
       case 't': selectTool('text'); break;
+      case 'h': selectTool('highlight'); break;
       case 'm': selectTool('magic-wand'); break;
       case '=': case '+': setZoom(state.zoom * 1.25); break;
       case '-': setZoom(state.zoom / 1.25); break;
@@ -2008,10 +2019,15 @@ function onWheel(e) {
 // Tool Selection
 // ══════════════════════════════════════════════════════════════════════════════
 
-const DRAWING_TOOLS = ['rect', 'ellipse', 'arrow', 'line', 'text', 'pixelate'];
+const DRAWING_TOOLS = ['rect', 'ellipse', 'arrow', 'line', 'text', 'highlight', 'pixelate'];
 
 function selectTool(tool) {
   if (state.isEditingText) commitInlineText();
+  if (state.isDrawing) {
+    state.isDrawing = false;
+    state.highlightPoints = [];
+    state.highlightTip = null;
+  }
   if (state.cropActive) cancelCrop();
   if (state.magicWandActive) {
     state.magicWandActive = false;
@@ -2026,6 +2042,7 @@ function selectTool(tool) {
     selectColor(state.currentColor || '#f97316');
   }
   toggleTextStyleControls();
+  toggleHighlightStyleControls();
   updateStatus();
 }
 
@@ -2200,6 +2217,22 @@ function getTextBounds(annotation) {
   };
 }
 
+function selectHighlightMode(mode) {
+  state.highlightMode = mode === 'line' ? 'line' : 'freehand';
+  elements.highlightModeBtns.forEach((btn) => {
+    const active = btn.dataset.highlightMode === state.highlightMode;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+}
+
+function toggleHighlightStyleControls() {
+  const visible = state.currentTool === 'highlight';
+  elements.highlightStyleGroup?.classList.toggle('text-style-hidden', !visible);
+  elements.highlightStyleSeparator?.classList.toggle('text-style-hidden', !visible);
+  if (visible) selectHighlightMode(state.highlightMode);
+}
+
 function toggleTextStyleControls() {
   const selected = state.annotations[state.selectedAnnotationIndex];
   const visible = state.currentTool === 'text' || (state.currentTool === 'select' && selected?.type === 'text');
@@ -2261,7 +2294,12 @@ function findAnnotationAt(coords) {
   for (let i = state.annotations.length - 1; i >= 0; i--) {
     const a = state.annotations[i];
     if (a.type === 'text' && findTextAnnotationAt(coords) === i) return i;
-    if (a.type === 'rect' || a.type === 'highlight' || a.type === 'blur' || a.type === 'ellipse' || a.type === 'pixelate') {
+    if (a.type === 'highlight') {
+      const pad = (a.size || 16) / 2;
+      if (coords.x >= a.x - pad && coords.x <= a.x + a.width + pad &&
+          coords.y >= a.y - pad && coords.y <= a.y + a.height + pad) return i;
+    }
+    if (a.type === 'rect' || a.type === 'blur' || a.type === 'ellipse' || a.type === 'pixelate') {
       if (coords.x >= a.x && coords.x <= a.x + a.width && coords.y >= a.y && coords.y <= a.y + a.height) return i;
     }
     if (a.type === 'line' || a.type === 'arrow') {
@@ -2280,6 +2318,9 @@ function moveAnnotation(annotation, dx, dy) {
   if ('y' in annotation) annotation.y += dy;
   if ('x1' in annotation) { annotation.x1 += dx; annotation.x2 += dx; }
   if ('y1' in annotation) { annotation.y1 += dy; annotation.y2 += dy; }
+  if (Array.isArray(annotation.points)) {
+    annotation.points.forEach((point) => { point.x += dx; point.y += dy; });
+  }
 }
 
 function onCanvasMouseDown(e) {
@@ -2338,6 +2379,8 @@ function onCanvasMouseDown(e) {
   state.isDrawing = true;
   state.startX = coords.x;
   state.startY = coords.y;
+  state.highlightPoints = state.currentTool === 'highlight' ? [{ x: coords.x, y: coords.y }] : [];
+  state.highlightTip = state.currentTool === 'highlight' ? createHighlightTip() : null;
 }
 
 function onCanvasMouseMove(e) {
@@ -2389,6 +2432,28 @@ function onCanvasMouseMove(e) {
 
   if (!state.isDrawing) return;
   const coords = getCanvasCoords(e);
+  if (state.currentTool === 'highlight') {
+    if (state.highlightMode === 'line') {
+      const end = constrainHighlightLine(state.startX, state.startY, coords.x, coords.y, e.shiftKey);
+      render();
+      drawHighlightStroke(
+        elements.ctx,
+        [{ x: state.startX, y: state.startY }, { x: end.x, y: end.y }],
+        currentHighlightSize(),
+        state.currentColor,
+        0.35,
+        state.highlightTip
+      );
+      return;
+    }
+    const last = state.highlightPoints[state.highlightPoints.length - 1];
+    if (!last || Math.hypot(coords.x - last.x, coords.y - last.y) >= 1) {
+      state.highlightPoints.push({ x: coords.x, y: coords.y });
+    }
+    render();
+    drawHighlightPreview();
+    return;
+  }
   render();
   drawPreview(state.startX, state.startY, coords.x, coords.y);
 }
@@ -2438,6 +2503,32 @@ function onCanvasMouseUp(e) {
   if (!state.isDrawing || !state.image) return;
   const coords = getCanvasCoords(e);
   state.isDrawing = false;
+
+  if (state.currentTool === 'highlight') {
+    const points = state.highlightPoints;
+    const tip = state.highlightTip;
+    state.highlightPoints = [];
+    state.highlightTip = null;
+    if (state.highlightMode === 'line') {
+      const end = constrainHighlightLine(state.startX, state.startY, coords.x, coords.y, e.shiftKey);
+      if (Math.hypot(end.x - state.startX, end.y - state.startY) < 3) {
+        render();
+        return;
+      }
+      addAnnotation(createHighlightAnnotation([{ x: state.startX, y: state.startY }, { x: end.x, y: end.y }], tip));
+      return;
+    }
+    const last = points[points.length - 1];
+    if (last && Math.hypot(coords.x - last.x, coords.y - last.y) >= 1) {
+      points.push({ x: coords.x, y: coords.y });
+    }
+    if (points.length < 2 || highlightPathLength(points) < 3) {
+      render();
+      return;
+    }
+    addAnnotation(createHighlightAnnotation(points, tip));
+    return;
+  }
   
   if (Math.abs(coords.x - state.startX) < 5 && Math.abs(coords.y - state.startY) < 5) {
     render();
@@ -2517,10 +2608,69 @@ function autoResizeTextInput() {
 // Annotation Creation & History
 // ══════════════════════════════════════════════════════════════════════════════
 
+const DEFAULT_HIGHLIGHT_TIP = { startLeft: 0.08, startRight: 0.34, endLeft: 0.34, endRight: 0.08 };
+
+function currentHighlightSize() {
+  return Math.max(8, state.strokeWidth * 4);
+}
+
+function createHighlightTip() {
+  const makeCap = () => {
+    const base = Math.random() * 0.14;
+    const slant = 0.12 + Math.random() * 0.3;
+    const left = base;
+    const right = base + slant;
+    return Math.random() < 0.5 ? { left, right } : { left: right, right: left };
+  };
+  const start = makeCap();
+  const end = makeCap();
+  return {
+    startLeft: start.left,
+    startRight: start.right,
+    endLeft: end.left,
+    endRight: end.right,
+  };
+}
+
+function constrainHighlightLine(x1, y1, x2, y2, shiftKey) {
+  if (!shiftKey) return { x: x2, y: y2 };
+  const length = Math.hypot(x2 - x1, y2 - y1);
+  const step = Math.PI / 4;
+  const angle = Math.round(Math.atan2(y2 - y1, x2 - x1) / step) * step;
+  return { x: x1 + Math.cos(angle) * length, y: y1 + Math.sin(angle) * length };
+}
+
+function highlightPathLength(points) {
+  let length = 0;
+  for (let i = 1; i < points.length; i++) {
+    length += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+  }
+  return length;
+}
+
+function createHighlightAnnotation(points, tip = state.highlightTip) {
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return {
+    type: 'highlight',
+    color: state.currentColor,
+    strokeWidth: state.strokeWidth,
+    size: currentHighlightSize(),
+    tip: tip ? { ...tip } : createHighlightTip(),
+    x,
+    y,
+    width: Math.max(1, Math.max(...xs) - x),
+    height: Math.max(1, Math.max(...ys) - y),
+    points: points.map((point) => ({ x: point.x, y: point.y })),
+  };
+}
+
 function createAnnotation(x1, y1, x2, y2) {
   const base = { type: state.currentTool, color: state.currentColor, strokeWidth: state.strokeWidth };
   switch (state.currentTool) {
-    case 'rect': case 'ellipse': case 'highlight': case 'blur': case 'pixelate':
+    case 'rect': case 'ellipse': case 'blur': case 'pixelate':
       return { ...base, x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1) };
     case 'arrow': case 'line':
       return { ...base, x1, y1, x2, y2 };
@@ -2627,7 +2777,6 @@ function drawPreview(x1, y1, x2, y2) {
     case 'ellipse': drawEllipse(ctx, Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); break;
     case 'arrow': drawArrow(ctx, x1, y1, x2, y2, false); break;
     case 'line': ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); break;
-    case 'highlight': ctx.fillStyle = state.currentColor + '40'; ctx.setLineDash([]); ctx.fillRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); break;
     case 'blur': ctx.strokeRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); break;
     case 'pixelate': ctx.strokeRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)); break;
   }
@@ -2653,11 +2802,119 @@ function drawAnnotation(ann) {
         ctx.fillText(line, ann.x, ann.y + i * ((ann.fontSize || 24) * 1.2));
       });
       break;
-    case 'highlight': ctx.fillStyle = ann.color + '40'; ctx.fillRect(ann.x, ann.y, ann.width, ann.height); break;
+    case 'highlight': drawHighlightStroke(ctx, ann.points, ann.size || 16, ann.color, 0.35, ann.tip); break;
     case 'blur': applyBlur(ctx, ann.x, ann.y, ann.width, ann.height); break;
     case 'pixelate': applyPixelate(ctx, ann.x, ann.y, ann.width, ann.height); break;
   }
   ctx.restore();
+}
+
+function sampleHighlightPath(points, step = 2) {
+  if (points.length < 3) return points.map((point) => ({ x: point.x, y: point.y }));
+  const sampled = [{ x: points[0].x, y: points[0].y }];
+  let current = { x: points[0].x, y: points[0].y };
+  for (let i = 1; i < points.length - 1; i++) {
+    const control = points[i];
+    const end = {
+      x: (points[i].x + points[i + 1].x) / 2,
+      y: (points[i].y + points[i + 1].y) / 2,
+    };
+    const steps = Math.max(1, Math.ceil(Math.hypot(end.x - current.x, end.y - current.y) / step));
+    for (let s = 1; s <= steps; s++) {
+      const t = s / steps;
+      const mt = 1 - t;
+      sampled.push({
+        x: mt * mt * current.x + 2 * mt * t * control.x + t * t * end.x,
+        y: mt * mt * current.y + 2 * mt * t * control.y + t * t * end.y,
+      });
+    }
+    current = end;
+  }
+  const last = points[points.length - 1];
+  const steps = Math.max(1, Math.ceil(Math.hypot(last.x - current.x, last.y - current.y) / step));
+  for (let s = 1; s <= steps; s++) {
+    const t = s / steps;
+    sampled.push({ x: current.x + (last.x - current.x) * t, y: current.y + (last.y - current.y) * t });
+  }
+  return sampled;
+}
+
+function buildHighlightPolygon(points, size, tip) {
+  const sampled = sampleHighlightPath(points);
+  const half = size / 2;
+  const shape = tip || DEFAULT_HIGHLIGHT_TIP;
+
+  if (sampled.length === 1) {
+    const point = sampled[0];
+    const inset = (value) => (value || 0) * size;
+    return [
+      { x: point.x - half, y: point.y - half + inset(shape.startLeft) },
+      { x: point.x + half, y: point.y - half + inset(shape.startRight) },
+      { x: point.x + half, y: point.y + half - inset(shape.endRight) },
+      { x: point.x - half, y: point.y + half - inset(shape.endLeft) },
+    ];
+  }
+
+  const left = [];
+  const right = [];
+  for (let i = 0; i < sampled.length; i++) {
+    const prev = sampled[Math.max(0, i - 1)];
+    const next = sampled[Math.min(sampled.length - 1, i + 1)];
+    let dx = next.x - prev.x;
+    let dy = next.y - prev.y;
+    const length = Math.hypot(dx, dy) || 1;
+    dx /= length;
+    dy /= length;
+    left.push({ x: sampled[i].x - dy * half, y: sampled[i].y + dx * half });
+    right.push({ x: sampled[i].x + dy * half, y: sampled[i].y - dx * half });
+  }
+
+  const lastIndex = sampled.length - 1;
+  let startDx = sampled[1].x - sampled[0].x;
+  let startDy = sampled[1].y - sampled[0].y;
+  let startLength = Math.hypot(startDx, startDy) || 1;
+  startDx /= startLength;
+  startDy /= startLength;
+  let endDx = sampled[lastIndex].x - sampled[lastIndex - 1].x;
+  let endDy = sampled[lastIndex].y - sampled[lastIndex - 1].y;
+  let endLength = Math.hypot(endDx, endDy) || 1;
+  endDx /= endLength;
+  endDy /= endLength;
+
+  const startLeftInset = (shape.startLeft || 0) * size;
+  const startRightInset = (shape.startRight || 0) * size;
+  const endLeftInset = (shape.endLeft || 0) * size;
+  const endRightInset = (shape.endRight || 0) * size;
+  const startLeft = { x: left[0].x - startDx * startLeftInset, y: left[0].y - startDy * startLeftInset };
+  const startRight = { x: right[0].x - startDx * startRightInset, y: right[0].y - startDy * startRightInset };
+  const endLeft = { x: left[lastIndex].x + endDx * endLeftInset, y: left[lastIndex].y + endDy * endLeftInset };
+  const endRight = { x: right[lastIndex].x + endDx * endRightInset, y: right[lastIndex].y + endDy * endRightInset };
+
+  const polygon = [startLeft];
+  for (let i = 1; i < left.length - 1; i++) polygon.push(left[i]);
+  polygon.push(endLeft, endRight);
+  for (let i = right.length - 2; i >= 1; i--) polygon.push(right[i]);
+  polygon.push(startRight);
+  return polygon;
+}
+
+function drawHighlightStroke(ctx, points, size, color, alpha = 0.35, tip = null) {
+  if (!Array.isArray(points) || points.length === 0) return;
+  const polygon = buildHighlightPolygon(points, size, tip);
+  if (polygon.length < 3) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(polygon[0].x, polygon[0].y);
+  for (let i = 1; i < polygon.length; i++) ctx.lineTo(polygon[i].x, polygon[i].y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawHighlightPreview() {
+  drawHighlightStroke(elements.ctx, state.highlightPoints, currentHighlightSize(), state.currentColor, 0.35, state.highlightTip);
 }
 
 function drawEllipse(ctx, x, y, width, height) {
@@ -2785,6 +3042,7 @@ function resizeSelectedAnnotation(coords) {
     return;
   }
   const bounds = ann.type === 'text' ? getTextBounds(ann) : { x: ann.x, y: ann.y, width: ann.width, height: ann.height };
+  const highlightBounds = ann.type === 'highlight' ? { ...bounds } : null;
   const x1 = bounds.x, y1 = bounds.y, x2 = bounds.x + bounds.width, y2 = bounds.y + bounds.height;
   let nx1 = x1, ny1 = y1, nx2 = x2, ny2 = y2;
   if (state.resizeHandle.kind.includes('n')) ny1 = coords.y;
@@ -2795,6 +3053,16 @@ function resizeSelectedAnnotation(coords) {
   ann.y = Math.min(ny1, ny2);
   ann.width = Math.max(1, Math.abs(nx2 - nx1));
   ann.height = Math.max(1, Math.abs(ny2 - ny1));
+
+  if (ann.type === 'highlight' && Array.isArray(ann.points) && highlightBounds) {
+    const scaleX = ann.width / Math.max(1, highlightBounds.width);
+    const scaleY = ann.height / Math.max(1, highlightBounds.height);
+    ann.points = ann.points.map((point) => ({
+      x: ann.x + (point.x - highlightBounds.x) * scaleX,
+      y: ann.y + (point.y - highlightBounds.y) * scaleY,
+    }));
+    ann.size = Math.max(4, Math.round((ann.size || currentHighlightSize()) * ((scaleX + scaleY) / 2)));
+  }
 
   if (ann.type === 'text') {
     const currentBounds = getTextBounds(ann);

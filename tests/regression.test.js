@@ -464,6 +464,17 @@ function createStreamWithCursorSetting(cursor) {
   assert.ok(/\.toolbar-btn\s*\{[\s\S]*?width: 36px;[\s\S]*?height: 36px;/.test(stylesSource), 'editor toolbar buttons must match the main pillbar size');
   assert.ok(/\.toolbar-btn svg\s*\{\s*width: 18px;\s*height: 18px;\s*\}/.test(stylesSource), 'editor toolbar icons must match the main pillbar icon size');
   assert.ok(/\.color-swatch\s*\{[\s\S]*?-webkit-app-region: no-drag;/.test(stylesSource), 'color swatches must be clickable inside the draggable toolbar');
+  assert.ok(indexSource.includes('data-tool="highlight"'), 'toolbar must expose the highlight annotation tool');
+  assert.ok(rendererSource.includes("'text', 'highlight', 'pixelate'"), 'highlight must be a drawing tool so the color picker applies to it');
+  assert.ok(rendererSource.includes("case 'h': selectTool('highlight');"), 'the H shortcut must select the highlight tool');
+  assert.ok(rendererSource.includes('function createHighlightAnnotation(points, tip'), 'highlight strokes must store their freehand point path');
+  assert.ok(rendererSource.includes('drawHighlightStroke(ctx, ann.points'), 'highlight strokes must render their point path instead of a filled rectangle');
+  assert.ok(rendererSource.includes('ctx.globalAlpha = alpha;'), 'highlight opacity must composite so repeated passes darken');
+  assert.ok(rendererSource.includes('function createHighlightTip()'), 'highlight strokes must generate randomized chisel-tip ends');
+  assert.ok(rendererSource.includes('function buildHighlightPolygon('), 'highlight strokes must render an irregular polygon instead of a perfect rectangle');
+  assert.ok(indexSource.includes('data-highlight-mode="freehand"') && indexSource.includes('data-highlight-mode="line"'), 'highlight tool must expose freehand and straight-line modes');
+  assert.ok(rendererSource.includes("state.highlightMode = mode === 'line' ? 'line' : 'freehand'"), 'highlight mode options must be selectable');
+  assert.ok(rendererSource.includes('function constrainHighlightLine('), 'straight-line highlights must support Shift snapping');
 }
 
 });
