@@ -522,6 +522,14 @@ test('Recording Features', () => {
   );
 
   assert.ok(
+    /copyRecordingToClipboard: \(payload\) => ipcRenderer\.invoke\('pro-copy-recording', payload\)/.test(preloadSource) &&
+    /ipcMain\.handle\('pro-copy-recording'[\s\S]*copyRecordingDataToClipboard/.test(mainSource) &&
+    /window\.pico\.copyRecordingToClipboard\?\.\(\{[\s\S]*data: result\.data,[\s\S]*mimeType: result\.mimeType/.test(rendererSource) &&
+    /copiedToClipboard: copyFileToClipboard\(filePath\)\.success/.test(mainSource),
+    'finished recordings must be copied to the clipboard and saved exports must refresh that clipboard entry',
+  );
+
+  assert.ok(
     /inlinePreview: Boolean\(options\?\.previewVideoId\)/.test(preloadSource) &&
     /if \(started\.inlinePreview\) \{[\s\S]*showLiveRecordingPreview\(started, normalizedFormat\);[\s\S]*\} else \{[\s\S]*discardRecordingPreview\(\{ silent: true, keepWindowMode: true \}\)/.test(rendererSource),
     'normal desktop recordings must not switch the hidden app window into live preview/editor mode while recording',
@@ -759,11 +767,17 @@ test('Capture Focus Preservation', () => {
     'region capture must keep the pill visible via contentProtection to preserve source focus',
   );
 
-  // Region capture must NEVER kill Finder via withHiddenDesktopIcons — that is
-  // what caused Desktop→OpenCode Space switches when the desktop was bare.
+  // Region screenshots must honor the "Hide desktop icons" preference. The
+  // helper still skips Finder when the setting is disabled or icons are already hidden.
   assert.ok(
-    /async function captureRegion\([\s\S]*hideOrangeFujiWindowsBeforeCapture\(\{ \.\.\.options, mode: 'region' \}\)[\s\S]*await captureAllScreens\(\)/.test(mainSource),
-    'region capture must bypass withHiddenDesktopIcons to avoid killall Finder Space switches',
+    /async function captureRegion\([\s\S]*hideOrangeFujiWindowsBeforeCapture\(\{ \.\.\.options, mode: 'region' \}\)[\s\S]*withHiddenDesktopIcons\(options, async \(\) => captureAllScreens\(\)\)/.test(mainSource),
+    'region capture must honor the hideDesktopIcons setting',
+  );
+
+  // API region captures must use the saved preference as well.
+  assert.ok(
+    /const source = mode === 'region'[\s\S]*withHiddenDesktopIcons\([\s\S]*hideDesktopIcons:[^\n]*readSettings\(\)\.hideDesktopIcons[\s\S]*captureDisplaySource/.test(mainSource),
+    'API region captures must honor the hideDesktopIcons setting',
   );
 
   // Capture overlays must not use visibleOnAllWorkspaces — they should stay on

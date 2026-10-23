@@ -485,7 +485,10 @@ function bindKeyboard() {
     if (cmdOrCtrl && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); startCapture(); return; }
     if (cmdOrCtrl && e.key.toLowerCase() === 'o') { e.preventDefault(); openFile(); return; }
     if (cmdOrCtrl && e.key.toLowerCase() === 'e') { e.preventDefault(); saveFile(); return; }
-    if (cmdOrCtrl && e.key.toLowerCase() === 'c' && state.image) { e.preventDefault(); copyToClipboard(); return; }
+    if (cmdOrCtrl && e.key.toLowerCase() === 'c') {
+      if (state.recordingPreview) { e.preventDefault(); copyRecordingPreviewToClipboard(); return; }
+      if (state.image) { e.preventDefault(); copyToClipboard(); return; }
+    }
     if (cmdOrCtrl && e.key.toLowerCase() === 'v') { e.preventDefault(); pasteFromClipboard(); return; }
     if (cmdOrCtrl && e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); redo(); return; }
     if (cmdOrCtrl && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
@@ -950,7 +953,14 @@ async function toggleRecording(event) {
     state.isRecording = false;
     setRecordingIndicator(false);
     showRecordingPreview(result);
-    showToast('Recording ready to review', 'success');
+    let copied = null;
+    try {
+      copied = await window.pico.copyRecordingToClipboard?.({
+        data: result.data,
+        mimeType: result.mimeType,
+      });
+    } catch (_) {}
+    showToast(copied?.success ? 'Recording ready to review · copied to clipboard' : 'Recording ready to review', 'success');
   } catch (err) {
     state.isRecording = false;
     setRecordingIndicator(false);
@@ -1128,13 +1138,27 @@ async function saveRecordingPreview() {
     if (elements.recordingPreviewMeta) {
       elements.recordingPreviewMeta.textContent = `Saved ${state.recordingPreview.format.toUpperCase()}: ${savedPath}`;
     }
-    showToast(`Saved recording: ${savedPath}${warning}`, result.warning ? 'info' : 'success');
+    const copiedNote = result.copiedToClipboard ? ' · copied to clipboard' : '';
+    showToast(`Saved recording: ${savedPath}${warning}${copiedNote}`, result.warning ? 'info' : 'success');
     await new Promise((resolve) => setTimeout(resolve, 220));
   } catch (err) {
     showToast(`Recording save failed: ${err.message}`, 'error');
   } finally {
     setRecordingSaveProgress(false);
     state.isSavingRecording = false;
+  }
+}
+
+async function copyRecordingPreviewToClipboard() {
+  if (!state.recordingPreview) return;
+  try {
+    const result = await window.pico.copyRecordingToClipboard({
+      data: state.recordingPreview.data,
+      mimeType: state.recordingPreview.mimeType,
+    });
+    showToast(result?.success ? 'Recording copied to clipboard' : 'Failed to copy recording to clipboard', result?.success ? 'success' : 'error');
+  } catch (err) {
+    showToast(`Failed to copy recording to clipboard: ${err.message}`, 'error');
   }
 }
 

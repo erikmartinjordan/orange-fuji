@@ -6,6 +6,7 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer, dialog, screen, globalShortcut, nativeImage, clipboard, Menu, Tray, shell, systemPreferences, session } = require('electron');
 const { execSync, execFile } = require('child_process');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const fs = require('fs');
 const crypto = require('crypto');
 const os = require('os');
@@ -1592,6 +1593,55 @@ function copyDataUrlToClipboard(dataUrl) {
   clipboard.writeImage(image);
 }
 
+function recordingClipboardExtension(mimeType) {
+  const mime = String(mimeType || '').toLowerCase();
+  if (mime.includes('gif')) return 'gif';
+  if (mime.includes('mp4')) return 'mp4';
+  return 'webm';
+}
+
+function clipboardRecordingPath(extension) {
+  const dir = path.join(app.getPath('userData'), 'clipboard');
+  fs.mkdirSync(dir, { recursive: true });
+  for (const ext of ['mp4', 'webm', 'gif']) {
+    if (ext === extension) continue;
+    try { fs.rmSync(path.join(dir, `orange-fuji-recording.${ext}`), { force: true }); } catch (_) {}
+  }
+  return path.join(dir, `orange-fuji-recording.${extension}`);
+}
+
+function copyFileToClipboard(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return { success: false, error: 'Recording file was not found.' };
+  }
+  try {
+    const fileUrl = pathToFileURL(filePath).href;
+    if (process.platform === 'darwin') {
+      clipboard.writeBuffer('public.file-url', Buffer.from(fileUrl, 'utf8'));
+    } else if (process.platform === 'linux') {
+      clipboard.writeBuffer('text/uri-list', Buffer.from(`${fileUrl}\n`, 'utf8'));
+    } else {
+      clipboard.writeText(filePath);
+    }
+    return { success: true, path: filePath };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function copyRecordingDataToClipboard(data, mimeType) {
+  if (!data) return { success: false, error: 'Recording payload is empty' };
+  const extension = recordingClipboardExtension(mimeType);
+  const outputPath = clipboardRecordingPath(extension);
+  try {
+    const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
+    fs.writeFileSync(outputPath, bytes);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+  return copyFileToClipboard(outputPath);
+}
+
 function copyCaptureDataToClipboard(captureData) {
   if (!captureData) return;
   if (captureData.type === 'single') {
@@ -2705,9 +2755,8 @@ async function captureRegion(options = {}) {
       return { success: false, error: 'Screen Recording permission is required.' };
     }
     await hideOrangeFujiWindowsBeforeCapture({ ...options, mode: 'region' });
-    // Region never hides desktop icons: killall Finder forces a Space switch
-    // when the desktop is bare and the next window (OpenCode) is on another Space.
-    const captureData = await captureAllScreens();
+    // Region screenshots must honor the "Hide desktop icons" preference too.
+    const captureData = await withHiddenDesktopIcons(options, async () => captureAllScreens());
     console.log('[orange-fuji][capture] capture data ready; creating overlays');
     await createCaptureOverlays(captureData, 'region', [], { showToolbar: options?.showToolbar !== false });
     return { success: true };
@@ -2804,16 +2853,25 @@ async function captureForApi({ mode, rect, options = {} } = {}) {
 
   const display = screen.getPrimaryDisplay();
   const scaleFactor = display.scaleFactor || 1;
-  const sources = await desktopCapturer.getSources({
-    types: ['screen'],
-    thumbnailSize: {
-      width: Math.ceil(display.bounds.width * scaleFactor),
-      height: Math.ceil(display.bounds.height * scaleFactor),
-    },
-    fetchWindowIcons: false,
-  });
+  const captureDisplaySource = async () => {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: {
+        width: Math.ceil(display.bounds.width * scaleFactor),
+        height: Math.ceil(display.bounds.height * scaleFactor),
+      },
+      fetchWindowIcons: false,
+    });
+    return pickSourceForDisplay(sources, display);
+  };
 
-  const source = pickSourceForDisplay(sources, display);
+  // API region captures should respect the same desktop-icon preference as the app.
+  const source = mode === 'region'
+    ? await withHiddenDesktopIcons(
+        { hideDesktopIcons: options?.hideDesktopIcons ?? readSettings().hideDesktopIcons },
+        captureDisplaySource,
+      )
+    : await captureDisplaySource();
   if (!source || !source.thumbnail || source.thumbnail.isEmpty()) {
     return { success: false, error: 'No capturable screen source was returned.' };
   }
@@ -3725,13 +3783,18 @@ ipcMain.handle('pro-save-recording', async (event, payload) => {
 
   const needsProcessing = trimStart > 0 || trimEnd > trimStart || muted;
 
+  const finishSave = (result, filePath) => ({
+    ...result,
+    copiedToClipboard: copyFileToClipboard(filePath).success,
+  });
+
   try {
     // Fast path: the recorder already produced H.264 MP4 and nothing needs to
     // change, so skip the re-encode entirely (no quality loss, instant save).
     if (format === 'mp4' && inputIsMp4 && !needsProcessing) {
       fs.mkdirSync(path.dirname(outputPath), { recursive: true });
       fs.copyFileSync(inputPath, outputPath);
-      return { mp4: outputPath };
+      return finishSave({ mp4: outputPath }, outputPath);
     }
 
     let mp4Path = outputPath;
@@ -3753,23 +3816,32 @@ ipcMain.handle('pro-save-recording', async (event, payload) => {
       const rawOutputPath = outputPath.replace(/\.[^.]+$/i, `.${inputExtension}`);
       fs.mkdirSync(path.dirname(rawOutputPath), { recursive: true });
       fs.copyFileSync(inputPath, rawOutputPath);
-      return {
+      return finishSave({
         [inputExtension]: rawOutputPath,
         warning: `Saved as .${inputExtension} (bundled ffmpeg/gifski conversion tools are unavailable for ${format.toUpperCase()} export).`,
-      };
+      }, rawOutputPath);
     }
 
     if (format === 'gif') {
       try {
-        return { gif: await convertMp4ToGif(mp4, outputPath) };
+        const gifPath = await convertMp4ToGif(mp4, outputPath);
+        return finishSave({ gif: gifPath }, gifPath);
       } finally {
         if (mp4 !== inputPath) fs.rmSync(mp4, { force: true });
       }
     }
 
-    return { mp4 };
+    return finishSave({ mp4 }, mp4);
   } finally {
     fs.rmSync(inputPath, { force: true });
+  }
+});
+
+ipcMain.handle('pro-copy-recording', async (event, payload = {}) => {
+  try {
+    return copyRecordingDataToClipboard(payload?.data, payload?.mimeType);
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 });
 

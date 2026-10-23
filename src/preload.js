@@ -987,6 +987,7 @@ contextBridge.exposeInMainWorld('pico', {
   startRecording,
   stopRecording,
   saveRecording: (payload) => ipcRenderer.invoke('pro-save-recording', payload),
+  copyRecordingToClipboard: (payload) => ipcRenderer.invoke('pro-copy-recording', payload),
   onSaveRecordingStarted: (callback) => ipcRenderer.on('pro-save-recording-started', () => callback()),
   trimRecording: (payload) => ipcRenderer.invoke('pro-trim-recording', payload),
 
