@@ -113,7 +113,7 @@ async function main() {
     console.warn('fetch-media-binaries: could not determine ffmpeg-static release tag; skipping.');
     return;
   }
-  const baseUrl = `https://github.com/eugeneware/ffmpeg-static/releases/download/${releaseTag}`;
+  const baseUrl = `${process.env.FFMPEG_BINARIES_URL || 'https://github.com/eugeneware/ffmpeg-static/releases/download'}/${releaseTag}`;
 
   fs.mkdirSync(DEST_DIR, { recursive: true });
   let downloaded = 0;

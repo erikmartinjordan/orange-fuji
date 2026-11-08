@@ -24,6 +24,9 @@ jobs:
             platform: linux
 
     runs-on: ${{ matrix.os }}
+    env:
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      FFMPEG_BINARIES_URL: https://cdn.npmmirror.com/binaries/ffmpeg-static
 
     steps:
       - name: Checkout
@@ -35,33 +38,6 @@ jobs:
           node-version: '20'
 
 
-      - name: Prefetch ffmpeg static binary
-        shell: bash
-        run: |
-          set -euo pipefail
-          VERSION=$(node -p "require('./package.json').dependencies['ffmpeg-static'].replace(/[^0-9.]/g,'')")
-          TAG=$(npm view "ffmpeg-static@$VERSION" "ffmpeg-static.binary-release-tag" --json | tr -d '"')
-          PLATFORM=$(node -p "process.platform")
-          ARCH=$(node -p "process.arch")
-          DEST="$RUNNER_TEMP/ffmpeg-prefetch"
-          rm -rf "$DEST"
-          mkdir -p "$DEST" src/bin
-          gh release download "$TAG" --repo eugeneware/ffmpeg-static \
-            --pattern "ffmpeg-${PLATFORM}-${ARCH}.gz" \
-            --pattern "${PLATFORM}-${ARCH}.README" \
-            --pattern "${PLATFORM}-${ARCH}.LICENSE" -D "$DEST"
-          node -e "const fs=require('fs'),zlib=require('zlib');fs.writeFileSync(process.argv[1],zlib.gunzipSync(fs.readFileSync(process.argv[2])))" "$DEST/ffmpeg-bin" "$DEST/ffmpeg-${PLATFORM}-${ARCH}.gz"
-          chmod +x "$DEST/ffmpeg-bin" || true
-          echo "FFMPEG_BIN=$DEST/ffmpeg-bin" >> "$GITHUB_ENV"
-          if [ "$PLATFORM" = "darwin" ]; then
-            for arch in arm64 x64; do
-              mkdir -p "$DEST/darwin-$arch"
-              gh release download "$TAG" --repo eugeneware/ffmpeg-static --pattern "ffmpeg-darwin-$arch.gz" -D "$DEST/darwin-$arch"
-              node -e "const fs=require('fs'),zlib=require('zlib');fs.writeFileSync(process.argv[1],zlib.gunzipSync(fs.readFileSync(process.argv[2])))" "src/bin/ffmpeg-$arch" "$DEST/darwin-$arch/ffmpeg-darwin-$arch.gz"
-              chmod +x "src/bin/ffmpeg-$arch"
-            done
-          fi
-
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
@@ -72,17 +48,6 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
-      - name: Hydrate ffmpeg static binary
-        shell: bash
-        run: |
-          set -euo pipefail
-          PLATFORM=$(node -p "process.platform")
-          EXT=""
-          if [ "$PLATFORM" = "win32" ]; then EXT=".exe"; fi
-          cp "$RUNNER_TEMP/ffmpeg-prefetch/ffmpeg-bin" "node_modules/ffmpeg-static/ffmpeg${EXT}"
-          chmod +x "node_modules/ffmpeg-static/ffmpeg${EXT}" || true
-          echo "FFMPEG_BIN=" >> "$GITHUB_ENV"
 
       - name: Run tests
         run: npm test
