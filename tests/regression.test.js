@@ -313,7 +313,7 @@ function createStreamWithCursorSetting(cursor) {
     'window mode changes must support forcing the hidden recording window visible for preview',
   );
   assert.ok(
-    /setAppWindowMode\('editor', \{ show: true \}\)/.test(rendererSource),
+    /setAppWindowMode\('editor', \{ show: true, fromCapture: true \}\)/.test(rendererSource),
     'recording preview must reopen the app in editor mode instead of leaving the window hidden',
   );
   assert.ok(
@@ -598,8 +598,8 @@ test('Recording Features', () => {
   );
 
   assert.ok(
-    /if \(mode !== 'record-region' && options\.showToolbar !== false && mainWindow && !mainWindow\.isDestroyed\(\)\) \{[\s\S]*showWindowInactiveOnMac\(mainWindow\)/.test(mainSource),
-    'capture overlays must lift the Orange Fuji toolbar only when the caller allows it',
+    /if \(mode !== 'record-region' && options\.showToolbar !== false && mainWindow && !mainWindow\.isDestroyed\(\)\) \{[\s\S]*if \(process\.platform !== 'darwin'\) \{[\s\S]*showWindowInactiveOnMac\(mainWindow\);\s*mainWindow\.moveTop\(\);/.test(mainSource),
+    'capture overlays must not show or move the macOS toolbar above the selector',
   );
   assert.ok(
     /\.\.\.\(process\.platform === 'darwin' \? \{ acceptFirstMouse: true \} : \{\}\)/.test(mainSource) &&
@@ -614,8 +614,15 @@ test('Recording Features', () => {
   );
 
   assert.ok(
-    /const returnMode = pendingCaptureReturnMode;[\s\S]*pendingCaptureReturnMode = null;[\s\S]*if \(returnMode === 'editor'\) applyEditorWindowMode\(\{ show: true \}\);[\s\S]*else applyToolbarWindowMode\(\{ show: true \}\);/.test(mainSource),
-    'region capture completion must restore editor mode when capture started from editor mode',
+    /const returnMode = pendingCaptureReturnMode;[\s\S]*pendingCaptureReturnMode = null;[\s\S]*if \(returnMode === 'editor'\) applyEditorWindowMode\(\{ show: true, fromCapture: true \}\);[\s\S]*else applyToolbarWindowMode\(\);/.test(mainSource),
+    'region capture completion must restore editor mode without pulling the app to another Space',
+  );
+
+  assert.ok(
+    /showRecordingIndicator[\s\S]*process\.platform !== 'darwin'\) mainWindow\.minimize\(\)/.test(mainSource) &&
+    /hideRecordingIndicator[\s\S]*process\.platform !== 'darwin'[\s\S]*showMainWindowForCurrentMode\(\{ fromCapture: true \}\)/.test(mainSource) &&
+    /setVisibleOnAllWorkspaces\(true, \{ visibleOnFullScreen: true, skipTransformProcessType: true \}\)/.test(mainSource),
+    'recording must not hide/restore the macOS window or transform the process type in ways that switch Spaces',
   );
 
   assert.ok(

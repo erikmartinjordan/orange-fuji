@@ -1037,7 +1037,7 @@ function showRecordingPreview(result = {}) {
   elements.emptyState.classList.add('hidden');
   document.body.classList.add('has-content');
   resetFloatingToolbar();
-  setAppWindowMode('editor', { show: true });
+  setAppWindowMode('editor', { show: true, fromCapture: true });
   const bytes = result.data instanceof Uint8Array ? result.data : new Uint8Array(result.data);
   const blob = new Blob([bytes], { type: result.mimeType || 'video/webm' });
   const url = URL.createObjectURL(blob);

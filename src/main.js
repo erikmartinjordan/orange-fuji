@@ -776,7 +776,7 @@ function applyToolbarWindowMode(options = {}) {
   mainWindow.setSkipTaskbar(process.platform === 'darwin');
   try { mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'floating' : 'normal'); } catch (_) { mainWindow.setAlwaysOnTop(true); }
   if (process.platform === 'darwin') {
-    try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch (_) {}
+    try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch (_) {}
   }
   mainWindow.setBounds(getToolbarWindowBounds(), false);
 
@@ -828,11 +828,16 @@ function applyEditorWindowMode(options = {}) {
     }
     if (mainWindow.isMinimized()) mainWindow.restore();
     if (process.platform === 'darwin') {
-      try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch (_) {}
+      try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch (_) {}
       mainWindow.showInactive();
-      setTimeout(() => {
-        try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setVisibleOnAllWorkspaces(false); } catch (_) {}
-      }, 600);
+      // Keep the window on the user's current Space for capture/recording
+      // results. Toggling this off a moment later can drag macOS back to the
+      // app's previous Space.
+      if (!options.fromCapture) {
+        setTimeout(() => {
+          try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setVisibleOnAllWorkspaces(false); } catch (_) {}
+        }, 600);
+      }
     } else {
       mainWindow.show();
       mainWindow.moveTop();
@@ -841,13 +846,13 @@ function applyEditorWindowMode(options = {}) {
   }
 }
 
-function showMainWindowForCurrentMode() {
+function showMainWindowForCurrentMode(options = {}) {
   if (recordingInProgress && mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.hide();
     return;
   }
-  if (mainWindowMode === 'editor') applyEditorWindowMode({ show: true });
-  else applyToolbarWindowMode({ show: true });
+  if (mainWindowMode === 'editor') applyEditorWindowMode({ show: true, ...options });
+  else applyToolbarWindowMode({ show: true, ...options });
 }
 
 
@@ -912,7 +917,7 @@ function triggerPreviewToast(payload) {
 
   toastWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'floating' : 'normal');
   if (process.platform === 'darwin') {
-    try { toastWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch (_) {}
+    try { toastWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch (_) {}
   }
 
   const captureMode = isCaptureDataToastPayload(payload) ? 'fullscreen' : (payload?.captureMode || 'region');
@@ -2077,7 +2082,7 @@ function showRecordingIndicator(options = {}) {
       });
 
       overlayWindow.setAlwaysOnTop(true, 'screen-saver');
-      overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
       overlayWindow.setContentProtection(true);
       overlayWindow.setIgnoreMouseEvents(true, { forward: true });
 
@@ -2153,7 +2158,7 @@ function showRecordingIndicator(options = {}) {
   });
 
   controlsWindow.setAlwaysOnTop(true, 'screen-saver');
-  controlsWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  controlsWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
   controlsWindow.setContentProtection(true);
 
   controlsWindow.webContents.once('did-finish-load', () => {
@@ -2251,9 +2256,11 @@ function showRecordingIndicator(options = {}) {
   recordingIndicatorWindows.push(controlsWindow);
 
   // Keep Orange Fuji visible when the renderer is showing the selected stream inline.
+  // On macOS, hiding the app window while recording causes the system to
+  // activate another app/Space. Content protection already keeps it out of the
+  // recording, so leave the window in place.
   if (!options.inlinePreview && mainWindow && !mainWindow.isDestroyed()) {
-    if (process.platform === 'darwin') mainWindow.hide();
-    else mainWindow.minimize();
+    if (process.platform !== 'darwin') mainWindow.minimize();
   }
 }
 
@@ -2266,9 +2273,11 @@ function hideRecordingIndicator(options = {}) {
   lastRecordingRegion = null;
   restoreMacDesktopIconsAfterRecording();
 
-  // Restore Orange Fuji main window when recording ends
-  if (!options.skipMainWindowRestore && mainWindow && !mainWindow.isDestroyed()) {
-    showMainWindowForCurrentMode();
+  // Restore Orange Fuji main window when recording ends. On macOS the window
+  // is kept in place during recording and the renderer opens the preview, so
+  // re-showing it here would create a hide/show Space jump.
+  if (!options.skipMainWindowRestore && mainWindow && !mainWindow.isDestroyed() && process.platform !== 'darwin') {
+    showMainWindowForCurrentMode({ fromCapture: true });
   }
 }
 
@@ -2682,13 +2691,12 @@ async function createCaptureOverlays(captureData, mode = 'region', windowBounds 
       applyToolbarWindowMode();
 
       if (process.platform === 'darwin') {
-        try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } catch (_) {}
+        try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch (_) {}
         try { mainWindow.setAlwaysOnTop(true, 'screen-saver'); } catch (_) { mainWindow.setAlwaysOnTop(true); }
       }
 
-      showWindowInactiveOnMac(mainWindow);
-
-      if (process.platform === 'darwin') {
+      if (process.platform !== 'darwin') {
+        showWindowInactiveOnMac(mainWindow);
         mainWindow.moveTop();
       }
     }
@@ -3025,7 +3033,7 @@ ipcMain.on('preview-toast-clicked', () => {
 
   if (!payload || !mainWindow || mainWindow.isDestroyed()) return;
 
-  applyEditorWindowMode({ show: true });
+  applyEditorWindowMode({ show: true, fromCapture: true });
 
   if (isCaptureDataToastPayload(payload)) {
     mainWindow.webContents.send('load-capture-data', payload);
@@ -3082,10 +3090,10 @@ ipcMain.handle('start-capture', async (event, options = {}) => {
     const showToolbarBeforeCapture = options?.showToolbar !== false;
     const includeOrangeFuji = shouldCaptureOrangeFuji(options);
     if (showToolbarBeforeCapture && includeOrangeFuji && mainWindow && !mainWindow.isDestroyed()) {
-      if (process.platform === 'darwin') mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      if (process.platform === 'darwin') mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
       mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'screen-saver' : 'normal');
       showWindowInactiveOnMac(mainWindow);
-      mainWindow.moveTop();
+      if (process.platform !== 'darwin') mainWindow.moveTop();
     }
     if (showToolbarBeforeCapture && includeOrangeFuji) await new Promise(r => setTimeout(r, 120));
     return captureRegion(options);
@@ -3101,10 +3109,10 @@ async function captureWindow(options = {}) {
   const includeOrangeFuji = shouldCaptureOrangeFuji(options);
   if (includeOrangeFuji && mainWindow && !mainWindow.isDestroyed()) {
     setOrangeFujiWindowsContentProtection(false);
-    if (process.platform === 'darwin') mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    if (process.platform === 'darwin') mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
     mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'screen-saver' : 'normal');
     showWindowInactiveOnMac(mainWindow);
-    mainWindow.moveTop();
+    if (process.platform !== 'darwin') mainWindow.moveTop();
   }
   if (includeOrangeFuji) {
     await new Promise(r => setTimeout(r, process.platform === 'darwin' ? 180 : 80));
@@ -3170,7 +3178,7 @@ async function captureFullscreen(options = {}) {
     autoSaveCaptureData(captureData, 'fullscreen');
     if (mainWindow) {
       notifyRendererCaptureFinished();
-      applyToolbarWindowMode({ show: true });
+      applyToolbarWindowMode();
       triggerPreviewToast(captureData);
     }
     return { success: true };
@@ -3234,8 +3242,8 @@ ipcMain.on('capture-complete', (event, imageDataUrl) => {
   autoSaveCaptureDataUrl(imageDataUrl, 'region');
   if (mainWindow) {
     notifyRendererCaptureFinished();
-    if (returnMode === 'editor') applyEditorWindowMode({ show: true });
-    else applyToolbarWindowMode({ show: true });
+    if (returnMode === 'editor') applyEditorWindowMode({ show: true, fromCapture: true });
+    else applyToolbarWindowMode();
     triggerPreviewToast({ dataUrl: imageDataUrl, captureMode: 'region' });
   }
 });
@@ -3530,7 +3538,7 @@ ipcMain.handle('window-minimize', async () => {
 
 ipcMain.handle('window-set-mode', async (event, mode, options = {}) => {
   if (!mainWindow || mainWindow.isDestroyed()) return { success: false };
-  if (mode === 'editor') applyEditorWindowMode({ show: Boolean(options?.show) });
+  if (mode === 'editor') applyEditorWindowMode({ ...options, show: Boolean(options?.show) });
   else applyToolbarWindowMode({ show: Boolean(options?.show) });
   return { success: true, mode: mainWindowMode };
 });
