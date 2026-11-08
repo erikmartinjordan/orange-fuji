@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.15.1...v1.16.0) (2026-11-08)
+
+
+### ✨ Features
+
+* **recording:** add video cropping to recording preview ([7817ae1](https://github.com/erikmartinjordan/orange-fuji/commit/7817ae15a1f50389f54b13239f9d730277cfe5dc))
+
 ## [1.15.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.15.0...v1.15.1) (2026-10-23)
 
 
