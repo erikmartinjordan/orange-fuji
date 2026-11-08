@@ -27,6 +27,7 @@ jobs:
     env:
       ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
       FFMPEG_BINARIES_URL: https://cdn.npmmirror.com/binaries/ffmpeg-static
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
 
     steps:
       - name: Checkout
