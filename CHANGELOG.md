@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.16.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.16.0...v1.16.1) (2026-11-08)
+
+
+### 🐛 Fixes
+
+* **capture:** prevent macOS Space switches during capture and recording ([ea4de08](https://github.com/erikmartinjordan/orange-fuji/commit/ea4de08a4974d92b56443b2a3361a6b12b24a03e))
+
+
+### 👷 CI
+
+* prefetch ffmpeg binaries through the GitHub API ([e352bb4](https://github.com/erikmartinjordan/orange-fuji/commit/e352bb48660c786d2ddae69c13bd4ebe26ddabdc))
+* use mirror for electron-builder binaries ([af12f36](https://github.com/erikmartinjordan/orange-fuji/commit/af12f36ce4af107ac7445c2268748a1fdfc9c347))
+* use npmmirror for Electron and ffmpeg downloads ([5f73885](https://github.com/erikmartinjordan/orange-fuji/commit/5f73885a46f89376ce3bebb6a8eff28a0e2505ac))
+
 ## [1.16.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.15.1...v1.16.0) (2026-11-08)
 
 
