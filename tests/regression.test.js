@@ -9,6 +9,7 @@ const packageJson = JSON.parse(read('package.json'));
 const preloadSource = read('src/preload.js');
 const mainSource = read('src/main.js');
 const rendererSource = read('src/renderer/renderer.js');
+const recordingSource = read('src/pro/recording.js');
 const stylesSource = read('src/renderer/styles.css');
 const landingSource = read('index.html');
 const indexSource = read('src/renderer/index.html');
@@ -527,6 +528,51 @@ test('Recording Features', () => {
     /window\.pico\.copyRecordingToClipboard\?\.\(\{[\s\S]*data: result\.data,[\s\S]*mimeType: result\.mimeType/.test(rendererSource) &&
     /copiedToClipboard: copyFileToClipboard\(filePath\)\.success/.test(mainSource),
     'finished recordings must be copied to the clipboard and saved exports must refresh that clipboard entry',
+  );
+
+  assert.ok(
+    /function cropFilterExpression\(crop\)[\s\S]*'crop',[\s\S]*floor\(iw\*/.test(recordingSource) &&
+    /const cropFilter = cropFilterExpression\(options\.crop\)/.test(recordingSource) &&
+    /\[cropFilter, 'scale=trunc\(iw\/2\)\*2:trunc\(ih\/2\)\*2:flags=lanczos'\]/.test(recordingSource),
+    'recording conversion must apply an even-aligned crop filter before scaling',
+  );
+
+  assert.ok(
+    /const crop = normalizeCrop\(payload\?\.crop\)/.test(mainSource) &&
+    /needsProcessing = trimStart > 0 \|\| trimEnd > trimStart \|\| muted \|\| Boolean\(crop\)/.test(mainSource) &&
+    /convertWebmToMp4\(inputPath, mp4Path, \{ trimStart, trimEnd, muted, crop \}\)/.test(mainSource) &&
+    /convertWebmToMp4\(inputPath, mp4Path, \{ trimStart, trimEnd, muted: false, crop \}\)/.test(mainSource),
+    'saving and applying a recording must pass the crop rectangle through ffmpeg',
+  );
+
+  assert.ok(
+    /cropRecording: \(payload\) => ipcRenderer\.invoke\('pro-trim-recording', payload\)/.test(preloadSource) &&
+    /id="btn-recording-crop"/.test(indexSource) &&
+    /id="video-crop-overlay"/.test(indexSource) &&
+    /function toggleRecordingPreviewCrop\(\)/.test(rendererSource) &&
+    /crop: state\.recordingPreview\.crop \|\| null/.test(rendererSource),
+    'video preview must expose an interactive crop tool and send the selection when saving',
+  );
+
+  assert.ok(
+    /function refreshRecordingPreviewTimeline\(\)[\s\S]*generateOptimizedFilmstrip[\s\S]*strip\.style\.opacity = '1'/.test(rendererSource) &&
+    /await applyRecordingPreviewEditResult\(edited, 'Video cropped to selection'\)/.test(rendererSource) &&
+    /refreshRecordingPreviewTimeline\(\);/.test(rendererSource),
+    'cropping or trimming a recording must rebuild the trim filmstrip instead of losing it',
+  );
+
+  assert.ok(
+    /setRecordingCropChrome\(true\)/.test(rendererSource) &&
+    /body\.video-cropping #recording-preview-video/.test(stylesSource) &&
+    /body\.video-cropping \.toolbar/.test(stylesSource) &&
+    /body\.video-cropping \.timeline-filmstrip/.test(stylesSource),
+    'crop mode must hide the toolbar and timeline and enlarge the video preview',
+  );
+
+  assert.ok(
+    /copyRecordingToClipboard\?\.\(\{[\s\S]*data: edited\.data,[\s\S]*mimeType: state\.recordingPreview\.mimeType/.test(rendererSource) &&
+    /copied to clipboard/.test(rendererSource),
+    'every completed trim or crop must push the edited clip back to the clipboard',
   );
 
   assert.ok(

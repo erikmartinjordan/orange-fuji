@@ -35,6 +35,40 @@ function runBinary(binary, args) {
   });
 }
 
+function normalizeCrop(crop) {
+  if (!crop || typeof crop !== 'object') return null;
+  const values = ['x', 'y', 'width', 'height'].map((key) => Number(crop[key]));
+  if (!values.every((value) => Number.isFinite(value))) return null;
+
+  let [x, y, width, height] = values;
+  if (width <= 0 || height <= 0) return null;
+
+  x = Math.max(0, Math.min(1, x));
+  y = Math.max(0, Math.min(1, y));
+  width = Math.min(width, 1 - x);
+  height = Math.min(height, 1 - y);
+  if (width < 0.01 || height < 0.01) return null;
+
+  // A full-frame rectangle does not need a re-encode.
+  if (x <= 0.001 && y <= 0.001 && width >= 0.999 && height >= 0.999) return null;
+
+  return { x, y, width, height };
+}
+
+function cropFilterExpression(crop) {
+  const normalized = normalizeCrop(crop);
+  if (!normalized) return null;
+  const value = (number) => Number(number.toFixed(6));
+  // Keep width/height even so the H.264 encoder accepts the cropped frame.
+  return [
+    'crop',
+    `=floor(iw*${value(normalized.width)}/2)*2`,
+    `:floor(ih*${value(normalized.height)}/2)*2`,
+    `:floor(iw*${value(normalized.x)}/2)*2`,
+    `:floor(ih*${value(normalized.y)}/2)*2`,
+  ].join('');
+}
+
 function saveWebmFallback(webmPath, requestedOutputPath = null) {
   const webmOutputPath = requestedOutputPath
     ? requestedOutputPath.replace(/\.[^.]+$/i, '.webm')
@@ -51,6 +85,10 @@ async function convertWebmToMp4(webmPath, requestedOutputPath = null, options = 
   const trimEnd = Number.isFinite(options.trimEnd) && options.trimEnd > trimStart ? options.trimEnd : 0;
   const trimDuration = trimEnd > trimStart ? trimEnd - trimStart : 0;
   const audioArgs = options.muted ? ['-an'] : ['-c:a', 'aac', '-b:a', '192k'];
+  const cropFilter = cropFilterExpression(options.crop);
+  const videoFilters = [cropFilter, 'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos']
+    .filter(Boolean)
+    .join(',');
   ensureOutputDir(mp4Path);
   await runBinary(ffmpeg, [
     '-y',
@@ -58,7 +96,7 @@ async function convertWebmToMp4(webmPath, requestedOutputPath = null, options = 
     ...(trimStart > 0 ? ['-ss', String(trimStart)] : []),
     '-i', webmPath,
     ...(trimDuration > 0 ? ['-t', String(trimDuration)] : []),
-    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos',
+    '-vf', videoFilters,
     '-c:v', 'libx264',
     '-preset', 'medium',
     '-crf', '18',
@@ -93,4 +131,11 @@ async function convertMp4ToGif(mp4Path, requestedOutputPath = null) {
   }
 }
 
-module.exports = { tempRecordingPath, saveWebmFallback, convertWebmToMp4, convertMp4ToGif };
+module.exports = {
+  tempRecordingPath,
+  saveWebmFallback,
+  convertWebmToMp4,
+  convertMp4ToGif,
+  normalizeCrop,
+  cropFilterExpression,
+};

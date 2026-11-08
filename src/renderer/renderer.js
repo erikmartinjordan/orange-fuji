@@ -59,6 +59,10 @@ const state = {
   recordingMode: 'region',
   isSavingRecording: false,
   recordingLoop: true,
+  recordingCropActive: false,
+  recordingCropDragging: null,
+  recordingCropDragStart: null,
+  recordingCropOrigRect: null,
   recordingPreview: null,
   recordingSettings: { format: 'mp4', autoZoom: true, autoHideDelay: 3, captureOrangeFuji: false },
   captureSettings: { hideDesktopIcons: true },
@@ -136,6 +140,7 @@ const elements = {
   recordingPreviewResetTrim: $('#btn-recording-reset-trim'),
   recordingPreviewMute: $('#btn-recording-mute'),
   recordingPreviewLoop: $('#btn-recording-loop'),
+  recordingPreviewCrop: $('#btn-recording-crop'),
   recordingPreviewLoopBottom: $('#recording-preview-loop'),
   recordingPreviewJumpBackBottom: $('#recording-preview-jump-back'),
   recordingPreviewJumpForwardBottom: $('#recording-preview-jump-forward'),
@@ -160,6 +165,13 @@ const elements = {
   cropOverlay: $('#crop-overlay'),
   cropBox: $('#crop-box'),
   cropHint: $('#crop-hint'),
+  videoCropOverlay: $('#video-crop-overlay'),
+  videoCropBox: $('#video-crop-box'),
+  videoCropMask: $('#video-crop-mask'),
+  videoCropHint: $('#video-crop-hint'),
+  videoCropActions: $('#video-crop-actions'),
+  videoCropApply: $('#video-crop-apply'),
+  videoCropCancel: $('#video-crop-cancel'),
 };
 
 function on(el, event, handler) { if (el) el.addEventListener(event, handler); }
@@ -187,6 +199,7 @@ function init() {
   bindContextMenu();
   bindPaste();
   bindCrop();
+  bindVideoCrop();
   bindTooltips();
   if (elements.fontCurrentLabel) {
     elements.fontCurrentLabel.textContent = fontFamilyToLabel(state.textFontFamily);
@@ -316,10 +329,16 @@ function bindToolbar() {
   on(elements.recordingPreviewResetTrim, 'click', applyRecordingPreviewTrim);
   on(elements.recordingPreviewMute, 'click', toggleRecordingPreviewMute);
   on(elements.recordingPreviewLoop, 'click', toggleRecordingPreviewLoop);
+  on(elements.recordingPreviewCrop, 'click', toggleRecordingPreviewCrop);
   on(elements.recordingPreviewLoopBottom, 'click', toggleRecordingPreviewLoop);
+  on(elements.videoCropApply, 'click', applyRecordingPreviewCrop);
+  on(elements.videoCropCancel, 'click', cancelRecordingPreviewCrop);
   on(elements.recordingPreviewJumpBackBottom, 'click', () => jumpRecordingPreview(-1));
   on(elements.recordingPreviewJumpForwardBottom, 'click', () => jumpRecordingPreview(1));
-  on(elements.recordingPreviewVideo, 'loadedmetadata', updateRecordingPreviewControls);
+  on(elements.recordingPreviewVideo, 'loadedmetadata', () => {
+    updateRecordingPreviewControls();
+    if (state.recordingCropActive) updateRecordingCropUi();
+  });
   on(elements.recordingPreviewVideo, 'timeupdate', updateRecordingPreviewControls);
   on(elements.recordingPreviewVideo, 'play', startRecordingPreviewTimeline);
   on(elements.recordingPreviewVideo, 'pause', stopRecordingPreviewTimeline);
@@ -474,6 +493,13 @@ function bindKeyboard() {
     if (state.isEditingText) return;
     const isMac = window.pico.platform === 'darwin';
     const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+    // Video crop mode keyboard shortcuts
+    if (state.recordingCropActive) {
+      if (e.key === 'Enter') { e.preventDefault(); applyRecordingPreviewCrop(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); cancelRecordingPreviewCrop(); return; }
+      return; // Block other shortcuts while cropping the video
+    }
 
     // Crop mode keyboard shortcuts
     if (state.cropActive) {
@@ -1005,6 +1031,7 @@ function prepareForAppWindowClose() {
 
 function showRecordingPreview(result = {}) {
   if (!result?.data || !elements.recordingPreview || !elements.recordingPreviewVideo) return;
+  cancelRecordingPreviewCrop();
   clearTimeline();
   discardRecordingPreview({ silent: true, keepWindowMode: true });
   elements.emptyState.classList.add('hidden');
@@ -1021,6 +1048,7 @@ function showRecordingPreview(result = {}) {
     mimeType: result.mimeType || 'video/webm',
     trimStart: 0,
     trimEnd: null,
+    crop: null,
   };
   elements.recordingPreview.classList.remove('is-live');
   elements.recordingPreviewVideo.muted = false;
@@ -1040,25 +1068,16 @@ function showRecordingPreview(result = {}) {
   elements.recordingPreview.setAttribute('aria-hidden', 'false');
   ensureTimelineElements();
   initTimelineInteraction();
-  const gen = async () => {
-    const container = document.getElementById('timeline-frames');
-    if (!container || !state.recordingPreview?.url) return;
-
-    timelineGenerationAbort = false;
-    try {
-      await generateOptimizedFilmstrip(state.recordingPreview.url, container, 24);
-    } catch (error) {
-      if (!timelineGenerationAbort) {
-        console.error('[pico][timeline] failed to generate filmstrip:', error);
-      }
-    }
-    const strip = document.querySelector('.timeline-filmstrip');
-    if (strip) strip.style.opacity = '1';
-  };
-  gen();
+  refreshRecordingPreviewTimeline();
 }
 
 function discardRecordingPreview(options = {}) {
+  state.recordingCropActive = false;
+  state.recordingCropDragging = null;
+  state.recordingCropOrigRect = null;
+  setRecordingCropChrome(false);
+  elements.videoCropOverlay?.classList.remove('active');
+  elements.videoCropOverlay?.setAttribute('aria-hidden', 'true');
   if (state.recordingPreview?.url) URL.revokeObjectURL(state.recordingPreview.url);
   state.recordingPreview = null;
   if (elements.recordingPreviewVideo) {
@@ -1126,6 +1145,7 @@ async function saveRecordingPreview() {
       mimeType: state.recordingPreview.mimeType,
       trimStart: state.recordingPreview.trimStart || 0,
       trimEnd: state.recordingPreview.trimEnd,
+      crop: state.recordingPreview.crop || null,
       muted: elements.recordingPreviewVideo?.muted === true,
     });
     if (result.canceled) {
@@ -1296,7 +1316,8 @@ async function applyRecordingPreviewTrim() {
   if (!state.recordingPreview || state.isSavingRecording) return;
   const trimStart = state.recordingPreview.trimStart || 0;
   const trimEnd = state.recordingPreview.trimEnd;
-  if (!trimStart && !Number.isFinite(trimEnd)) {
+  const crop = state.recordingPreview.crop || null;
+  if (!trimStart && !Number.isFinite(trimEnd) && !crop) {
     resetRecordingPreviewTrim();
     return;
   }
@@ -1307,45 +1328,282 @@ async function applyRecordingPreviewTrim() {
       data: state.recordingPreview.data,
       trimStart,
       trimEnd,
+      crop,
       format: state.recordingPreview.format,
       mimeType: state.recordingPreview.mimeType,
     });
     if (!trimmed?.data) return;
-    if (state.recordingPreview?.url) URL.revokeObjectURL(state.recordingPreview.url);
-    const blob = new Blob([trimmed.data], { type: trimmed.mimeType || 'video/mp4' });
-    const url = URL.createObjectURL(blob);
-    state.recordingPreview = {
-      ...state.recordingPreview,
-      data: trimmed.data,
-      url,
-      format: trimmed.format || 'mp4',
-      mimeType: trimmed.mimeType || 'video/mp4',
-      trimStart: 0,
-      trimEnd: null,
-    };
-    const video = elements.recordingPreviewVideo;
-    video.pause();
-    video.src = url;
-    video.load();
-    updateRecordingPreviewConstraint();
-    const playPromise = video.play();
-    if (playPromise?.catch) playPromise.catch(() => {});
-    updateRecordingPreviewFormatUi();
-    updateRecordingPreviewToolbar();
-    updateRecordingPreviewControls();
-    showToast('Video trimmed to selection', 'success');
-    clearTimeline();
-    const container = document.getElementById('timeline-frames');
-    if (container && state.recordingPreview?.url) {
-      timelineGenerationAbort = false;
-      generateOptimizedFilmstrip(state.recordingPreview.url, container).catch(() => {});
-    }
-    updateTimeline();
+    await applyRecordingPreviewEditResult(trimmed, crop ? 'Video cropped to selection' : 'Video trimmed to selection');
   } catch (err) {
     showToast(`Failed to cut video: ${err.message}`, 'error');
   } finally {
     setRecordingSaveProgress(false);
     state.isSavingRecording = false;
+  }
+}
+
+function applyRecordingPreviewEditResult(edited, successMessage = 'Video updated') {
+  if (!state.recordingPreview || !edited?.data) return Promise.resolve();
+  if (state.recordingPreview.url) URL.revokeObjectURL(state.recordingPreview.url);
+  const blob = new Blob([edited.data], { type: edited.mimeType || 'video/mp4' });
+  const url = URL.createObjectURL(blob);
+  state.recordingPreview = {
+    ...state.recordingPreview,
+    data: edited.data,
+    url,
+    format: edited.format || 'mp4',
+    mimeType: edited.mimeType || 'video/mp4',
+    trimStart: 0,
+    trimEnd: null,
+    crop: null,
+  };
+  state.recordingCropActive = false;
+  state.recordingCropDragging = null;
+  state.recordingCropOrigRect = null;
+  setRecordingCropChrome(false);
+  elements.videoCropOverlay?.classList.remove('active');
+  elements.videoCropOverlay?.setAttribute('aria-hidden', 'true');
+  const video = elements.recordingPreviewVideo;
+  video.pause();
+  video.src = url;
+  video.load();
+  updateRecordingPreviewConstraint();
+  const playPromise = video.play();
+  if (playPromise?.catch) playPromise.catch(() => {});
+  updateRecordingPreviewFormatUi();
+  updateRecordingPreviewToolbar();
+  updateRecordingPreviewControls();
+  refreshRecordingPreviewTimeline();
+  return window.pico.copyRecordingToClipboard?.({
+    data: edited.data,
+    mimeType: state.recordingPreview.mimeType,
+  }).then((result) => {
+    showToast(`${successMessage}${result?.success ? ' · copied to clipboard' : ''}`, result?.success ? 'success' : 'info');
+  }).catch(() => {
+    showToast(successMessage, 'success');
+  });
+}
+
+function bindVideoCrop() {
+  const overlay = elements.videoCropOverlay;
+  const box = elements.videoCropBox;
+  if (!overlay || !box) return;
+
+  const startDrag = (event) => {
+    if (!state.recordingCropActive || !state.recordingPreview) return;
+    event.preventDefault();
+    event.stopPropagation();
+    state.recordingCropDragging = event.target.dataset.handle || 'move';
+    state.recordingCropDragStart = { x: event.clientX, y: event.clientY };
+    const crop = state.recordingPreview.crop || { x: 0, y: 0, width: 1, height: 1 };
+    state.recordingCropOrigRect = { ...crop };
+    overlay.setPointerCapture?.(event.pointerId);
+  };
+
+  box.querySelectorAll('.crop-handle').forEach((handle) => {
+    handle.addEventListener('pointerdown', startDrag);
+  });
+  box.addEventListener('pointerdown', (event) => {
+    if (event.target.classList.contains('crop-handle')) return;
+    startDrag(event);
+  });
+  box.addEventListener('dblclick', (event) => {
+    event.preventDefault();
+    applyRecordingPreviewCrop();
+  });
+
+  overlay.addEventListener('pointermove', (event) => {
+    if (!state.recordingCropDragging || !state.recordingPreview) return;
+    event.preventDefault();
+    updateRecordingCropFromPointer(event);
+  });
+
+  const finishDrag = (event) => {
+    if (!state.recordingCropDragging) return;
+    overlay.releasePointerCapture?.(event.pointerId);
+    state.recordingCropDragging = null;
+    state.recordingCropOrigRect = null;
+    updateRecordingCropUi();
+    updateRecordingPreviewToolbar();
+  };
+  overlay.addEventListener('pointerup', finishDrag);
+  overlay.addEventListener('pointercancel', finishDrag);
+
+  window.addEventListener('resize', () => {
+    if (state.recordingCropActive) updateRecordingCropUi();
+  });
+}
+
+function setRecordingCropChrome(active) {
+  document.body.classList.toggle('video-cropping', active);
+  elements.recordingPreview?.classList.toggle('is-cropping', active);
+  window.pico.setCropMode?.(active)?.catch?.(() => {});
+}
+
+function toggleRecordingPreviewCrop() {
+  if (state.recordingCropActive) {
+    cancelRecordingPreviewCrop();
+  } else {
+    startRecordingPreviewCrop();
+  }
+}
+
+function recordingCropIsFull(crop) {
+  return Boolean(crop)
+    && crop.x <= 0.001
+    && crop.y <= 0.001
+    && crop.width >= 0.999
+    && crop.height >= 0.999;
+}
+
+function startRecordingPreviewCrop() {
+  const video = elements.recordingPreviewVideo;
+  if (!state.recordingPreview || !video || !elements.videoCropOverlay) return;
+  state.recordingCropActive = true;
+  state.recordingCropDragging = null;
+  state.recordingCropOrigRect = null;
+  if (!state.recordingPreview.crop) {
+    state.recordingPreview.crop = { x: 0, y: 0, width: 1, height: 1 };
+  }
+  video.pause();
+  setRecordingCropChrome(true);
+  elements.videoCropOverlay.classList.add('active');
+  elements.videoCropOverlay.setAttribute('aria-hidden', 'false');
+  updateRecordingCropUi();
+  updateRecordingPreviewToolbar();
+}
+
+function cancelRecordingPreviewCrop() {
+  state.recordingCropActive = false;
+  state.recordingCropDragging = null;
+  state.recordingCropOrigRect = null;
+  if (state.recordingPreview) state.recordingPreview.crop = null;
+  setRecordingCropChrome(false);
+  elements.videoCropOverlay?.classList.remove('active');
+  elements.videoCropOverlay?.setAttribute('aria-hidden', 'true');
+  updateRecordingPreviewToolbar();
+}
+
+async function applyRecordingPreviewCrop() {
+  if (!state.recordingPreview || state.isSavingRecording || !state.recordingCropActive) return;
+  const crop = state.recordingPreview.crop;
+  if (!crop || recordingCropIsFull(crop)) {
+    cancelRecordingPreviewCrop();
+    return;
+  }
+  state.isSavingRecording = true;
+  setRecordingSaveProgress(true, { preserveSaving: true });
+  try {
+    const edited = await window.pico.cropRecording({
+      data: state.recordingPreview.data,
+      crop,
+      format: state.recordingPreview.format,
+      mimeType: state.recordingPreview.mimeType,
+    });
+    if (!edited?.data) return;
+    await applyRecordingPreviewEditResult(edited, 'Video cropped to selection');
+  } catch (err) {
+    showToast(`Failed to crop video: ${err.message}`, 'error');
+  } finally {
+    setRecordingSaveProgress(false);
+    state.isSavingRecording = false;
+  }
+}
+
+function recordingCropParentRect() {
+  const video = elements.recordingPreviewVideo;
+  if (!video) return null;
+  const rect = video.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return null;
+
+  // object-fit: contain can letterbox the frame inside the <video> element.
+  // Map crop coordinates to the visible video content, not the element box.
+  const intrinsicWidth = video.videoWidth || rect.width;
+  const intrinsicHeight = video.videoHeight || rect.height;
+  const scale = Math.min(rect.width / intrinsicWidth, rect.height / intrinsicHeight) || 1;
+  const width = intrinsicWidth * scale;
+  const height = intrinsicHeight * scale;
+
+  return {
+    left: rect.left + (rect.width - width) / 2,
+    top: rect.top + (rect.height - height) / 2,
+    width,
+    height,
+  };
+}
+
+function updateRecordingCropFromPointer(event) {
+  const rect = recordingCropParentRect();
+  const crop = state.recordingPreview?.crop;
+  const orig = state.recordingCropOrigRect;
+  if (!rect || !crop || !orig || !state.recordingCropDragging) return;
+  if (rect.width <= 0 || rect.height <= 0) return;
+
+  const dx = (event.clientX - state.recordingCropDragStart.x) / rect.width;
+  const dy = (event.clientY - state.recordingCropDragStart.y) / rect.height;
+  const minWidth = Math.min(0.25, 20 / rect.width);
+  const minHeight = Math.min(0.25, 20 / rect.height);
+
+  if (state.recordingCropDragging === 'move') {
+    crop.x = Math.max(0, Math.min(1 - orig.width, orig.x + dx));
+    crop.y = Math.max(0, Math.min(1 - orig.height, orig.y + dy));
+  } else {
+    let x = orig.x;
+    let y = orig.y;
+    let width = orig.width;
+    let height = orig.height;
+
+    if (state.recordingCropDragging.includes('w')) {
+      const nextX = Math.max(0, Math.min(orig.x + orig.width - minWidth, orig.x + dx));
+      width = orig.width + (orig.x - nextX);
+      x = nextX;
+    }
+    if (state.recordingCropDragging.includes('e')) {
+      width = Math.max(minWidth, Math.min(1 - orig.x, orig.width + dx));
+    }
+    if (state.recordingCropDragging.includes('n')) {
+      const nextY = Math.max(0, Math.min(orig.y + orig.height - minHeight, orig.y + dy));
+      height = orig.height + (orig.y - nextY);
+      y = nextY;
+    }
+    if (state.recordingCropDragging.includes('s')) {
+      height = Math.max(minHeight, Math.min(1 - orig.y, orig.height + dy));
+    }
+
+    crop.x = x;
+    crop.y = y;
+    crop.width = width;
+    crop.height = height;
+  }
+
+  updateRecordingCropUi();
+}
+
+function updateRecordingCropUi() {
+  const rect = recordingCropParentRect();
+  const crop = state.recordingPreview?.crop;
+  const wrap = elements.videoCropOverlay?.parentElement;
+  if (!rect || !crop || !elements.videoCropBox || !wrap) return;
+
+  const wrapRect = wrap.getBoundingClientRect();
+  const offsetLeft = rect.left - wrapRect.left;
+  const offsetTop = rect.top - wrapRect.top;
+  const left = offsetLeft + crop.x * rect.width;
+  const top = offsetTop + crop.y * rect.height;
+  const width = crop.width * rect.width;
+  const height = crop.height * rect.height;
+
+  const box = elements.videoCropBox;
+  box.style.left = `${left}px`;
+  box.style.top = `${top}px`;
+  box.style.width = `${width}px`;
+  box.style.height = `${height}px`;
+
+  if (elements.videoCropMask) {
+    elements.videoCropMask.style.clipPath = `polygon(
+      0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
+      ${left}px ${top}px, ${left}px ${top + height}px, ${left + width}px ${top + height}px, ${left + width}px ${top}px, ${left}px ${top}px
+    )`;
   }
 }
 
@@ -1445,6 +1703,11 @@ function updateRecordingPreviewToolbar() {
   if (elements.recordingPreviewLoopBottom) {
     elements.recordingPreviewLoopBottom.classList.toggle('active', state.recordingLoop);
     elements.recordingPreviewLoopBottom.dataset.loop = String(state.recordingLoop);
+  }
+  if (elements.recordingPreviewCrop) {
+    const cropActive = state.recordingCropActive || Boolean(state.recordingPreview?.crop);
+    elements.recordingPreviewCrop.classList.toggle('active', cropActive);
+    elements.recordingPreviewCrop.setAttribute('aria-pressed', cropActive ? 'true' : 'false');
   }
 }
 
@@ -1549,6 +1812,27 @@ function clearTimeline() {
   if (frames) frames.replaceChildren();
   const strip = document.querySelector('.timeline-filmstrip');
   if (strip) strip.style.opacity = '0';
+}
+
+async function refreshRecordingPreviewTimeline() {
+  clearTimeline();
+  updateTimeline();
+  const container = document.getElementById('timeline-frames');
+  if (!container || !state.recordingPreview?.url) {
+    return;
+  }
+
+  timelineGenerationAbort = false;
+  try {
+    await generateOptimizedFilmstrip(state.recordingPreview.url, container, 24);
+  } catch (error) {
+    if (!timelineGenerationAbort) {
+      console.error('[pico][timeline] failed to generate filmstrip:', error);
+    }
+  }
+  const strip = document.querySelector('.timeline-filmstrip');
+  if (strip && !timelineGenerationAbort) strip.style.opacity = '1';
+  updateTimeline();
 }
 
 function updateTimeline() {

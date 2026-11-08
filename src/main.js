@@ -11,7 +11,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const os = require('os');
 const https = require('https');
-const { tempRecordingPath, convertWebmToMp4, convertMp4ToGif } = require('./pro/recording');
+const { tempRecordingPath, convertWebmToMp4, convertMp4ToGif, normalizeCrop } = require('./pro/recording');
 const nativeRecorder = require('./pro/native-recorder');
 const { createApiBridge } = require('./api-bridge');
 let autoUpdater = null;
@@ -41,6 +41,8 @@ let pendingRecordingWindowClose = false;
 let allowMainWindowCloseAfterRecordingCleanup = false;
 let pendingAppWindowClose = false;
 let allowMainWindowCloseAfterRendererCleanup = false;
+let cropModePreviousBounds = null;
+let cropModeBoundsLocked = false;
 let quitRequested = false;
 let tray = null;
 let desktopIconsHidden = false;
@@ -733,6 +735,7 @@ function getEditorWindowBounds() {
 }
 
 function rememberEditorBounds() {
+  if (cropModeBoundsLocked) return;
   if (!mainWindow || mainWindow.isDestroyed() || mainWindowMode !== 'editor' || mainWindow.isMinimized()) return;
   const bounds = mainWindow.getBounds();
   if (bounds.width >= TOOLBAR_WINDOW_SIZE.width && bounds.height >= TOOLBAR_WINDOW_SIZE.height) {
@@ -843,7 +846,7 @@ function showMainWindowForCurrentMode() {
     mainWindow.hide();
     return;
   }
-  if (mainWindowMode === 'editor') applyEditorWindowMode({ show: true, noFocus });
+  if (mainWindowMode === 'editor') applyEditorWindowMode({ show: true });
   else applyToolbarWindowMode({ show: true });
 }
 
@@ -3532,6 +3535,32 @@ ipcMain.handle('window-set-mode', async (event, mode, options = {}) => {
   return { success: true, mode: mainWindowMode };
 });
 
+ipcMain.handle('window-set-crop-mode', async (event, enabled) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return { success: false };
+  if (enabled) {
+    applyEditorWindowMode({ show: true });
+    if (process.platform === 'darwin') {
+      try { mainWindow.setWindowButtonVisibility(false); } catch (_) {}
+    }
+    if (!cropModePreviousBounds) cropModePreviousBounds = mainWindow.getBounds();
+    cropModeBoundsLocked = true;
+    const display = screen.getDisplayMatching(mainWindow.getBounds());
+    const { x, y, width, height } = display.workArea;
+    mainWindow.setBounds({ x, y, width, height }, false);
+    mainWindow.showInactive();
+  } else if (cropModePreviousBounds) {
+    mainWindow.setBounds(cropModePreviousBounds, false);
+    cropModePreviousBounds = null;
+    cropModeBoundsLocked = false;
+    if (process.platform === 'darwin') {
+      try { mainWindow.setWindowButtonVisibility(true); } catch (_) {}
+    }
+  } else {
+    cropModeBoundsLocked = false;
+  }
+  return { success: true };
+});
+
 ipcMain.handle('window-toggle-maximize', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return { success: false };
   if (mainWindowMode !== 'editor') applyEditorWindowMode({ show: true });
@@ -3756,6 +3785,7 @@ ipcMain.handle('pro-save-recording', async (event, payload) => {
   const trimStart = Number.isFinite(payload?.trimStart) && payload.trimStart > 0 ? payload.trimStart : 0;
   const trimEnd = Number.isFinite(payload?.trimEnd) && payload.trimEnd > trimStart ? payload.trimEnd : 0;
   const muted = payload?.muted === true;
+  const crop = normalizeCrop(payload?.crop);
   const filename = `orange-fuji-recording-${Date.now()}.${extension}`;
   let outputPath = configuredDefaultSavePath(filename);
 
@@ -3781,7 +3811,7 @@ ipcMain.handle('pro-save-recording', async (event, payload) => {
   const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
   fs.writeFileSync(inputPath, bytes);
 
-  const needsProcessing = trimStart > 0 || trimEnd > trimStart || muted;
+  const needsProcessing = trimStart > 0 || trimEnd > trimStart || muted || Boolean(crop);
 
   const finishSave = (result, filePath) => ({
     ...result,
@@ -3807,7 +3837,7 @@ ipcMain.handle('pro-save-recording', async (event, payload) => {
         // generation of lossy re-encoding.
         mp4 = inputPath;
       } else {
-        mp4 = await convertWebmToMp4(inputPath, mp4Path, { trimStart, trimEnd, muted });
+        mp4 = await convertWebmToMp4(inputPath, mp4Path, { trimStart, trimEnd, muted, crop });
       }
     } catch (conversionError) {
       fs.rmSync(mp4Path, { force: true });
@@ -3851,14 +3881,15 @@ ipcMain.handle('pro-trim-recording', async (event, payload) => {
   if (!data) throw new Error('Trim payload is empty');
   const trimStart = Number.isFinite(payload?.trimStart) && payload.trimStart > 0 ? payload.trimStart : 0;
   const trimEnd = Number.isFinite(payload?.trimEnd) && payload.trimEnd > trimStart ? payload.trimEnd : 0;
-  if (!trimStart && !trimEnd) return { data, mimeType: payload.mimeType || 'video/webm', format: payload.format || 'mp4' };
+  const crop = normalizeCrop(payload?.crop);
+  if (!trimStart && !trimEnd && !crop) return { data, mimeType: payload.mimeType || 'video/webm', format: payload.format || 'mp4' };
   const inputIsMp4 = String(payload?.mimeType || '').toLowerCase().includes('mp4');
   const inputPath = tempRecordingPath(inputIsMp4 ? 'mp4' : 'webm');
   const mp4Path = tempRecordingPath('mp4');
   const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
   fs.writeFileSync(inputPath, bytes);
   try {
-    await convertWebmToMp4(inputPath, mp4Path, { trimStart, trimEnd, muted: false });
+    await convertWebmToMp4(inputPath, mp4Path, { trimStart, trimEnd, muted: false, crop });
     const result = fs.readFileSync(mp4Path);
     return { data: result, mimeType: 'video/mp4', format: 'mp4' };
   } finally {

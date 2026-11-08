@@ -990,6 +990,7 @@ contextBridge.exposeInMainWorld('pico', {
   copyRecordingToClipboard: (payload) => ipcRenderer.invoke('pro-copy-recording', payload),
   onSaveRecordingStarted: (callback) => ipcRenderer.on('pro-save-recording-started', () => callback()),
   trimRecording: (payload) => ipcRenderer.invoke('pro-trim-recording', payload),
+  cropRecording: (payload) => ipcRenderer.invoke('pro-trim-recording', payload),
 
   // Native ScreenCaptureKit recorder (macOS; full Retina resolution)
   nativeRecordingSupported: () => ipcRenderer.invoke('pro-native-recording-supported'),
@@ -1024,6 +1025,7 @@ contextBridge.exposeInMainWorld('pico', {
   closeWindow: () => ipcRenderer.invoke('window-close'),
   minimizeWindow: () => ipcRenderer.invoke('window-minimize'),
   setWindowMode: (mode, options = {}) => ipcRenderer.invoke('window-set-mode', mode, options),
+  setCropMode: (enabled) => ipcRenderer.invoke('window-set-crop-mode', Boolean(enabled)),
   toggleMaximizeWindow: () => ipcRenderer.invoke('window-toggle-maximize'),
 
   // Display info
