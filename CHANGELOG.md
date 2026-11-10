@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.16.1...v1.17.0) (2026-11-10)
+
+
+### ✨ Features
+
+* **menu:** add recent captures history ([c42af6a](https://github.com/erikmartinjordan/orange-fuji/commit/c42af6a2d66cfac02a3583573a06f06cf6b3be65))
+
 ## [1.16.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.16.0...v1.16.1) (2026-11-08)
 
 
