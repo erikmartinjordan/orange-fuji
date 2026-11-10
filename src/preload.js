@@ -1044,6 +1044,15 @@ contextBridge.exposeInMainWorld('pico', {
     return ipcRenderer.invoke('relaunch-app');
   },
 
+  // Menu bar popover
+  trayMenu: {
+    getData: () => ipcRenderer.invoke('tray-menu-data'),
+    onRefresh: (callback) => ipcRenderer.on('tray-menu-refresh', (_, data) => callback(data)),
+    resize: (height) => ipcRenderer.send('tray-menu-ready', height),
+    action: (action, payload) => ipcRenderer.send('tray-menu-action', { action, payload }),
+    close: () => ipcRenderer.send('tray-menu-close'),
+  },
+
   // Platform info
   platform: process.platform,
 });

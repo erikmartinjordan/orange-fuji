@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>Orange Fuji</title>
+  <link rel="stylesheet" href="tray-menu.css">
+</head>
+<body>
+  <div class="tray-surface" id="tray-surface">
+    <div class="tray-menu" role="menu" aria-label="Orange Fuji">
+
+      <button type="button" class="tray-item" role="menuitem" data-action="open">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.6"/><path d="M3.5 9.5h17"/><path d="M14.5 14.5 18 11l-3.5-3.5"/></svg>
+        <span class="tray-item__label">Open</span>
+      </button>
+
+      <div class="tray-sep" role="separator"></div>
+
+      <button type="button" class="tray-item" role="menuitem" data-action="preferences">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10"/><path d="M18 7h2"/><circle cx="16" cy="7" r="2"/><path d="M4 17h4"/><path d="M12 17h8"/><circle cx="10" cy="17" r="2"/></svg>
+        <span class="tray-item__label">Preferences…</span>
+      </button>
+
+      <div class="tray-sep" role="separator"></div>
+
+      <button type="button" class="tray-item" role="menuitem" data-action="capture-region">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v14a2 2 0 0 0 2 2h14"/><path d="M3 5h14a2 2 0 0 1 2 2v14"/></svg>
+        <span class="tray-item__label">Capture Region</span>
+        <span class="tray-item__kbd">⌘⇧S</span>
+      </button>
+
+      <button type="button" class="tray-item" role="menuitem" data-action="capture-window">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.6"/><path d="M3.5 9.5h17"/><path d="M7 7h.01M10 7h.01"/></svg>
+        <span class="tray-item__label">Capture Window</span>
+        <span class="tray-item__kbd">⌘⇧W</span>
+      </button>
+
+      <button type="button" class="tray-item" role="menuitem" data-action="capture-fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H4v5"/><path d="M15 4h5v5"/><path d="M20 15v5h-5"/><path d="M4 15v5h5"/></svg>
+        <span class="tray-item__label">Capture Fullscreen</span>
+        <span class="tray-item__kbd">⌘⇧F</span>
+      </button>
+
+      <button type="button" class="tray-item" role="menuitem" data-action="record-screen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5.5" width="13" height="13" rx="2.6"/><circle cx="9.5" cy="12" r="3" fill="currentColor" stroke="none"/><path d="m16 10 4-2.2v8.4L16 14"/></svg>
+        <span class="tray-item__label">Record Screen</span>
+        <span class="tray-item__kbd">⌘⇧R</span>
+      </button>
+
+      <div class="tray-sep" role="separator"></div>
+
+      <section class="capture-history" id="capture-history" aria-label="Recent captures">
+        <header class="capture-history__header">
+          <span class="capture-history__title">Recent captures</span>
+          <span class="capture-history__meta">
+            <span class="capture-history__count" id="history-count"></span>
+            <button type="button" class="capture-history__clear" id="history-clear">Clear</button>
+          </span>
+        </header>
+        <div class="capture-history__stage" id="history-stage"></div>
+      </section>
+
+      <div class="tray-sep" role="separator"></div>
+
+      <button type="button" class="tray-item" role="menuitem" data-action="about">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>
+        <span class="tray-item__label">About Orange Fuji</span>
+      </button>
+
+      <div class="tray-sep" role="separator"></div>
+
+      <button type="button" class="tray-item tray-item--danger" role="menuitem" data-action="quit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg>
+        <span class="tray-item__label">Quit Orange Fuji</span>
+        <span class="tray-item__kbd">⌘Q</span>
+      </button>
+
+    </div>
+  </div>
+  <script src="tray-menu.js"></script>
+</body>
+</html>

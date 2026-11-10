@@ -45,6 +45,11 @@ let cropModePreviousBounds = null;
 let cropModeBoundsLocked = false;
 let quitRequested = false;
 let tray = null;
+let trayMenuWindow = null;
+let trayMenuHiddenAt = 0;
+let trayMenuShowTimer = null;
+let trayMenuPending = false;
+let trayMenuIpcRegistered = false;
 let desktopIconsHidden = false;
 let desktopIconsVisibleBeforeRecording = true;
 let preferencesWindow = null;
@@ -463,6 +468,165 @@ function autoSaveCaptureData(captureData, captureMode = 'screenshot') {
     .filter(Boolean);
 }
 
+// ── Capture history ─────────────────────────────────────────────────────────
+
+const CAPTURE_HISTORY_LIMIT = 30;
+const CAPTURE_HISTORY_DIRNAME = 'capture-history';
+const CAPTURE_HISTORY_INDEX = 'index.json';
+const CAPTURE_HISTORY_VISIBLE = 5;
+
+function captureHistoryDirectory() {
+  return path.join(app.getPath('userData'), CAPTURE_HISTORY_DIRNAME);
+}
+
+function captureHistoryIndexPath() {
+  return path.join(captureHistoryDirectory(), CAPTURE_HISTORY_INDEX);
+}
+
+function readCaptureHistory() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(captureHistoryIndexPath(), 'utf8'));
+    const entries = Array.isArray(raw?.entries) ? raw.entries : [];
+    return entries.filter((entry) => entry && entry.id && entry.file && entry.thumb);
+  } catch (_) {
+    return [];
+  }
+}
+
+function writeCaptureHistory(entries) {
+  fs.mkdirSync(captureHistoryDirectory(), { recursive: true });
+  fs.writeFileSync(captureHistoryIndexPath(), JSON.stringify({ entries }, null, 2));
+}
+
+function removeCaptureHistoryFiles(entry) {
+  if (!entry) return;
+  for (const key of ['file', 'thumb']) {
+    if (!entry[key]) continue;
+    try { fs.rmSync(path.join(captureHistoryDirectory(), entry[key]), { force: true }); } catch (_) {}
+  }
+}
+
+function historyEntryDataUrl(entry, key = 'thumb') {
+  if (!entry?.[key]) return '';
+  try {
+    return readImageFileAsDataUrl(path.join(captureHistoryDirectory(), entry[key]));
+  } catch (_) {
+    return '';
+  }
+}
+
+function recordCaptureHistory(payload, captureMode = 'region') {
+  const dataUrls = [];
+  if (typeof payload === 'string') {
+    dataUrls.push(payload);
+  } else if (payload?.type === 'single' && payload.dataUrl) {
+    dataUrls.push(payload.dataUrl);
+  } else if (Array.isArray(payload?.screens)) {
+    const ordered = [...payload.screens].sort((a, b) => {
+      if (a.bounds?.y !== b.bounds?.y) return (a.bounds?.y || 0) - (b.bounds?.y || 0);
+      return (a.bounds?.x || 0) - (b.bounds?.x || 0);
+    });
+    for (const screenData of ordered) {
+      if (screenData?.dataUrl) dataUrls.push(screenData.dataUrl);
+    }
+  }
+  if (!dataUrls.length) return [];
+
+  const entries = readCaptureHistory();
+  const created = [];
+  dataUrls.forEach((dataUrl, index) => {
+    try {
+      const image = nativeImage.createFromDataURL(dataUrl);
+      if (image.isEmpty()) return;
+      const size = image.getSize();
+      const id = `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`;
+      const file = `capture-${id}.png`;
+      const thumb = `capture-${id}-thumb.png`;
+      fs.mkdirSync(captureHistoryDirectory(), { recursive: true });
+      fs.writeFileSync(path.join(captureHistoryDirectory(), file), image.toPNG());
+      const maxThumbWidth = 520;
+      const thumbImage = size.width > maxThumbWidth
+        ? image.resize({ width: maxThumbWidth, quality: 'good' })
+        : image;
+      fs.writeFileSync(path.join(captureHistoryDirectory(), thumb), thumbImage.toPNG());
+      const entry = {
+        id,
+        mode: captureMode,
+        createdAt: Date.now(),
+        file,
+        thumb,
+        width: size.width,
+        height: size.height,
+      };
+      entries.unshift(entry);
+      created.push(entry);
+    } catch (error) {
+      console.error('[orange-fuji][history] failed to record capture:', error.message);
+    }
+  });
+
+  while (entries.length > CAPTURE_HISTORY_LIMIT) {
+    removeCaptureHistoryFiles(entries.pop());
+  }
+  writeCaptureHistory(entries);
+
+  if (trayMenuWindow && !trayMenuWindow.isDestroyed()) {
+    trayMenuWindow.webContents.send('tray-menu-refresh', trayMenuData());
+  }
+  return created;
+}
+
+function captureHistoryForDisplay() {
+  const entries = readCaptureHistory();
+  const items = [];
+  for (const entry of entries.slice(0, CAPTURE_HISTORY_VISIBLE)) {
+    const thumb = historyEntryDataUrl(entry, 'thumb');
+    if (!thumb) continue;
+    items.push({ id: entry.id, mode: entry.mode, createdAt: entry.createdAt, thumb });
+  }
+  return { total: entries.length, items };
+}
+
+function clearCaptureHistory() {
+  try {
+    fs.rmSync(captureHistoryDirectory(), { recursive: true, force: true });
+  } catch (error) {
+    console.error('[orange-fuji][history] failed to clear history:', error.message);
+  }
+  if (trayMenuWindow && !trayMenuWindow.isDestroyed()) {
+    trayMenuWindow.webContents.send('tray-menu-refresh', trayMenuData());
+  }
+}
+
+function openCaptureHistoryEntry(id) {
+  const entry = readCaptureHistory().find((item) => item.id === id);
+  if (!entry) return false;
+  const filePath = path.join(captureHistoryDirectory(), entry.file);
+  if (!fs.existsSync(filePath)) {
+    removeCaptureHistoryFiles(entry);
+    return false;
+  }
+  const dataUrl = readImageFileAsDataUrl(filePath);
+  const wasMissing = !mainWindow || mainWindow.isDestroyed();
+  if (wasMissing) createMainWindow();
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
+  const deliver = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    applyEditorWindowMode({ show: true, fromCapture: true });
+    mainWindow.webContents.send('load-capture', {
+      dataUrl,
+      captureMode: entry.mode,
+      source: 'history',
+    });
+  };
+  if (wasMissing || mainWindow.webContents.isLoading()) {
+    mainWindow.once('ready-to-show', deliver);
+  } else {
+    deliver();
+  }
+  return true;
+}
+
 function sourceTypesForRecordingSourceId(sourceId) {
   const sourceIdStr = String(sourceId || '');
   if (sourceIdStr.startsWith('window:')) return ['window', 'screen'];
@@ -775,9 +939,7 @@ function applyToolbarWindowMode(options = {}) {
   mainWindow.setContentProtection(false);
   mainWindow.setSkipTaskbar(process.platform === 'darwin');
   try { mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'floating' : 'normal'); } catch (_) { mainWindow.setAlwaysOnTop(true); }
-  if (process.platform === 'darwin') {
-    try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch (_) {}
-  }
+  ensureVisibleOnAllWorkspaces(mainWindow);
   mainWindow.setBounds(getToolbarWindowBounds(), false);
 
   if (options.show) {
@@ -810,11 +972,6 @@ function applyEditorWindowMode(options = {}) {
   mainWindow.setMinimumSize(EDITOR_MIN_SIZE.width, EDITOR_MIN_SIZE.height);
   mainWindow.setSkipTaskbar(false);
   try { mainWindow.setAlwaysOnTop(false); } catch (_) {}
-  // fromCapture: keep visible on all workspaces to avoid Space jump when the
-  // source was the desktop (no app window) and the last active app was elsewhere.
-  if (process.platform === 'darwin' && !options.fromCapture) {
-    try { mainWindow.setVisibleOnAllWorkspaces(false); } catch (_) {}
-  }
   try { mainWindow.setHasShadow(true); } catch (_) {}
 
   if (!wasEditor || !mainWindow.isVisible()) {
@@ -828,16 +985,8 @@ function applyEditorWindowMode(options = {}) {
     }
     if (mainWindow.isMinimized()) mainWindow.restore();
     if (process.platform === 'darwin') {
-      try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch (_) {}
+      ensureVisibleOnAllWorkspaces(mainWindow);
       mainWindow.showInactive();
-      // Keep the window on the user's current Space for capture/recording
-      // results. Toggling this off a moment later can drag macOS back to the
-      // app's previous Space.
-      if (!options.fromCapture) {
-        setTimeout(() => {
-          try { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setVisibleOnAllWorkspaces(false); } catch (_) {}
-        }, 600);
-      }
     } else {
       mainWindow.show();
       mainWindow.moveTop();
@@ -906,6 +1055,7 @@ function triggerPreviewToast(payload) {
     hasShadow: false,
     backgroundColor: '#00000000',
     show: false,
+    ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -916,9 +1066,6 @@ function triggerPreviewToast(payload) {
   previewToastWindow = toastWindow;
 
   toastWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'floating' : 'normal');
-  if (process.platform === 'darwin') {
-    try { toastWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch (_) {}
-  }
 
   const captureMode = isCaptureDataToastPayload(payload) ? 'fullscreen' : (payload?.captureMode || 'region');
   try { toastWindow.setHasShadow(false); } catch (_) {}
@@ -1397,6 +1544,7 @@ async function captureNativeMacWindow() {
     const dataUrl = readImageFileAsDataUrl(filePath);
     copyDataUrlToClipboard(dataUrl);
     autoSaveCaptureDataUrl(dataUrl, 'window');
+    recordCaptureHistory(dataUrl, 'window');
     if (mainWindow) {
       applyToolbarWindowMode({ show: true });
       triggerPreviewToast({
@@ -1911,6 +2059,14 @@ function showWindowInactiveOnMac(win) {
   else win.show();
 }
 
+function ensureVisibleOnAllWorkspaces(win) {
+  if (process.platform !== 'darwin' || !win || win.isDestroyed()) return;
+  try {
+    if (typeof win.isVisibleOnAllWorkspaces === 'function' && win.isVisibleOnAllWorkspaces()) return;
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+  } catch (_) {}
+}
+
 function rectsOverlap(a, b, padding = 0) {
   return !(
     a.x + a.width <= b.x - padding ||
@@ -2074,6 +2230,7 @@ function showRecordingIndicator(options = {}) {
         autoHideMenuBar: true,
         fullscreenable: true,
         enableLargerThanScreen: true,
+        ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
         webPreferences: {
           contextIsolation: false,
           nodeIntegration: true,
@@ -2082,7 +2239,6 @@ function showRecordingIndicator(options = {}) {
       });
 
       overlayWindow.setAlwaysOnTop(true, 'screen-saver');
-      overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
       overlayWindow.setContentProtection(true);
       overlayWindow.setIgnoreMouseEvents(true, { forward: true });
 
@@ -2150,6 +2306,7 @@ function showRecordingIndicator(options = {}) {
     hasShadow: false,
     show: false,
     autoHideMenuBar: true,
+    ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
     webPreferences: {
       contextIsolation: false,
       nodeIntegration: true,
@@ -2158,7 +2315,6 @@ function showRecordingIndicator(options = {}) {
   });
 
   controlsWindow.setAlwaysOnTop(true, 'screen-saver');
-  controlsWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
   controlsWindow.setContentProtection(true);
 
   controlsWindow.webContents.once('did-finish-load', () => {
@@ -2691,7 +2847,7 @@ async function createCaptureOverlays(captureData, mode = 'region', windowBounds 
       applyToolbarWindowMode();
 
       if (process.platform === 'darwin') {
-        try { mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch (_) {}
+        ensureVisibleOnAllWorkspaces(mainWindow);
         try { mainWindow.setAlwaysOnTop(true, 'screen-saver'); } catch (_) { mainWindow.setAlwaysOnTop(true); }
       }
 
@@ -3090,7 +3246,7 @@ ipcMain.handle('start-capture', async (event, options = {}) => {
     const showToolbarBeforeCapture = options?.showToolbar !== false;
     const includeOrangeFuji = shouldCaptureOrangeFuji(options);
     if (showToolbarBeforeCapture && includeOrangeFuji && mainWindow && !mainWindow.isDestroyed()) {
-      if (process.platform === 'darwin') mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+      ensureVisibleOnAllWorkspaces(mainWindow);
       mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'screen-saver' : 'normal');
       showWindowInactiveOnMac(mainWindow);
       if (process.platform !== 'darwin') mainWindow.moveTop();
@@ -3109,7 +3265,7 @@ async function captureWindow(options = {}) {
   const includeOrangeFuji = shouldCaptureOrangeFuji(options);
   if (includeOrangeFuji && mainWindow && !mainWindow.isDestroyed()) {
     setOrangeFujiWindowsContentProtection(false);
-    if (process.platform === 'darwin') mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+    ensureVisibleOnAllWorkspaces(mainWindow);
     mainWindow.setAlwaysOnTop(true, process.platform === 'darwin' ? 'screen-saver' : 'normal');
     showWindowInactiveOnMac(mainWindow);
     if (process.platform !== 'darwin') mainWindow.moveTop();
@@ -3176,6 +3332,7 @@ async function captureFullscreen(options = {}) {
     const captureData = await captureAllScreens();
     copyCaptureDataToClipboard(captureData);
     autoSaveCaptureData(captureData, 'fullscreen');
+    recordCaptureHistory(captureData, 'fullscreen');
     if (mainWindow) {
       notifyRendererCaptureFinished();
       applyToolbarWindowMode();
@@ -3217,6 +3374,7 @@ ipcMain.on('window-overlay-select', async (event, windowName) => {
       windowPickerSources = [];
       copyDataUrlToClipboard(dataUrl);
       autoSaveCaptureDataUrl(dataUrl, 'window');
+      recordCaptureHistory(dataUrl, 'window');
       if (mainWindow) {
         notifyRendererCaptureFinished();
         applyToolbarWindowMode({ show: true });
@@ -3240,6 +3398,7 @@ ipcMain.on('capture-complete', (event, imageDataUrl) => {
   pendingCaptureReturnMode = null;
   copyDataUrlToClipboard(imageDataUrl);
   autoSaveCaptureDataUrl(imageDataUrl, 'region');
+  recordCaptureHistory(imageDataUrl, 'region');
   if (mainWindow) {
     notifyRendererCaptureFinished();
     if (returnMode === 'editor') applyEditorWindowMode({ show: true, fromCapture: true });
@@ -3295,6 +3454,7 @@ ipcMain.on('window-source-select', async (event, sourceId) => {
 
     const dataUrl = selected.thumbnail.toDataURL();
     copyDataUrlToClipboard(dataUrl);
+    recordCaptureHistory(dataUrl, 'window');
     if (mainWindow) {
       applyToolbarWindowMode({ show: true });
       triggerPreviewToast({ dataUrl, captureMode: 'window' });
@@ -3946,6 +4106,252 @@ function shortcutAcceleratorsForKey(key) {
     : [`Control+Shift+${key}`];
 }
 
+function sendCaptureActionToRenderer(channel) {
+  const wasMissing = !mainWindow || mainWindow.isDestroyed();
+  if (wasMissing) createMainWindow();
+  const send = () => mainWindow?.webContents?.send(channel);
+  if (wasMissing || mainWindow?.webContents?.isLoading()) {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.once('ready-to-show', send);
+    return;
+  }
+  send();
+}
+
+function openMainWindowFromTray() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow(true);
+  } else {
+    applyToolbarWindowMode({ show: true });
+    mainWindow.show();
+    mainWindow.focus();
+  }
+  mainWindow?.webContents?.send('toolbar-open-requested');
+}
+
+function quitFromTray() {
+  quitRequested = true;
+  if (!mainWindow || mainWindow.isDestroyed()) { app.quit(); return; }
+  mainWindow.close();
+}
+
+function trayCaptureHistoryIcon(entry) {
+  try {
+    const image = nativeImage.createFromPath(path.join(captureHistoryDirectory(), entry.thumb));
+    if (image.isEmpty()) return undefined;
+    return image.resize({ height: 18, quality: 'good' });
+  } catch (_) {
+    return undefined;
+  }
+}
+
+function trayCaptureHistoryLabel(entry) {
+  const mode = String(entry.mode || 'capture');
+  const label = mode.charAt(0).toUpperCase() + mode.slice(1);
+  let time = '';
+  try {
+    time = new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (_) {}
+  return time ? `${label} — ${time}` : label;
+}
+
+function buildNativeTrayMenu(trayIcons) {
+  const historyEntries = readCaptureHistory().slice(0, 8);
+  const historySubmenu = historyEntries.length
+    ? [
+        ...historyEntries.map((entry) => ({
+          label: trayCaptureHistoryLabel(entry),
+          icon: trayCaptureHistoryIcon(entry),
+          click: () => openCaptureHistoryEntry(entry.id),
+        })),
+        { type: 'separator' },
+        { label: 'Clear History', click: () => clearCaptureHistory() },
+      ]
+    : [{ label: 'No captures yet', enabled: false }];
+
+  return Menu.buildFromTemplate([
+    { label: 'Open', click: () => openMainWindowFromTray() },
+    { type: 'separator' },
+    { label: 'Preferences...', click: () => openPreferencesWindow() },
+    { type: 'separator' },
+    { label: 'Capture Region', accelerator: TRAY_CAPTURE_SHORTCUTS.captureRegion.accelerator, icon: trayIcons.captureRegion, click: () => sendCaptureActionToRenderer('trigger-capture') },
+    { label: 'Capture Window', accelerator: TRAY_CAPTURE_SHORTCUTS.captureWindow.accelerator, icon: trayIcons.captureWindow, click: () => sendCaptureActionToRenderer('trigger-capture-window') },
+    { label: 'Capture Fullscreen', accelerator: TRAY_CAPTURE_SHORTCUTS.captureFullscreen.accelerator, icon: trayIcons.captureFullscreen, click: () => sendCaptureActionToRenderer('trigger-capture-fullscreen') },
+    { label: 'Record Screen', accelerator: TRAY_CAPTURE_SHORTCUTS.recordScreen.accelerator, icon: trayIcons.recordScreen, click: () => sendCaptureActionToRenderer('trigger-record-screen') },
+    { type: 'separator' },
+    { label: 'Recent Captures', submenu: historySubmenu },
+    { type: 'separator' },
+    { label: 'About', click: showAboutDialog },
+    { type: 'separator' },
+    { label: 'Quit', click: () => quitFromTray() },
+  ]);
+}
+
+function trayMenuData() {
+  return { history: captureHistoryForDisplay() };
+}
+
+function hideTrayMenuWindow() {
+  clearTimeout(trayMenuShowTimer);
+  trayMenuShowTimer = null;
+  trayMenuPending = false;
+  if (trayMenuWindow && !trayMenuWindow.isDestroyed() && trayMenuWindow.isVisible()) {
+    trayMenuWindow.hide();
+    trayMenuHiddenAt = Date.now();
+  }
+}
+
+function positionTrayMenuWindow() {
+  if (!trayMenuWindow || trayMenuWindow.isDestroyed()) return;
+  const [width, height] = trayMenuWindow.getContentSize();
+  let trayBounds = { x: 0, y: 0, width: 0, height: 0 };
+  try { trayBounds = tray.getBounds() || trayBounds; } catch (_) {}
+  const anchor = {
+    x: Math.round(trayBounds.x + trayBounds.width / 2),
+    y: Math.round(trayBounds.y + trayBounds.height),
+  };
+  const display = screen.getDisplayNearestPoint(anchor) || screen.getPrimaryDisplay();
+  const { workArea } = display;
+  const x = Math.round(Math.min(
+    Math.max(anchor.x - width / 2, workArea.x + 6),
+    workArea.x + workArea.width - width - 6,
+  ));
+  const preferredY = anchor.y + 6;
+  const y = Math.round(Math.min(
+    Math.max(preferredY, workArea.y + 6),
+    workArea.y + workArea.height - height - 6,
+  ));
+  trayMenuWindow.setPosition(x, y);
+}
+
+function revealTrayMenuWindow() {
+  if (!trayMenuWindow || trayMenuWindow.isDestroyed()) return;
+  clearTimeout(trayMenuShowTimer);
+  trayMenuShowTimer = null;
+  trayMenuPending = false;
+  positionTrayMenuWindow();
+  trayMenuWindow.show();
+  trayMenuWindow.focus();
+}
+
+function createTrayMenuWindow() {
+  if (trayMenuWindow && !trayMenuWindow.isDestroyed()) return trayMenuWindow;
+  trayMenuWindow = new BrowserWindow({
+    width: 320,
+    height: 520,
+    show: false,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    hasShadow: false,
+    roundedCorners: false,
+    acceptFirstMouse: true,
+    backgroundColor: '#00000000',
+    autoHideMenuBar: true,
+    webPreferences: getAppWebPreferences(),
+  });
+  try { trayMenuWindow.setAlwaysOnTop(true, 'pop-up-menu'); } catch (_) { trayMenuWindow.setAlwaysOnTop(true); }
+  if (process.platform === 'darwin') {
+    try { trayMenuWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true }); } catch (_) {}
+  }
+  trayMenuWindow.loadFile(path.join(__dirname, 'renderer', 'tray-menu.html'));
+  trayMenuWindow.on('blur', () => hideTrayMenuWindow());
+  trayMenuWindow.on('closed', () => {
+    clearTimeout(trayMenuShowTimer);
+    trayMenuShowTimer = null;
+    trayMenuWindow = null;
+  });
+  return trayMenuWindow;
+}
+
+function showTrayMenuWindow() {
+  const win = createTrayMenuWindow();
+  if (!win || win.isDestroyed()) return;
+  const refresh = () => {
+    if (win.isDestroyed()) return;
+    win.webContents.send('tray-menu-refresh', trayMenuData());
+  };
+  clearTimeout(trayMenuShowTimer);
+  trayMenuPending = true;
+  // Safety net: if the renderer fails to report its height, still show the menu.
+  trayMenuShowTimer = setTimeout(revealTrayMenuWindow, 420);
+  if (win.webContents.isLoading()) {
+    win.webContents.once('did-finish-load', refresh);
+  } else {
+    refresh();
+  }
+}
+
+function handleTrayMenuAction(action, payload = {}) {
+  hideTrayMenuWindow();
+  switch (action) {
+    case 'open':
+      openMainWindowFromTray();
+      break;
+    case 'preferences':
+      openPreferencesWindow();
+      break;
+    case 'capture-region':
+      sendCaptureActionToRenderer('trigger-capture');
+      break;
+    case 'capture-window':
+      sendCaptureActionToRenderer('trigger-capture-window');
+      break;
+    case 'capture-fullscreen':
+      sendCaptureActionToRenderer('trigger-capture-fullscreen');
+      break;
+    case 'record-screen':
+      sendCaptureActionToRenderer('trigger-record-screen');
+      break;
+    case 'history-open':
+      if (payload?.id) openCaptureHistoryEntry(payload.id);
+      break;
+    case 'history-clear':
+      clearCaptureHistory();
+      break;
+    case 'about':
+      showAboutDialog();
+      break;
+    case 'quit':
+      quitFromTray();
+      break;
+    default:
+      break;
+  }
+}
+
+function registerTrayMenuIpc() {
+  if (trayMenuIpcRegistered) return;
+  trayMenuIpcRegistered = true;
+  ipcMain.handle('tray-menu-data', () => trayMenuData());
+  ipcMain.on('tray-menu-ready', (event, height) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win !== trayMenuWindow || win.isDestroyed()) return;
+    const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()) || screen.getPrimaryDisplay();
+    const maxHeight = Math.max(240, display.workAreaSize.height - 24);
+    const targetHeight = Math.min(Math.max(Math.round(Number(height) || 0), 220), maxHeight);
+    const [, currentHeight] = win.getContentSize();
+    if (currentHeight !== targetHeight) win.setContentSize(320, targetHeight);
+    if (trayMenuPending) revealTrayMenuWindow();
+  });
+  ipcMain.on('tray-menu-action', (event, payload = {}) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win !== trayMenuWindow) return;
+    handleTrayMenuAction(payload?.action, payload?.payload);
+  });
+  ipcMain.on('tray-menu-close', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win !== trayMenuWindow) return;
+    hideTrayMenuWindow();
+  });
+}
+
 function setupTray() {
   if (process.platform !== 'darwin' || tray) return;
   const trayIcons = {
@@ -3964,38 +4370,14 @@ function setupTray() {
   trayIcon.setTemplateImage(true);
   tray = new Tray(trayIcon);
   tray.setToolTip('Orange Fuji');
+  registerTrayMenuIpc();
 
-  const traySendToRenderer = (channel) => {
-    const wasMissing = !mainWindow || mainWindow.isDestroyed();
-    if (wasMissing) createMainWindow();
-    const send = () => mainWindow?.webContents?.send(channel);
-    if (wasMissing || mainWindow?.webContents?.isLoading()) {
-      if (!mainWindow || mainWindow.isDestroyed()) return;
-      mainWindow.once('ready-to-show', send);
-      return;
-    }
-    send();
+  const popUpNativeTrayMenu = () => {
+    hideTrayMenuWindow();
+    tray.popUpContextMenu(buildNativeTrayMenu(trayIcons));
   };
-
-  const trayMenu = Menu.buildFromTemplate([
-    { label: 'Open', click: () => { if (!mainWindow || mainWindow.isDestroyed()) { createMainWindow(true); } else { applyToolbarWindowMode({ show: true }); mainWindow.show(); mainWindow.focus(); } mainWindow?.webContents?.send('toolbar-open-requested'); } },
-    { type: 'separator' },
-    { label: 'Preferences...', click: () => openPreferencesWindow() },
-    { type: 'separator' },
-    { label: 'Capture Region', accelerator: TRAY_CAPTURE_SHORTCUTS.captureRegion.accelerator, icon: trayIcons.captureRegion, click: () => traySendToRenderer('trigger-capture') },
-    { label: 'Capture Window', accelerator: TRAY_CAPTURE_SHORTCUTS.captureWindow.accelerator, icon: trayIcons.captureWindow, click: () => traySendToRenderer('trigger-capture-window') },
-    { label: 'Capture Fullscreen', accelerator: TRAY_CAPTURE_SHORTCUTS.captureFullscreen.accelerator, icon: trayIcons.captureFullscreen, click: () => traySendToRenderer('trigger-capture-fullscreen') },
-    { label: 'Record Screen', accelerator: TRAY_CAPTURE_SHORTCUTS.recordScreen.accelerator, icon: trayIcons.recordScreen, click: () => traySendToRenderer('trigger-record-screen') },
-    { type: 'separator' },
-    { label: 'About', click: showAboutDialog },
-    { type: 'separator' },
-    { label: 'Quit', click: () => { quitRequested = true; if (!mainWindow || mainWindow.isDestroyed()) { app.quit(); return; } mainWindow.close(); } },
-  ]);
-
-  tray.setContextMenu(trayMenu);
-  tray.on('click', () => {
-    tray.popUpContextMenu();
-  });
+  tray.on('click', popUpNativeTrayMenu);
+  tray.on('right-click', popUpNativeTrayMenu);
 }
 
 applyLegacyUserDataPath();
