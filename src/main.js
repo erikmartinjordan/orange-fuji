@@ -4135,11 +4135,72 @@ function quitFromTray() {
   mainWindow.close();
 }
 
+const TRAY_HISTORY_THUMB = Object.freeze({ width: 24, height: 18, radius: 4, scale: 2 });
+
+const TRAY_HISTORY_MODE_LABELS = {
+  region: 'Region capture',
+  window: 'Window capture',
+  fullscreen: 'Fullscreen capture',
+  screenshot: 'Screenshot',
+  recording: 'Screen recording',
+};
+
+function applyRoundedCorners(bitmap, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const px = x + 0.5;
+      const py = y + 0.5;
+      const cx = Math.min(Math.max(px, r), width - r);
+      const cy = Math.min(Math.max(py, r), height - r);
+      const distance = Math.hypot(px - cx, py - cy);
+      if (distance <= r - 0.5) continue;
+      const coverage = Math.max(0, Math.min(1, r + 0.5 - distance));
+      if (coverage >= 1) continue;
+      const offset = (y * width + x) * 4;
+      bitmap[offset] = Math.round(bitmap[offset] * coverage);
+      bitmap[offset + 1] = Math.round(bitmap[offset + 1] * coverage);
+      bitmap[offset + 2] = Math.round(bitmap[offset + 2] * coverage);
+      bitmap[offset + 3] = Math.round(bitmap[offset + 3] * coverage);
+    }
+  }
+}
+
+function roundedTrayThumbnail(image) {
+  const { width, height, radius, scale } = TRAY_HISTORY_THUMB;
+  const size = image.getSize();
+  if (!size.width || !size.height) return image;
+  const targetRatio = width / height;
+  let cropWidth = size.width;
+  let cropHeight = Math.round(cropWidth / targetRatio);
+  if (cropHeight > size.height) {
+    cropHeight = size.height;
+    cropWidth = Math.round(cropHeight * targetRatio);
+  }
+  const cropped = image.crop({
+    x: Math.max(0, Math.round((size.width - cropWidth) / 2)),
+    y: Math.max(0, Math.round((size.height - cropHeight) / 2)),
+    width: Math.max(1, Math.min(cropWidth, size.width)),
+    height: Math.max(1, Math.min(cropHeight, size.height)),
+  });
+  const bitmapWidth = width * scale;
+  const bitmapHeight = height * scale;
+  const scaled = cropped.resize({ width: bitmapWidth, height: bitmapHeight, quality: 'best' });
+  const bitmap = Buffer.from(scaled.toBitmap({ scaleFactor: 1 }));
+  if (bitmap.length < bitmapWidth * bitmapHeight * 4) return scaled;
+  applyRoundedCorners(bitmap, bitmapWidth, bitmapHeight, radius * scale);
+  return nativeImage.createFromBitmap(bitmap, {
+    width: bitmapWidth,
+    height: bitmapHeight,
+    scaleFactor: scale,
+  });
+}
+
 function trayCaptureHistoryIcon(entry) {
   try {
     const image = nativeImage.createFromPath(path.join(captureHistoryDirectory(), entry.thumb));
     if (image.isEmpty()) return undefined;
-    return image.resize({ height: 18, quality: 'good' });
+    return roundedTrayThumbnail(image);
   } catch (_) {
     return undefined;
   }
@@ -4147,23 +4208,58 @@ function trayCaptureHistoryIcon(entry) {
 
 function trayCaptureHistoryLabel(entry) {
   const mode = String(entry.mode || 'capture');
-  const label = mode.charAt(0).toUpperCase() + mode.slice(1);
-  let time = '';
+  return TRAY_HISTORY_MODE_LABELS[mode] || `${mode.charAt(0).toUpperCase()}${mode.slice(1)} capture`;
+}
+
+function trayCaptureHistoryTime(entry) {
   try {
-    time = new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch (_) {}
-  return time ? `${label} — ${time}` : label;
+    const date = new Date(entry.createdAt);
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (date.toDateString() === new Date().toDateString()) return time;
+    const day = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return `${day}, ${time}`;
+  } catch (_) {
+    return '';
+  }
+}
+
+function trayCaptureHistoryMeta(entry) {
+  const parts = [];
+  const when = trayCaptureHistoryTime(entry);
+  if (when) parts.push(when);
+  const width = Number(entry.width);
+  const height = Number(entry.height);
+  if (width > 0 && height > 0) parts.push(`${width} × ${height}`);
+  return parts.join(' · ');
+}
+
+function menuSupportsSublabel() {
+  if (process.platform !== 'darwin') return false;
+  const [major, minor] = String(process.getSystemVersion() || '')
+    .split('.')
+    .map((part) => Number.parseInt(part, 10));
+  if (!Number.isFinite(major)) return false;
+  return major > 14 || (major === 14 && minor >= 4);
 }
 
 function buildNativeTrayMenu(trayIcons) {
   const historyEntries = readCaptureHistory().slice(0, 8);
+  const withSublabel = menuSupportsSublabel();
   const historySubmenu = historyEntries.length
     ? [
-        ...historyEntries.map((entry) => ({
-          label: trayCaptureHistoryLabel(entry),
-          icon: trayCaptureHistoryIcon(entry),
-          click: () => openCaptureHistoryEntry(entry.id),
-        })),
+        ...historyEntries.map((entry) => {
+          const label = trayCaptureHistoryLabel(entry);
+          const time = trayCaptureHistoryTime(entry);
+          const meta = trayCaptureHistoryMeta(entry);
+          const item = {
+            label: withSublabel || !time ? label : `${label} — ${time}`,
+            icon: trayCaptureHistoryIcon(entry),
+            toolTip: meta ? `${label} · ${meta}` : label,
+            click: () => openCaptureHistoryEntry(entry.id),
+          };
+          if (withSublabel && meta) item.sublabel = meta;
+          return item;
+        }),
         { type: 'separator' },
         { label: 'Clear History', click: () => clearCaptureHistory() },
       ]
