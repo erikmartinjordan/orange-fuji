@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.17.0...v1.18.0) (2026-11-11)
+
+
+### ✨ Features
+
+* **menu:** polish recent captures thumbnails and metadata ([334d676](https://github.com/erikmartinjordan/orange-fuji/commit/334d676f0439c3df8a987490aa2717a39cea544c))
+
 ## [1.17.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.16.1...v1.17.0) (2026-11-10)
 
 
