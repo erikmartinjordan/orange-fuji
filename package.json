@@ -20,9 +20,9 @@
     "build:desktop": "electron-builder --win --linux"
   },
   "devDependencies": {
-    "electron": "^32.3.3",
-    "electron-builder": "^25.1.8",
-    "@electron/notarize": "2.5.0"
+    "@electron/notarize": "2.5.0",
+    "electron": "^37.10.3",
+    "electron-builder": "^25.1.8"
   },
   "dependencies": {
     "electron-updater": "6.6.2",
