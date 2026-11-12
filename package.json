@@ -16,6 +16,7 @@
     "build:win": "electron-builder --win",
     "build:all": "npm run fetch:media && electron-builder --mac --win --linux",
     "build:mac:legacy": "npm run fetch:media && electron-builder --mac --config config/electron-builder.legacy-mac.cjs",
+    "build:mac:catalina": "npm run fetch:media && electron-builder --mac --config config/electron-builder.catalina-mac.cjs",
     "build:linux": "electron-builder --linux",
     "build:desktop": "electron-builder --win --linux"
   },
