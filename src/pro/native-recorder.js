@@ -28,8 +28,17 @@ const STOP_TIMEOUT_MS = 10000;
 let activeProcess = null;
 let activeSession = null; // { outPath, resolveStopped }
 
+function macOsSupportsNativeRecorder() {
+  const [major, minor] = String(process.getSystemVersion?.() || '')
+    .split('.')
+    .map((part) => Number.parseInt(part, 10));
+  if (!Number.isFinite(major)) return false;
+  return major > 12 || (major === 12 && minor >= 3);
+}
+
 function isSupported() {
   if (process.platform !== 'darwin') return false;
+  if (!macOsSupportsNativeRecorder()) return false;
   try {
     resolveBundledBinary('orange-fuji-recorder');
     return true;
