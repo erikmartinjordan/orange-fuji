@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.18.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.18.0...v1.18.1) (2026-11-12)
+
+
+### 🐛 Fixes
+
+* **recording:** skip native recorder on macOS below 12.3 ([950b1ed](https://github.com/erikmartinjordan/orange-fuji/commit/950b1edb73ab965782d321f1616a99342a4f032d))
+
+
+### 👷 CI
+
+* **mac:** allow building only the legacy macOS DMG ([71331de](https://github.com/erikmartinjordan/orange-fuji/commit/71331deda2fcbf497fb6028b18193fc21d1aa0a0))
+
 ## [1.18.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.17.0...v1.18.0) (2026-11-11)
 
 
