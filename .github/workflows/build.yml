@@ -6,6 +6,14 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      mac_target:
+        description: 'macOS build target'
+        type: choice
+        options:
+          - all
+          - legacy-only
+        default: all
 
 permissions:
   contents: write
@@ -63,7 +71,7 @@ jobs:
           ORANGE_FUJI_PRO_SUPABASE_PUBLISHABLE_KEY: ${{ vars.ORANGE_FUJI_PRO_SUPABASE_PUBLISHABLE_KEY || secrets.ORANGE_FUJI_PRO_SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Build (macOS)
-        if: matrix.platform == 'mac'
+        if: matrix.platform == 'mac' && inputs.mac_target != 'legacy-only'
         run: npm run build:mac -- --publish never
         env:
           DEBUG: electron-builder,electron-osx-sign*
