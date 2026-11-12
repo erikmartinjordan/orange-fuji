@@ -4,14 +4,14 @@ const { publish: _publish, ...buildWithoutPublish } = build;
 const legacyMacBuild = {
   ...buildWithoutPublish,
   artifactName: 'orange-fuji-legacy.${ext}',
-  electronVersion: '22.3.27',
+  electronVersion: '32.3.3',
   directories: {
     ...build.directories,
     output: 'dist/legacy',
   },
   mac: {
     ...build.mac,
-    minimumSystemVersion: '10.13.0',
+    minimumSystemVersion: '10.15.0',
     target: [
       {
         target: 'dmg',

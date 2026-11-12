@@ -99,16 +99,6 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Build Catalina macOS DMG
-        if: matrix.platform == 'mac'
-        run: npm run build:mac:catalina -- --publish never
-        env:
-          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-
       - name: Merge update metadata (macOS)
         if: matrix.platform == 'mac'
         run: node scripts/merge-update-metadata.js
@@ -185,7 +175,7 @@ jobs:
       - name: Collect binaries
         run: |
           mkdir -p release
-          find artifacts -type f \( -name "*.yml" \) -not -path "*/legacy/*" -not -path "*/catalina/*" -exec cp {} release/ \;
+          find artifacts -type f \( -name "*.yml" \) -not -path "*/legacy/*" -exec cp {} release/ \;
           find artifacts -type f \( -name "*.dmg" -o -name "*.zip" -o -name "*.blockmap" -o -name "*.AppImage" \) -exec cp {} release/ \;
           find artifacts -type f \( -name "orange-fuji-portable.exe" -o -name "Orange Fuji*.exe" \) -exec cp {} release/ \;
           ls -lh release/
