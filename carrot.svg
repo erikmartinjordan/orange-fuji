@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffbe5c"/>
+      <stop offset=".5" stop-color="#ff8a2a"/>
+      <stop offset="1" stop-color="#ee5600"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9ade4a"/>
+      <stop offset="1" stop-color="#4f9a1c"/>
+    </linearGradient>
+    <linearGradient id="leafDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#78c532"/>
+      <stop offset="1" stop-color="#3c7a13"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .arm{transform-box:fill-box}
+    .arm-l{transform-origin:100% 88%;animation:waveL 3.8s ease-in-out infinite}
+    .arm-r{transform-origin:0% 88%;animation:waveR 3.8s ease-in-out infinite}
+    .leaves{transform-box:fill-box;transform-origin:50% 100%;animation:leafSway 4.6s ease-in-out infinite}
+    @keyframes waveL{0%,100%{transform:rotate(0)}50%{transform:rotate(-9deg)}}
+    @keyframes waveR{0%,100%{transform:rotate(0)}50%{transform:rotate(9deg)}}
+    @keyframes leafSway{0%,100%{transform:rotate(-1.4deg)}50%{transform:rotate(1.8deg)}}
+    @media (prefers-reduced-motion:reduce){.arm,.leaves{animation:none}}
+  </style>
+  <g class="leaves">
+    <path d="M124,86 C112,76 104,64 102,50 C114,54 126,68 130,86 Z" fill="url(#leafDark)" stroke="#2f6b12" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M126,84 C112,68 108,46 118,28 C132,42 138,66 132,86 Z" fill="url(#leaf)" stroke="#2f6b12" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M130,84 C138,58 154,46 174,44 C172,64 156,82 136,90 Z" fill="url(#leaf)" stroke="#2f6b12" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M128,82 C126,58 132,34 148,22 C154,44 144,72 132,86 Z" fill="url(#leafDark)" stroke="#2f6b12" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+  <g class="arm arm-l">
+    <path d="M97,148 C84,146 75,137 71,124" fill="none" stroke="#ff8a2a" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="70" cy="122" r="6.4" fill="#ffd9a3" stroke="#d95400" stroke-width="2"/>
+  </g>
+  <g class="arm arm-r">
+    <path d="M161,148 C174,146 183,137 187,124" fill="none" stroke="#ff8a2a" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="188" cy="122" r="6.4" fill="#ffd9a3" stroke="#d95400" stroke-width="2"/>
+  </g>
+  <path d="M96,92 C94,84 100,76 110,76 L148,76 C158,76 164,84 162,92 C158,124 150,164 138,218 C135,230 131,240 128,242 C125,240 121,230 118,218 C106,164 98,124 96,92 Z"
+        fill="url(#body)" stroke="#d95400" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M108,98 C104,126 108,156 116,192" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M118,100 C116,132 120,168 124,206" fill="none" stroke="#e85e00" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+  <path d="M140,100 C142,132 138,168 133,206" fill="none" stroke="#e85e00" stroke-width="2" stroke-linecap="round" opacity=".45"/>
+  <path d="M128,96 C128,132 128,172 128,214" fill="none" stroke="#e85e00" stroke-width="1.6" stroke-linecap="round" opacity=".3"/>
+  <ellipse cx="102" cy="152" rx="7.5" ry="4.4" fill="#ff5a3a" opacity=".55"/>
+  <ellipse cx="154" cy="152" rx="7.5" ry="4.4" fill="#ff5a3a" opacity=".55"/>
+  <path d="M101,118 Q110,114 120,119" fill="none" stroke="#3a1d12" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M136,116 Q146,112 156,115" fill="none" stroke="#3a1d12" stroke-width="2.6" stroke-linecap="round"/>
+  <g>
+    <ellipse cx="112" cy="134" rx="10.5" ry="9" fill="#3a1d12"/>
+    <circle cx="109" cy="135" r="2.2" fill="#fff"/>
+    <path d="M101,130 Q112,125.5 123,130 L123,136.5 L101,136.5 Z" fill="#ff9636"/>
+    <path d="M102,130 Q112,126 122,130" fill="none" stroke="#3a1d12" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+  <g>
+    <ellipse cx="144" cy="134" rx="10.5" ry="9" fill="#3a1d12"/>
+    <circle cx="147" cy="135" r="2.2" fill="#fff"/>
+    <path d="M133,130 Q144,125.5 155,130 L155,136.5 L133,136.5 Z" fill="#ff9636"/>
+    <path d="M134,130 Q144,126 154,130" fill="none" stroke="#3a1d12" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+  <path d="M117,156 C124,166 137,168 146,159" fill="none" stroke="#3a1d12" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M146,159 C148,157 149,155 149,153" fill="none" stroke="#3a1d12" stroke-width="2.4" stroke-linecap="round"/>
+</svg>

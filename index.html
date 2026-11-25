@@ -123,8 +123,90 @@
     @keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
     .mascot-wrap{display:inline-block;will-change:transform}
     .mascot-float{position:relative;display:inline-block;animation:float 6s ease-in-out infinite}
-    .mascot{width:clamp(96px,11vw,134px);border-radius:27%;display:block;
+    .mascot-btn{position:relative;display:block;width:clamp(96px,11vw,134px);aspect-ratio:1;padding:0;border:0;
+      background:none;cursor:pointer;border-radius:27%;-webkit-tap-highlight-color:transparent;user-select:none;
+      will-change:transform;isolation:isolate}
+    .mascot-btn::before{content:"";position:absolute;inset:-16%;z-index:-1;border-radius:50%;pointer-events:none;
+      opacity:0;background:radial-gradient(circle,rgba(255,86,16,.62),rgba(255,40,0,.2) 46%,transparent 70%);
+      transform:scale(.8);transition:opacity .35s var(--ease)}
+    .mascot-btn[data-heat="3"]::before,.mascot-btn[data-heat="4"]::before{
+      opacity:1;animation:rageHalo 1s ease-in-out infinite alternate}
+    @keyframes rageHalo{from{transform:scale(.86);opacity:.55}to{transform:scale(1.12);opacity:1}}
+    .mascot-btn:focus-visible{outline:2px solid var(--orange);outline-offset:8px}
+    .mascot-face{position:absolute;inset:0;width:100%;height:100%;border-radius:27%;display:block;
+      opacity:0;pointer-events:none;transition:opacity .14s ease,filter .3s var(--ease);
       filter:drop-shadow(0 20px 32px rgba(0,0,0,.5)) drop-shadow(0 0 36px rgba(255,140,50,.38))}
+    .mascot-btn:hover .mascot-face{filter:drop-shadow(0 22px 34px rgba(0,0,0,.52)) drop-shadow(0 0 46px rgba(255,140,50,.58))}
+    .mascot-btn[data-heat="2"] .mascot-face,.mascot-btn[data-heat="3"] .mascot-face{
+      filter:drop-shadow(0 20px 32px rgba(0,0,0,.5)) drop-shadow(0 0 42px rgba(255,90,30,.62))}
+    .mascot-btn[data-heat="4"] .mascot-face{
+      filter:drop-shadow(0 20px 32px rgba(0,0,0,.5)) drop-shadow(0 0 56px rgba(255,50,10,.78))}
+    .mascot-btn[data-face="normal"] .mascot-normal,
+    .mascot-btn[data-face="annoyed"] .mascot-annoyed,
+    .mascot-btn[data-face="angry"] .mascot-angry,
+    .mascot-btn[data-face="furious"] .mascot-furious{opacity:1}
+    .mascot-btn.is-hit .mascot-face{animation:mascotSquash .28s var(--ease)}
+    @keyframes mascotSquash{0%{transform:scale(1)}26%{transform:scale(1.17,.82)}55%{transform:scale(.94,1.07)}
+      80%{transform:scale(1.03,.98)}100%{transform:scale(1)}}
+    .mascot-btn.is-sulking{transform:scale(.74) rotate(-12deg);opacity:.55;transition:transform .6s var(--ease),opacity .6s var(--ease)}
+    .mascot-rage{position:absolute;left:50%;top:calc(100% + 13px);display:flex;gap:5px;
+      transform:translateX(-50%);opacity:0;pointer-events:none;transition:opacity .3s var(--ease)}
+    .mascot-rage.show{opacity:1}
+    .mascot-rage span{width:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.16);
+      transition:background .2s,box-shadow .2s,transform .2s}
+    .mascot-rage span.on{background:linear-gradient(180deg,#ffc06b,#ff6a00);
+      box-shadow:0 0 10px rgba(255,110,20,.75);transform:scale(1.15)}
+    .mascot-rage.hot span.on{background:linear-gradient(180deg,#ff8a5a,#ff2e00);
+      box-shadow:0 0 15px rgba(255,50,0,.9);animation:rageDot .42s ease-in-out infinite alternate}
+    @keyframes rageDot{from{transform:scale(1.1)}to{transform:scale(1.6)}}
+    .mascot-bubble{position:absolute;left:50%;bottom:calc(100% + 15px);z-index:6;padding:10px 16px;border-radius:15px;
+      background:#fff;color:#1d0e04;font-size:.82rem;font-weight:700;line-height:1.25;letter-spacing:-.01em;white-space:nowrap;
+      box-shadow:0 14px 34px rgba(0,0,0,.4);opacity:0;pointer-events:none;
+      transform:translate(-50%,8px) scale(.88);transform-origin:50% 100%;
+      transition:opacity .18s ease,transform .26s var(--ease)}
+    .mascot-bubble::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);
+      border:8px solid transparent;border-top-color:#fff}
+    .mascot-bubble.show{opacity:1;transform:translate(-50%,0) scale(1)}
+    .mascot-bubble.bump{animation:bubbleBump .26s var(--ease)}
+    @keyframes bubbleBump{0%{transform:translate(-50%,0) scale(1)}45%{transform:translate(-50%,-3px) scale(1.06)}
+      100%{transform:translate(-50%,0) scale(1)}}
+    .mascot-bubble.hot{background:linear-gradient(135deg,#ffc27a,#ff8a2a 62%,#ff6a00);color:#2b1206}
+    .mascot-bubble.hot::after{border-top-color:#ff8a2a}
+    .mascot-puff{position:absolute;z-index:4;width:15px;height:15px;border-radius:50%;pointer-events:none;
+      filter:blur(.6px);
+      background:radial-gradient(circle at 34% 30%,rgba(255,244,228,.95),rgba(255,214,166,.55) 48%,rgba(255,200,150,0));
+      opacity:0;animation:puffUp .95s ease-out forwards}
+    @keyframes puffUp{0%{opacity:.9;transform:translate(0,0) scale(.35) rotate(0)}
+      70%{opacity:.45}100%{opacity:0;transform:translate(var(--px),var(--py)) scale(1.85) rotate(var(--pr,18deg))}}
+    .mascot-spark{position:absolute;z-index:5;left:50%;top:34%;width:7px;height:7px;border-radius:50%;
+      background:linear-gradient(180deg,#ffe0b0,#ff6a00);pointer-events:none;
+      animation:sparkOut .85s ease-out forwards}
+    @keyframes sparkOut{from{opacity:1;transform:translate(-50%,0) scale(1)}
+      to{opacity:0;transform:translate(calc(-50% + var(--px)),var(--py)) scale(.25)}}
+    .mascot-ring{position:absolute;z-index:3;left:var(--rx);top:var(--ry);width:16px;height:16px;border-radius:50%;
+      border:3px solid rgba(255,206,148,.9);pointer-events:none;mix-blend-mode:screen;
+      transform:translate(-50%,-50%) scale(.35);animation:ringOut .42s ease-out forwards}
+    @keyframes ringOut{0%{opacity:.95}100%{opacity:0;transform:translate(-50%,-50%) scale(5)}}
+    .mascot-btn.shake-1{animation:mShake .3s ease-in-out}
+    .mascot-btn.shake-2{animation:mShake .36s ease-in-out}
+    .mascot-btn.shake-3{animation:mShakeHard .55s ease-in-out}
+    @keyframes mShake{0%,100%{transform:translate(0,0) rotate(0) scale(1)}
+      20%{transform:translate(-5px,1px) rotate(-4deg) scale(1.03,.97)}
+      45%{transform:translate(5px,-1px) rotate(4deg) scale(.98,1.02)}
+      70%{transform:translate(-3px,0) rotate(-2.5deg)}}
+    @keyframes mShakeHard{0%,100%{transform:translate(0,0) rotate(0) scale(1)}
+      8%{transform:translate(-9px,3px) rotate(-7deg) scale(1.06,.94)}
+      18%{transform:translate(9px,-3px) rotate(7deg) scale(.95,1.05)}
+      32%{transform:translate(-7px,2px) rotate(-6deg) scale(1.04,.96)}
+      48%{transform:translate(7px,-2px) rotate(6deg)}
+      66%{transform:translate(-5px,1px) rotate(-4deg)}
+      84%{transform:translate(4px,0) rotate(3deg)}}
+    #hero.quake .hero-scroll{animation:heroQuake .5s ease-in-out}
+    @keyframes heroQuake{0%,100%{translate:0 0}12%{translate:-3px 0}26%{translate:3px 0}
+      44%{translate:-2px 0}62%{translate:2px 0}80%{translate:-1px 0}}
+    .brand img.brand-angry{animation:brandShake .55s ease-in-out}
+    @keyframes brandShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}
+      60%{transform:rotate(-7deg)}80%{transform:rotate(4deg)}}
     @keyframes float{0%,100%{transform:translateY(0) rotate(-1.4deg)}50%{transform:translateY(-13px) rotate(1.4deg)}}
     #hero h1{font-size:clamp(3rem,8.4vw,5.7rem);font-weight:800;letter-spacing:-.045em;line-height:1.03;margin-top:26px}
     .grad{background:linear-gradient(94deg,#ffc98a 0%,#ff7a1a 46%,#ff5e3a 100%);
@@ -377,6 +459,130 @@
     footer .links a{color:var(--ink-faint);text-decoration:none;font-size:.84rem;transition:color .2s}
     footer .links a:hover{color:var(--ink)}
 
+    /* ───────────────────────── Carrot rampage ───────────────────── */
+    html.is-breaking .nav{animation:navBreak .75s var(--ease) forwards}
+    html.is-breaking .hero-scroll{animation:heroBreak .9s var(--ease) forwards}
+    html.is-breaking .marquee{animation:pieceBreak .8s .05s var(--ease) forwards}
+    html.is-breaking .section{animation:pieceBreak .8s .1s var(--ease) forwards}
+    html.is-breaking footer{animation:pieceBreak .8s .15s var(--ease) forwards}
+    html.is-breaking .progress,html.is-breaking .noise{opacity:0}
+    html.is-breaking #hero{animation:heroQuakeBig .55s ease-in-out}
+    html.is-rampage,html.is-rampage body{overflow:hidden}
+    @keyframes navBreak{0%{transform:none;opacity:1}18%{transform:translateY(-8px) rotate(1deg)}
+      100%{transform:translateY(-140%) rotate(-5deg);opacity:0}}
+    @keyframes heroBreak{0%{transform:none;opacity:1}
+      22%{transform:translate(-10px,5px) rotate(-1.6deg) scale(1.01)}
+      46%{transform:translate(12px,-7px) rotate(2.2deg)}
+      72%{transform:translate(-6px,10px) rotate(-1deg)}
+      100%{transform:translate(0,110px) rotate(6deg) scale(.93);opacity:0;filter:blur(3px)}}
+    @keyframes pieceBreak{to{opacity:0;transform:translateY(70px) scale(.96)}}
+    @keyframes heroQuakeBig{0%,100%{translate:0 0}10%{translate:-9px 3px}22%{translate:9px -4px}
+      36%{translate:-7px 2px}50%{translate:7px -2px}68%{translate:-4px 1px}84%{translate:3px 0}}
+    html.is-rebuilding .nav,html.is-rebuilding .hero-scroll,html.is-rebuilding .marquee,
+    html.is-rebuilding .section,html.is-rebuilding footer{animation:pieceRebuild .55s var(--ease)}
+    @keyframes pieceRebuild{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+
+    .rampage-flash{position:fixed;inset:0;z-index:195;pointer-events:none;opacity:0;
+      background:radial-gradient(circle at 50% 30%,rgba(255,244,224,.95),rgba(255,130,40,.35) 36%,transparent 70%)}
+    html.is-breaking .rampage-flash{animation:rampageFlash .7s ease-out forwards}
+    @keyframes rampageFlash{0%{opacity:0}10%{opacity:1}100%{opacity:0}}
+
+    .rampage-shard{position:fixed;left:0;top:0;z-index:190;pointer-events:none;width:var(--s);height:var(--s);
+      background:linear-gradient(135deg,var(--c1),var(--c2));
+      clip-path:polygon(50% 0,100% 36%,80% 100%,16% 86%,0 28%);
+      animation:shardFly var(--t) cubic-bezier(.17,.72,.3,1) forwards}
+    @keyframes shardFly{0%{opacity:1;transform:translate3d(var(--x),var(--y),0) rotate(var(--r)) scale(1)}
+      100%{opacity:0;transform:translate3d(calc(var(--x) + var(--dx)),calc(var(--y) + var(--dy)),0)
+        rotate(calc(var(--r) + 620deg)) scale(.3)}}
+    .rampage-dust{position:fixed;left:0;top:0;z-index:190;width:var(--s);height:var(--s);border-radius:50%;
+      pointer-events:none;filter:blur(1px);
+      background:radial-gradient(circle at 40% 35%,rgba(255,240,220,.9),rgba(255,190,130,.35) 45%,transparent 70%);
+      animation:dustFly var(--t) ease-out forwards}
+    @keyframes dustFly{0%{opacity:.9;transform:translate3d(var(--x),var(--y),0) scale(.3)}
+      100%{opacity:0;transform:translate3d(calc(var(--x) + var(--dx)),calc(var(--y) + var(--dy)),0) scale(2.4)}}
+    .rampage-shock{position:fixed;left:var(--sx);top:var(--sy);z-index:191;width:22px;height:22px;border-radius:50%;
+      border:3px solid rgba(255,206,150,.85);pointer-events:none;mix-blend-mode:screen;
+      transform:translate(-50%,-50%) scale(1);animation:shockOut .72s ease-out forwards}
+    @keyframes shockOut{0%{opacity:.95;transform:translate(-50%,-50%) scale(1)}
+      100%{opacity:0;transform:translate(-50%,-50%) scale(64)}}
+    .rampage-fragment{position:fixed;left:0;top:0;z-index:191;pointer-events:none;white-space:nowrap;
+      font-weight:750;letter-spacing:-.03em;color:var(--fc,#fff);opacity:0;
+      animation:fragmentFly var(--t) cubic-bezier(.2,.7,.3,1) forwards}
+    @keyframes fragmentFly{0%{opacity:0;transform:translate3d(var(--x),var(--y),0) rotate(var(--r)) scale(.6)}
+      8%{opacity:1}100%{opacity:0;transform:translate3d(calc(var(--x) + var(--dx)),calc(var(--y) + var(--dy)),0)
+        rotate(calc(var(--r) + 260deg)) scale(1.05)}}
+
+    .rampage{position:fixed;inset:0;z-index:200;overflow:hidden;visibility:hidden;opacity:0;pointer-events:none;
+      background:radial-gradient(120% 95% at 50% 110%,rgba(255,100,20,.22),transparent 60%),
+                 radial-gradient(80% 60% at 50% 30%,#35170c 0%,#160a12 52%,#060409 100%);
+      transition:opacity .5s ease,visibility .5s}
+    .rampage.show{visibility:visible;opacity:1;pointer-events:auto}
+    .rampage::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+      background:radial-gradient(90% 70% at 50% 50%,transparent 30%,rgba(0,0,0,.62) 100%)}
+    .rampage-cracks{position:absolute;inset:0;z-index:0;width:100%;height:100%;opacity:.55;pointer-events:none;
+      filter:drop-shadow(0 0 6px rgba(255,120,40,.35))}
+    .rampage-title{position:absolute;left:50%;top:9%;z-index:1;transform:translateX(-50%);text-align:center;
+      font-size:clamp(2.6rem,9vw,7rem);font-weight:800;line-height:.86;letter-spacing:-.05em;
+      color:rgba(255,225,200,.07);-webkit-text-stroke:1px rgba(255,140,60,.22);
+      pointer-events:none;user-select:none}
+    .rampage-note{position:absolute;left:50%;bottom:86px;z-index:5;transform:translateX(-50%);
+      color:var(--ink-faint);font-size:.76rem;letter-spacing:.02em;text-align:center;pointer-events:none}
+
+    .carrot-actor{position:fixed;left:0;top:0;z-index:4;width:clamp(118px,18vw,176px);padding:0;border:0;
+      background:none;cursor:pointer;touch-action:manipulation;
+      transform:translate3d(var(--cx,-240px),var(--cy,-240px),0) rotate(var(--tilt,0deg));
+      transition:transform var(--dodge,.42s) cubic-bezier(.22,.9,.28,1.18);
+      will-change:transform;-webkit-tap-highlight-color:transparent}
+    .carrot-actor:focus-visible{outline:2px solid var(--orange);outline-offset:10px;border-radius:40%}
+    .carrot-shadow{position:absolute;left:50%;bottom:-10px;width:62%;height:14px;border-radius:50%;
+      transform:translateX(-50%);background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent 76%);
+      filter:blur(2px);pointer-events:none;transition:transform .2s ease,opacity .2s ease}
+    .carrot-actor.is-dodging .carrot-shadow{transform:translateX(-50%) scale(.7);opacity:.55}
+    .carrot-inner{display:block;transform-origin:50% 92%;animation:carrotBob 2.6s ease-in-out infinite;
+      filter:drop-shadow(0 22px 30px rgba(0,0,0,.45)) drop-shadow(0 0 30px rgba(255,140,40,.32))}
+    .carrot-sprite{display:block;width:100%;height:auto;pointer-events:none}
+    .carrot-actor.is-entering .carrot-inner{animation:carrotEnter .78s cubic-bezier(.18,.9,.28,1.2)}
+    .carrot-actor.is-dodging .carrot-inner{animation:carrotDodge .46s var(--ease)}
+    .carrot-actor.is-tired .carrot-inner{animation:carrotTired 1.5s ease-in-out infinite;
+      filter:drop-shadow(0 16px 22px rgba(0,0,0,.4)) drop-shadow(0 0 22px rgba(255,140,40,.22))}
+    @keyframes carrotBob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-9px) rotate(2.2deg)}}
+    @keyframes carrotDodge{0%{transform:scale(1) rotate(0)}22%{transform:scale(1.16,.8) rotate(-9deg)}
+      58%{transform:scale(.92,1.09) rotate(7deg)}100%{transform:scale(1) rotate(0)}}
+    @keyframes carrotEnter{0%{transform:scale(.2) rotate(-24deg);opacity:0}
+      62%{transform:scale(1.14) rotate(6deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+    @keyframes carrotTired{0%,100%{transform:translateY(2px) scale(1,1) rotate(-2deg)}
+      50%{transform:translateY(7px) scale(1.04,.94) rotate(2deg)}}
+    .carrot-bubble{position:fixed;left:0;top:0;z-index:5;width:max-content;
+      max-width:min(72vw,260px);padding:11px 15px;border-radius:14px;background:#fff;color:#2b1206;
+      font-size:.84rem;font-weight:750;line-height:1.3;text-align:center;white-space:normal;
+      box-shadow:0 16px 40px rgba(0,0,0,.4);opacity:0;pointer-events:none;
+      transform:translate(-50%,-100%) translateY(10px) scale(.92);transform-origin:50% 100%;
+      transition:opacity .18s ease,transform .26s var(--ease),
+        left .42s cubic-bezier(.22,.9,.28,1.18),top .42s cubic-bezier(.22,.9,.28,1.18)}
+    .carrot-bubble::after{content:"";position:absolute;top:100%;left:calc(50% + var(--tail,0px));
+      transform:translateX(-50%);border:8px solid transparent;border-top-color:#fff}
+    .carrot-bubble.show{opacity:1;transform:translate(-50%,-100%) translateY(0) scale(1)}
+    .carrot-bubble.bump{animation:carrotBubbleBump .3s var(--ease)}
+    @keyframes carrotBubbleBump{0%,100%{scale:1}45%{scale:1.06}}
+    .carrot-bubble.below{transform:translate(-50%,0) translateY(-10px) scale(.92);transform-origin:50% 0}
+    .carrot-bubble.below.show{transform:translate(-50%,0) translateY(0) scale(1)}
+    .carrot-bubble.below::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:#fff}
+    .carrot-poof{position:fixed;z-index:3;width:var(--s);height:var(--s);border-radius:50%;pointer-events:none;
+      background:radial-gradient(circle,rgba(255,214,166,.5),rgba(255,150,60,.18) 50%,transparent 72%);
+      animation:carrotPoof .45s ease-out forwards}
+    @keyframes carrotPoof{from{opacity:.9;transform:translate(-50%,-50%) scale(.4)}
+      to{opacity:0;transform:translate(-50%,-50%) scale(2.4)}}
+
+    .rebuild{position:absolute;left:50%;bottom:26px;z-index:6;transform:translateX(-50%);
+      display:inline-flex;align-items:center;gap:9px;padding:12px 22px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:var(--ink);
+      font-family:inherit;font-size:.84rem;font-weight:650;letter-spacing:-.01em;cursor:pointer;
+      backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+      transition:transform .2s var(--ease),background .25s,border-color .25s}
+    .rebuild:hover{transform:translateX(-50%) translateY(-2px);background:rgba(255,255,255,.12);
+      border-color:rgba(255,255,255,.3)}
+    .rebuild svg{width:15px;height:15px}
+
     /* ────────────────────────── Responsive ──────────────────────── */
     @media(max-width:900px){
       .feat-grid{grid-template-columns:1fr 1fr}
@@ -384,6 +590,13 @@
       .price-card{grid-template-columns:1fr;gap:30px;padding:38px 32px}
     }
     @media(max-width:640px){
+      #hero .hero-scroll{padding-top:146px}
+      .mascot-bubble{font-size:.78rem;padding:9px 14px}
+      .carrot-actor{width:clamp(104px,30vw,132px)}
+      .carrot-bubble{font-size:.78rem;padding:9px 13px}
+      .rampage-title{top:7%}
+      .rampage-note{bottom:76px;font-size:.7rem}
+      .rebuild{bottom:20px;padding:11px 16px;font-size:.78rem}
       .nav-inner{padding:12px 16px;gap:10px}
       .brand{font-size:.9rem;gap:8px;min-width:0}
       .brand img{width:24px;height:24px}
@@ -467,7 +680,16 @@
 
   <div class="hero-scroll" id="hero-scroll">
     <div class="hero-in" style="--d:.05s">
-      <span class="mascot-wrap" data-depth="1.5"><span class="mascot-float"><img class="mascot" src="mascot.svg" alt="Orange Fuji mascot" /></span></span>
+      <span class="mascot-wrap" data-depth="1.5"><span class="mascot-float">
+        <button class="mascot-btn" id="hero-mascot" type="button" data-face="normal" data-heat="0" aria-label="Poke the Orange Fuji mascot. Warning: it has very little patience.">
+          <img class="mascot-face mascot-normal" src="mascot.svg" alt="Orange Fuji mascot" width="134" height="134" draggable="false" />
+          <img class="mascot-face mascot-annoyed" src="mascot-annoyed.svg" alt="" aria-hidden="true" width="134" height="134" draggable="false" />
+          <img class="mascot-face mascot-angry" src="mascot-squeeze.svg" alt="" aria-hidden="true" width="134" height="134" draggable="false" />
+          <img class="mascot-face mascot-furious" src="mascot-furious.svg" alt="" aria-hidden="true" width="134" height="134" draggable="false" />
+        </button>
+        <span class="mascot-rage" id="mascot-rage" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+        <span class="mascot-bubble" id="mascot-bubble" role="status" aria-live="polite"></span>
+      </span></span>
     </div>
     <h1 class="hero-in" style="--d:.16s">Capture. Annotate.<br /><span class="grad">Share.</span><span class="version" id="latest-version">v1.1.0</span></h1>
     <p class="tagline hero-in" style="--d:.26s">Fast captures. Clean marks. Zero friction.</p>
@@ -771,6 +993,34 @@
     </div>
   </div>
 </footer>
+
+<div class="rampage-flash" id="rampage-flash" aria-hidden="true"></div>
+<div class="rampage" id="rampage" role="dialog" aria-modal="true" aria-label="The website has been destroyed by a carrot" aria-hidden="true">
+  <svg class="rampage-cracks" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g fill="none" stroke="rgba(255,226,200,.18)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M720,0 L690,112 L744,188 L702,286 L768,372 L730,472 L790,560 L744,690 L812,780"/>
+      <path d="M744,188 L826,224 L888,190 L968,246 L1040,214"/>
+      <path d="M702,286 L612,318 L548,280 L468,326 L382,300"/>
+      <path d="M730,472 L646,510 L590,486 L512,540 L430,522"/>
+      <path d="M790,560 L870,602 L932,576 L1008,626 L1088,600"/>
+      <path d="M812,780 L884,830 L950,806 L1030,860"/>
+      <path d="M612,318 L584,410 L520,444"/>
+      <path d="M968,246 L1002,336 L1070,372"/>
+      <path d="M744,188 L760,92 L730,40"/>
+    </g>
+  </svg>
+  <div class="rampage-title" aria-hidden="true">MOUNTAIN<br />DESTROYED</div>
+  <button class="carrot-actor" id="carrot-actor" type="button" aria-label="A very smug carrot. Try to catch it.">
+    <span class="carrot-shadow" aria-hidden="true"></span>
+    <span class="carrot-inner"><img class="carrot-sprite" src="carrot.svg" alt="" width="176" height="176" draggable="false" /></span>
+  </button>
+  <span class="carrot-bubble" id="carrot-bubble" role="status" aria-live="polite"></span>
+  <p class="rampage-note">The carrot is not sorry.</p>
+  <button class="rebuild" id="rebuild-site" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l3-3 3.3-3.3a4 4 0 0 0 5.4-5.4Z"/><path d="m16 2 6 6"/></svg>
+    Rebuild the website
+  </button>
+</div>
 
 <script>
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1213,6 +1463,628 @@
 
     updateOrange();
     updateGlass();
+  })();
+
+  /* ── Hero mascot temper ── */
+  (function(){
+    var btn = document.getElementById('hero-mascot');
+    var bubble = document.getElementById('mascot-bubble');
+    var hero = document.getElementById('hero');
+    if (!btn || !bubble || !hero) return;
+
+    var rampage = document.getElementById('rampage');
+    var carrot = document.getElementById('carrot-actor');
+    var carrotBubble = document.getElementById('carrot-bubble');
+    var rebuildBtn = document.getElementById('rebuild-site');
+    var rage = document.getElementById('mascot-rage');
+    var rampageReady = !!(rampage && carrot && carrotBubble && rebuildBtn);
+
+    var heat = 0;
+    var MAX_HEAT = 5;
+    var cooling = null;
+    var bubbleTimer = null;
+    var hoverTimer = null;
+    var sulkStartTimer = null;
+    var recoverTimer = null;
+    var sulking = false;
+    var busy = false;
+    var destroyed = false;
+    var rebuilding = false;
+    var sulkPokes = 0;
+    var eruptions = 0;
+    var originalTitle = document.title;
+    var inerted = [];
+    var carrotDodges = 0;
+    var carrotPos = { x: -240, y: -240 };
+    var carrotHoverTimer = null;
+    var carrotBubbleTimer = null;
+    var carrotTiltTimer = null;
+    var carrotTired = false;
+    var carrotTiredTimer = null;
+
+    var jabs = {
+      1: ['Hmph.'],
+      2: ['Personal space.', 'Do I look like a carrot?', "Excuse me?"],
+      3: ["I'm a MOUNTAIN, not a carrot.", 'Stop poking the leaf.'],
+      4: ["Careful... I'm a volcano.", "You're REALLY asking for it.", 'This is your last warning.']
+    };
+
+    var insults = [
+      'Too slow, human.',
+      'You destroyed a whole website for this?',
+      "I'm a carrot. You're not even close.",
+      'Missed me, missed me, now you gotta... well, you can not.',
+      'This is why the mountain left.',
+      'My grandmother dodges faster than that.',
+      'You click like a toddler with a mouse.',
+      'Are we done? My leaves are tired.',
+      "You can't catch me. I'm full of beta-carotene.",
+      'Wow. Zero for eleven.',
+      'Your aim is a screenshot of a screenshot.',
+      'Keep trying. I have nowhere to be.',
+      'I would insult you again, but you look tired.'
+    ];
+
+    var stares = [
+      'Are you going to poke or just stare?',
+      'Take a picture. It lasts longer.',
+      "I'm not going to poke myself.",
+      "You blink, I move. That's the deal."
+    ];
+
+    function say(text, hot, ms){
+      var shown = bubble.classList.contains('show');
+      bubble.textContent = text;
+      bubble.classList.toggle('hot', !!hot);
+      bubble.classList.add('show');
+      if (shown){
+        bubble.classList.remove('bump');
+        void bubble.offsetWidth;
+        bubble.classList.add('bump');
+      }
+      clearTimeout(bubbleTimer);
+      bubbleTimer = setTimeout(function(){ bubble.classList.remove('show'); }, ms || 1900);
+    }
+
+    function faceFor(h){
+      if (h <= 0) return 'normal';
+      if (h <= 2) return 'annoyed';
+      if (h <= 4) return 'angry';
+      return 'furious';
+    }
+
+    function paint(){
+      btn.setAttribute('data-face', faceFor(heat));
+      btn.setAttribute('data-heat', String(heat));
+      if (rage){
+        rage.classList.toggle('show', heat > 0 && !destroyed);
+        rage.classList.toggle('hot', heat >= 4);
+        for (var i = 0; i < rage.children.length; i++){
+          rage.children[i].classList.toggle('on', i < heat);
+        }
+      }
+    }
+
+    function hit(){
+      if (reduceMotion) return;
+      btn.classList.remove('is-hit');
+      void btn.offsetWidth;
+      btn.classList.add('is-hit');
+      setTimeout(function(){ btn.classList.remove('is-hit'); }, 320);
+    }
+
+    function shake(level){
+      if (reduceMotion) return;
+      btn.classList.remove('shake-1', 'shake-2', 'shake-3');
+      void btn.offsetWidth;
+      btn.classList.add('shake-' + level);
+      setTimeout(function(){ btn.classList.remove('shake-' + level); }, 700);
+    }
+
+    function puff(count){
+      if (reduceMotion) return;
+      for (var i = 0; i < count; i++){
+        var p = document.createElement('span');
+        p.className = 'mascot-puff';
+        var size = 11 + Math.random() * 10;
+        p.style.width = size.toFixed(1) + 'px';
+        p.style.height = size.toFixed(1) + 'px';
+        p.style.left = (26 + Math.random() * 48).toFixed(1) + '%';
+        p.style.top = (4 + Math.random() * 18).toFixed(1) + '%';
+        p.style.setProperty('--px', ((Math.random() - .5) * 64).toFixed(0) + 'px');
+        p.style.setProperty('--py', (-40 - Math.random() * 52).toFixed(0) + 'px');
+        p.style.setProperty('--pr', ((Math.random() - .5) * 100).toFixed(0) + 'deg');
+        p.style.animationDelay = (Math.random() * .16).toFixed(2) + 's';
+        btn.appendChild(p);
+        p.addEventListener('animationend', function(){ this.remove(); });
+      }
+    }
+
+    function sparks(count){
+      if (reduceMotion) return;
+      for (var i = 0; i < count; i++){
+        var s = document.createElement('span');
+        s.className = 'mascot-spark';
+        s.style.width = s.style.height = (5 + Math.random() * 5).toFixed(1) + 'px';
+        s.style.setProperty('--px', ((Math.random() - .5) * 170).toFixed(0) + 'px');
+        s.style.setProperty('--py', (-40 - Math.random() * 110).toFixed(0) + 'px');
+        s.style.animationDelay = (Math.random() * .12).toFixed(2) + 's';
+        btn.appendChild(s);
+        s.addEventListener('animationend', function(){ this.remove(); });
+      }
+    }
+
+    function ring(e){
+      if (reduceMotion) return;
+      var r = btn.getBoundingClientRect();
+      var x = e && e.clientX ? e.clientX - r.left : r.width / 2;
+      var y = e && e.clientY ? e.clientY - r.top : r.height / 2;
+      var el = document.createElement('span');
+      el.className = 'mascot-ring';
+      el.style.setProperty('--rx', x + 'px');
+      el.style.setProperty('--ry', y + 'px');
+      btn.appendChild(el);
+      el.addEventListener('animationend', function(){ this.remove(); });
+    }
+
+    function brandWiggle(){
+      var brand = document.querySelector('.brand img');
+      if (!brand || reduceMotion) return;
+      brand.classList.remove('brand-angry');
+      void brand.offsetWidth;
+      brand.classList.add('brand-angry');
+      brand.addEventListener('animationend', function(){ brand.classList.remove('brand-angry'); }, { once: true });
+    }
+
+    function erupt(e){
+      busy = true;
+      heat = MAX_HEAT;
+      eruptions++;
+      sulkPokes = 0;
+      paint(); hit(); ring(e); shake(3); puff(10); sparks(18);
+      say('I AM A VOLCANO!', true, 1500);
+      hero.classList.add('quake');
+      setTimeout(function(){ hero.classList.remove('quake'); }, 520);
+      brandWiggle();
+      document.title = 'Orange Fuji is NOT a carrot';
+
+      clearTimeout(sulkStartTimer);
+      clearTimeout(recoverTimer);
+      sulkStartTimer = setTimeout(function(){
+        if (destroyed) return;
+        sulking = true;
+        btn.classList.add('is-sulking');
+        paint();
+        say("I'm counting to ten. I dare you.", true, 2800);
+      }, 1100);
+
+      recoverTimer = setTimeout(function(){
+        if (destroyed) return;
+        btn.classList.remove('is-sulking');
+        sulking = false;
+        busy = false;
+        heat = 0;
+        sulkPokes = 0;
+        paint();
+        document.title = originalTitle;
+        say('Okay. Truce?', false, 1600);
+        puff(3);
+      }, 5200);
+    }
+
+    function coolDown(){
+      if (sulking || busy || destroyed || heat <= 0) return;
+      heat--;
+      paint();
+      if (heat > 0){
+        cooling = setTimeout(coolDown, 950);
+      } else {
+        bubble.classList.remove('show');
+        puff(2);
+      }
+    }
+
+    function scheduleCool(){
+      clearTimeout(cooling);
+      cooling = setTimeout(coolDown, 3400);
+    }
+
+    function poke(e){
+      if (destroyed || rebuilding) return;
+      if (sulking){
+        clearTimeout(cooling);
+        sulkPokes++;
+        hit(); ring(e);
+        if (sulkPokes >= 2){ destroySite(e); return; }
+        say(Math.random() < .5 ? 'I warned you.' : "Don't. I'm counting.", true, 1300);
+        shake(2); puff(5); sparks(4);
+        return;
+      }
+      if (busy) return;
+      clearTimeout(hoverTimer);
+      var step = 1 + (eruptions > 0 ? 1 : 0);
+      heat = Math.min(MAX_HEAT, heat + step);
+      paint(); ring(e); hit();
+      if (heat >= MAX_HEAT){
+        if (eruptions > 0) destroySite(e);
+        else erupt(e);
+        return;
+      }
+
+      var lines = jabs[heat] || jabs[1];
+      say(lines[Math.floor(Math.random() * lines.length)], heat >= 3, 1900);
+      shake(heat >= 4 ? 2 : 1);
+      puff(heat >= 3 ? 4 : 2);
+      if (heat === 4) sparks(6);
+      scheduleCool();
+    }
+
+    function positionCarrotBubble(spot){
+      if (!rampageReady) return;
+      var cw = carrot.offsetWidth || 150;
+      var ch = carrot.offsetHeight || cw;
+      var bw = carrotBubble.offsetWidth || 210;
+      var cx = spot.x + cw / 2;
+      var below = spot.y < 150;
+      var by = below ? spot.y + ch + 12 : spot.y - 12;
+      var margin = 12;
+      var bx = Math.min(Math.max(cx, bw / 2 + margin), window.innerWidth - bw / 2 - margin);
+      var tail = Math.max(-bw / 2 + 20, Math.min(bw / 2 - 20, cx - bx));
+      carrotBubble.style.left = bx.toFixed(1) + 'px';
+      carrotBubble.style.top = by.toFixed(1) + 'px';
+      carrotBubble.style.setProperty('--tail', tail.toFixed(1) + 'px');
+      carrotBubble.classList.toggle('below', below);
+    }
+
+    function setCarrotSpot(spot, tilt){
+      carrotPos = spot;
+      carrot.style.setProperty('--cx', spot.x.toFixed(1) + 'px');
+      carrot.style.setProperty('--cy', spot.y.toFixed(1) + 'px');
+      if (typeof tilt === 'number') carrot.style.setProperty('--tilt', tilt.toFixed(1) + 'deg');
+      positionCarrotBubble(spot);
+    }
+
+    function pickCarrotSpot(fromPoint){
+      var cw = carrot.offsetWidth || 150;
+      var ch = carrot.offsetHeight || cw;
+      var margin = 16;
+      var minX = margin;
+      var maxX = Math.max(minX + 10, window.innerWidth - cw - margin);
+      var minY = Math.min(150, Math.max(88, window.innerHeight * .14));
+      var maxY = Math.max(minY + 10, window.innerHeight - ch - 132);
+      var current = carrotPos;
+      var minDist = Math.min(window.innerWidth, window.innerHeight) * .38;
+      var avoid = Math.min(240, Math.min(window.innerWidth, window.innerHeight) * .3);
+      var point = null;
+      for (var i = 0; i < 30; i++){
+        var x = minX + Math.random() * (maxX - minX);
+        var y = minY + Math.random() * (maxY - minY);
+        var cx = x + cw / 2;
+        var cy = y + ch / 2;
+        if (current && Math.abs(current.x) < window.innerWidth){
+          var ddx = cx - (current.x + cw / 2);
+          var ddy = cy - (current.y + ch / 2);
+          if (Math.sqrt(ddx * ddx + ddy * ddy) < minDist) continue;
+        }
+        if (fromPoint && fromPoint.x && fromPoint.y){
+          var pdx = cx - fromPoint.x;
+          var pdy = cy - fromPoint.y;
+          if (Math.sqrt(pdx * pdx + pdy * pdy) < avoid) continue;
+        }
+        point = { x: x, y: y };
+        break;
+      }
+      if (!point){
+        point = { x: minX + Math.random() * (maxX - minX), y: minY + Math.random() * (maxY - minY) };
+      }
+      return point;
+    }
+
+    function carrotSay(text, ms){
+      if (!rampageReady) return;
+      var shown = carrotBubble.classList.contains('show');
+      carrotBubble.textContent = text;
+      carrotBubble.classList.add('show');
+      if (shown){
+        carrotBubble.classList.remove('bump');
+        void carrotBubble.offsetWidth;
+        carrotBubble.classList.add('bump');
+      }
+      clearTimeout(carrotBubbleTimer);
+      carrotBubbleTimer = setTimeout(function(){ carrotBubble.classList.remove('show'); }, ms || 2600);
+      positionCarrotBubble(carrotPos);
+    }
+
+    function spawnCarrotPoof(spot){
+      if (!rampageReady || reduceMotion) return;
+      var el = document.createElement('span');
+      el.className = 'carrot-poof';
+      el.style.setProperty('--s', (70 + Math.random() * 50).toFixed(0) + 'px');
+      el.style.left = (spot.x + (carrot.offsetWidth || 0) / 2).toFixed(1) + 'px';
+      el.style.top = (spot.y + (carrot.offsetHeight || 0) / 2).toFixed(1) + 'px';
+      rampage.appendChild(el);
+      el.addEventListener('animationend', function(){ this.remove(); });
+    }
+
+    function dodgeCarrot(fromPoint){
+      if (!destroyed || carrotTired) return;
+      clearTimeout(carrotHoverTimer);
+      clearTimeout(carrotTiltTimer);
+      var old = { x: carrotPos.x, y: carrotPos.y };
+      spawnCarrotPoof(old);
+      carrotDodges++;
+      var spot = pickCarrotSpot(fromPoint);
+      var dur = Math.max(.26, .44 - carrotDodges * .012);
+      var tilt = Math.max(-16, Math.min(16, (spot.x - old.x) / 18));
+      carrot.style.setProperty('--dodge', dur.toFixed(2) + 's');
+      setCarrotSpot(spot, tilt);
+      carrot.classList.remove('is-dodging');
+      void carrot.offsetWidth;
+      carrot.classList.add('is-dodging');
+      setTimeout(function(){ carrot.classList.remove('is-dodging'); }, 500);
+      carrotTiltTimer = setTimeout(function(){
+        carrot.style.setProperty('--tilt', '0deg');
+      }, dur * 1000 + 90);
+
+      if (carrotDodges >= 10 && !carrotTired){
+        carrotTired = true;
+        carrot.classList.add('is-tired');
+        clearTimeout(carrotTiredTimer);
+        carrotTiredTimer = setTimeout(function(){
+          carrotTired = false;
+          carrot.classList.remove('is-tired');
+          carrotDodges = 0;
+          carrot.style.setProperty('--dodge', '.42s');
+          if (destroyed) carrotSay("Break's over. Try again, slowpoke.", 2400);
+        }, 5200);
+        carrotSay("Okay... okay. Timeout. I'm out of shape.", 3200);
+        return;
+      }
+
+      var line;
+      if (carrotDodges === 1) line = 'Whoa there, slow hands.';
+      else if (carrotDodges === 2) line = 'You call that a poke?';
+      else if (carrotDodges === 6) line = 'The rebuild button is right there, genius.';
+      else if (carrotDodges >= 12) line = 'Fine. Chase a carrot. See where it gets you.';
+      else line = insults[Math.floor(Math.random() * insults.length)];
+      carrotSay(line, 2700);
+    }
+
+    function spawnDebris(cx, cy){
+      if (reduceMotion) return;
+      var i, el, size, lava;
+      var shock = document.createElement('span');
+      shock.className = 'rampage-shock';
+      shock.style.setProperty('--sx', cx + 'px');
+      shock.style.setProperty('--sy', cy + 'px');
+      document.body.appendChild(shock);
+      shock.addEventListener('animationend', function(){ this.remove(); });
+
+      for (i = 0; i < 34; i++){
+        el = document.createElement('span');
+        el.className = 'rampage-shard';
+        size = 8 + Math.random() * 26;
+        lava = Math.random() < .55;
+        el.style.setProperty('--s', size.toFixed(0) + 'px');
+        el.style.setProperty('--x', (cx + (Math.random() - .5) * 90).toFixed(0) + 'px');
+        el.style.setProperty('--y', (cy + (Math.random() - .5) * 90).toFixed(0) + 'px');
+        el.style.setProperty('--dx', ((Math.random() - .5) * Math.max(680, window.innerWidth * .9)).toFixed(0) + 'px');
+        el.style.setProperty('--dy', (Math.random() * window.innerHeight * .9 - window.innerHeight * .25).toFixed(0) + 'px');
+        el.style.setProperty('--r', (Math.random() * 360 - 180).toFixed(0) + 'deg');
+        el.style.setProperty('--t', (.7 + Math.random() * .7).toFixed(2) + 's');
+        el.style.setProperty('--c1', lava ? '#ffc06b' : '#6b5562');
+        el.style.setProperty('--c2', lava ? '#ef5b00' : '#221521');
+        document.body.appendChild(el);
+        el.addEventListener('animationend', function(){ this.remove(); });
+      }
+      for (i = 0; i < 14; i++){
+        el = document.createElement('span');
+        el.className = 'rampage-dust';
+        size = 40 + Math.random() * 80;
+        el.style.setProperty('--s', size.toFixed(0) + 'px');
+        el.style.setProperty('--x', (cx + (Math.random() - .5) * 120).toFixed(0) + 'px');
+        el.style.setProperty('--y', (cy + (Math.random() - .5) * 80).toFixed(0) + 'px');
+        el.style.setProperty('--dx', ((Math.random() - .5) * 420).toFixed(0) + 'px');
+        el.style.setProperty('--dy', (-80 - Math.random() * 220).toFixed(0) + 'px');
+        el.style.setProperty('--t', (.8 + Math.random() * .8).toFixed(2) + 's');
+        document.body.appendChild(el);
+        el.addEventListener('animationend', function(){ this.remove(); });
+      }
+      var words = ['Capture.', 'Annotate.', 'Share.', 'Download', '9\u20ac', 'FAQ', 'GitHub',
+        'Screenshot', 'macOS', 'Windows', 'Linux', 'v1.18.1', 'Poke?', 'No.'];
+      for (i = 0; i < 14; i++){
+        el = document.createElement('span');
+        el.className = 'rampage-fragment';
+        el.textContent = words[Math.floor(Math.random() * words.length)];
+        el.style.fontSize = (13 + Math.random() * 32).toFixed(0) + 'px';
+        el.style.setProperty('--fc', Math.random() < .5 ? 'rgba(246,240,231,.92)' : 'rgba(255,150,60,.95)');
+        el.style.setProperty('--x', (cx + (Math.random() - .5) * 180).toFixed(0) + 'px');
+        el.style.setProperty('--y', (cy + (Math.random() - .5) * 140).toFixed(0) + 'px');
+        el.style.setProperty('--dx', ((Math.random() - .5) * window.innerWidth * 1.15).toFixed(0) + 'px');
+        el.style.setProperty('--dy', ((Math.random() - .5) * window.innerHeight * 1.2).toFixed(0) + 'px');
+        el.style.setProperty('--r', ((Math.random() - .5) * 36).toFixed(0) + 'deg');
+        el.style.setProperty('--t', (1 + Math.random() * .7).toFixed(2) + 's');
+        document.body.appendChild(el);
+        el.addEventListener('animationend', function(){ this.remove(); });
+      }
+    }
+
+    function lockPage(){
+      var kids = Array.prototype.slice.call(document.body.children);
+      inerted = [];
+      for (var i = 0; i < kids.length; i++){
+        var el = kids[i];
+        if (el === rampage || el.tagName === 'SCRIPT') continue;
+        if ('inert' in el){ el.inert = true; inerted.push(el); }
+      }
+    }
+
+    function unlockPage(){
+      for (var i = 0; i < inerted.length; i++) inerted[i].inert = false;
+      inerted = [];
+    }
+
+    function destroySite(e){
+      if (destroyed || rebuilding || !rampageReady) return;
+      destroyed = true;
+      busy = true;
+      sulking = false;
+      clearTimeout(cooling);
+      clearTimeout(hoverTimer);
+      clearTimeout(sulkStartTimer);
+      clearTimeout(recoverTimer);
+      btn.classList.remove('is-sulking');
+      clearTimeout(carrotTiltTimer);
+      clearTimeout(carrotTiredTimer);
+      carrotTired = false;
+      carrotDodges = 0;
+      carrot.classList.remove('is-tired', 'is-entering', 'is-dodging');
+      heat = MAX_HEAT;
+      paint(); hit(); ring(e); shake(3); puff(9); sparks(34);
+      say("THAT'S IT.", true, 1100);
+      brandWiggle();
+      document.title = 'Orange Fuji was destroyed by a carrot';
+      document.documentElement.classList.add('is-breaking');
+      var rect = btn.getBoundingClientRect();
+      spawnDebris(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+      setTimeout(function(){
+        if (!destroyed) return;
+        document.documentElement.classList.add('is-rampage');
+        carrotBubble.classList.remove('show', 'bump', 'below');
+        carrot.style.setProperty('--tilt', '0deg');
+        carrot.style.setProperty('--dodge', '.42s');
+        rampage.classList.add('show');
+        rampage.setAttribute('aria-hidden', 'false');
+        lockPage();
+        setCarrotSpot(pickCarrotSpot(null));
+        carrot.classList.add('is-entering');
+        setTimeout(function(){ carrot.classList.remove('is-entering'); }, 860);
+        setTimeout(function(){
+          if (!destroyed) return;
+          carrotSay('Thanks. That mountain was blocking my sun.', 3200);
+        }, 620);
+        if (rebuildBtn.focus) rebuildBtn.focus({ preventScroll: true });
+      }, 920);
+    }
+
+    function rebuildSite(){
+      if (!destroyed || rebuilding) return;
+      rebuilding = true;
+      clearTimeout(cooling);
+      clearTimeout(sulkStartTimer);
+      clearTimeout(recoverTimer);
+      clearTimeout(hoverTimer);
+      clearTimeout(carrotHoverTimer);
+      clearTimeout(carrotBubbleTimer);
+      clearTimeout(carrotTiltTimer);
+      clearTimeout(carrotTiredTimer);
+      carrotTired = false;
+      carrot.classList.remove('is-tired', 'is-entering', 'is-dodging');
+      carrot.style.setProperty('--tilt', '0deg');
+      carrot.style.setProperty('--dodge', '.42s');
+      rampage.classList.remove('show');
+      rampage.setAttribute('aria-hidden', 'true');
+      carrotBubble.classList.remove('show');
+      carrotBubble.classList.remove('below');
+      document.documentElement.classList.remove('is-rampage', 'is-breaking');
+      document.documentElement.classList.add('is-rebuilding');
+      unlockPage();
+      document.title = originalTitle;
+
+      setTimeout(function(){
+        document.documentElement.classList.remove('is-rebuilding');
+        rebuilding = false;
+        destroyed = false;
+        busy = false;
+        sulking = false;
+        heat = 0;
+        sulkPokes = 0;
+        eruptions = 0;
+        carrotDodges = 0;
+        btn.classList.remove('is-sulking');
+        paint();
+        carrot.classList.remove('is-dodging');
+        carrotPos = { x: -240, y: -240 };
+        carrot.style.setProperty('--cx', '-240px');
+        carrot.style.setProperty('--cy', '-240px');
+        say('We never speak of this again.', false, 2600);
+        puff(3);
+        if (btn.focus) btn.focus({ preventScroll: true });
+      }, 520);
+    }
+
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      poke(e);
+    });
+
+    if (rampageReady){
+      carrot.addEventListener('click', function(e){
+        e.preventDefault();
+        if (carrotTired){
+          carrotSay('You got me. I am right here. Go on, press the button.', 2400);
+          carrot.classList.remove('is-dodging');
+          void carrot.offsetWidth;
+          carrot.classList.add('is-dodging');
+          setTimeout(function(){ carrot.classList.remove('is-dodging'); }, 500);
+          return;
+        }
+        var point = (e.clientX || e.clientY) ? { x: e.clientX, y: e.clientY } : null;
+        dodgeCarrot(point);
+      });
+      rebuildBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        rebuildSite();
+      });
+      document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape' && destroyed){
+          e.preventDefault();
+          rebuildSite();
+        }
+      });
+      if (finePointer && !reduceMotion){
+        carrot.addEventListener('pointerenter', function(){
+          clearTimeout(carrotHoverTimer);
+          carrotHoverTimer = setTimeout(function(){
+            if (!destroyed || carrotBubble.classList.contains('show')) return;
+            carrotSay(stares[Math.floor(Math.random() * stares.length)], 2200);
+          }, 1500);
+        });
+        carrot.addEventListener('pointerleave', function(){
+          clearTimeout(carrotHoverTimer);
+        });
+      }
+      window.addEventListener('resize', function(){
+        if (destroyed && !rebuilding) setCarrotSpot(pickCarrotSpot(null));
+      });
+    }
+
+    if (finePointer && !reduceMotion){
+      btn.addEventListener('pointerenter', function(){
+        if (sulking || busy || destroyed || hoverTimer) return;
+        hoverTimer = setTimeout(function(){
+          hoverTimer = null;
+          if (heat < 2 && !destroyed){
+            heat = 2;
+            paint();
+            shake(1);
+            say(Math.random() < .5 ? "You're staring." : 'Can I help you?', false, 1800);
+            scheduleCool();
+          }
+        }, 2000);
+      });
+      btn.addEventListener('pointerleave', function(){
+        clearTimeout(hoverTimer);
+        hoverTimer = null;
+      });
+    }
+    btn.addEventListener('pointerdown', function(){
+      clearTimeout(hoverTimer);
+      hoverTimer = null;
+    });
+
+    paint();
   })();
 
   /* ── GitHub release wiring ── */
