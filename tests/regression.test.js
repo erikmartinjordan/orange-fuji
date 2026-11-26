@@ -518,6 +518,11 @@ test('Recording Features', () => {
   );
 
   assert.ok(
+    /if \(options\?\.autoZoom !== false && source\.autoZoom !== false\) return null;/.test(preloadSource),
+    'autozoom recordings must stay on the canvas pipeline because ScreenCaptureKit starves static frames',
+  );
+
+  assert.ok(
     /startRecordingWithFormat\(state\.recordingSettings\.format, 'region'\)/.test(rendererSource),
     'record button must start the region recording flow by default',
   );

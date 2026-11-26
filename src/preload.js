@@ -710,6 +710,11 @@ async function tryStartNativeRecording(source, options) {
   if (process.platform !== 'darwin') return null;
   if ((options?.format ?? 'mp4') === 'gif') return null;
   if (source.mode !== 'region' || !source.region) return null;
+  // ScreenCaptureKit only emits frames when the screen changes. That starves
+  // the autozoom camera whenever the screen is static (which is exactly when
+  // it zooms in and holds), so autozoom recordings stay on the canvas pipeline,
+  // where every frame is rendered at a steady rate with a synthetic cursor.
+  if (options?.autoZoom !== false && source.autoZoom !== false) return null;
   let supported = false;
   try {
     supported = await ipcRenderer.invoke('pro-native-recording-supported');
