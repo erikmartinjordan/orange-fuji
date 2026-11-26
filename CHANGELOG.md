@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.19.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.18.1...v1.19.0) (2026-11-26)
+
+
+### ✨ Features
+
+* **hero:** add mascot rampage and carrot easter egg ([3c3bb49](https://github.com/erikmartinjordan/orange-fuji/commit/3c3bb49cec4f7668785fe7dfd377f5031c5df879))
+
+
+### 🐛 Fixes
+
+* **recording:** keep autozoom on the canvas pipeline ([f85ae37](https://github.com/erikmartinjordan/orange-fuji/commit/f85ae37d74d9e4fdce7bb62814f91c743bb0890d))
+
 ## [1.18.1](https://github.com/erikmartinjordan/orange-fuji/compare/v1.18.0...v1.18.1) (2026-11-12)
 
 
