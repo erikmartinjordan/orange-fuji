@@ -241,18 +241,6 @@
     @keyframes cue{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}
       55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 
-    /* ─────────────────────────── Marquee ────────────────────────── */
-    .marquee{overflow:hidden;padding:17px 0;border-block:1px solid rgba(255,255,255,.07);
-      background:rgba(255,255,255,.02);
-      -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);
-      mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent)}
-    .marquee-track{display:flex;width:max-content;animation:scrollx 34s linear infinite}
-    .marquee:hover .marquee-track{animation-play-state:paused}
-    .marquee-track span{display:inline-flex;align-items:center;gap:44px;padding-right:44px;white-space:nowrap;
-      font-size:.76rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint)}
-    .marquee-track i{font-style:normal;color:var(--orange);font-size:.62rem}
-    @keyframes scrollx{to{transform:translateX(-50%)}}
-
     /* ─────────────────────────── Sections ───────────────────────── */
     .section{padding:112px 0;position:relative}
     .ambient{position:absolute;border-radius:50%;filter:blur(110px);pointer-events:none}
@@ -462,7 +450,6 @@
     /* ───────────────────────── Carrot rampage ───────────────────── */
     html.is-breaking .nav{animation:navBreak .75s var(--ease) forwards}
     html.is-breaking .hero-scroll{animation:heroBreak .9s var(--ease) forwards}
-    html.is-breaking .marquee{animation:pieceBreak .8s .05s var(--ease) forwards}
     html.is-breaking .section{animation:pieceBreak .8s .1s var(--ease) forwards}
     html.is-breaking footer{animation:pieceBreak .8s .15s var(--ease) forwards}
     html.is-breaking .progress,html.is-breaking .noise{opacity:0}
@@ -478,7 +465,7 @@
     @keyframes pieceBreak{to{opacity:0;transform:translateY(70px) scale(.96)}}
     @keyframes heroQuakeBig{0%,100%{translate:0 0}10%{translate:-9px 3px}22%{translate:9px -4px}
       36%{translate:-7px 2px}50%{translate:7px -2px}68%{translate:-4px 1px}84%{translate:3px 0}}
-    html.is-rebuilding .nav,html.is-rebuilding .hero-scroll,html.is-rebuilding .marquee,
+    html.is-rebuilding .nav,html.is-rebuilding .hero-scroll,
     html.is-rebuilding .section,html.is-rebuilding footer{animation:pieceRebuild .55s var(--ease)}
     @keyframes pieceRebuild{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
 
@@ -711,14 +698,6 @@
     <div class="scroll-cue hero-in" style="--d:.7s">Scroll</div>
   </div>
 </section>
-
-<!-- ── Marquee ── -->
-<div class="marquee" aria-hidden="true">
-  <div class="marquee-track" id="marquee-track">
-    <span>Region capture <i>✦</i> Window capture <i>✦</i> Fullscreen <i>✦</i> Annotation <i>✦</i> Blur &amp; highlight <i>✦</i> Screen recording <i>✦</i> Scrolling capture <i>✦</i> ⌘⇧S <i>✦</i> Copy to clipboard <i>✦</i> PNG export <i>✦</i></span>
-    <span>Region capture <i>✦</i> Window capture <i>✦</i> Fullscreen <i>✦</i> Annotation <i>✦</i> Blur &amp; highlight <i>✦</i> Screen recording <i>✦</i> Scrolling capture <i>✦</i> ⌘⇧S <i>✦</i> Copy to clipboard <i>✦</i> PNG export <i>✦</i></span>
-  </div>
-</div>
 
 <div class="container">
 
