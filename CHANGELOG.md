@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.20.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.19.0...v1.20.0) (2026-11-27)
+
+
+### ✨ Features
+
+* **hero:** remove scrolling marquee from landing ([17afecf](https://github.com/erikmartinjordan/orange-fuji/commit/17afecfafdfacfcc8fb0e45275607675e4f41b24))
+* **recording:** add configurable mouse cursor ([0d16edf](https://github.com/erikmartinjordan/orange-fuji/commit/0d16edfc40f4b21f4bbfd34fabe44d6453b36204))
+
 ## [1.19.0](https://github.com/erikmartinjordan/orange-fuji/compare/v1.18.1...v1.19.0) (2026-11-26)
 
 
