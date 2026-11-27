@@ -3915,10 +3915,14 @@ ipcMain.handle('pro-native-recording-start', async (_event, options = {}) => {
   if (Number.isFinite(options?.fps)) {
     startOptions.fps = Math.max(1, Math.min(120, Math.round(options.fps)));
   }
+  if (options?.cursor === 'hidden' || options?.cursor === 'large') {
+    startOptions.cursor = options.cursor;
+  }
   if (options?.mode === 'region' && options.region) {
     // Region coords are display-relative logical points; the helper maps
     // them onto SCStreamConfiguration.sourceRect.
     startOptions = {
+      ...startOptions,
       region: {
         x: Math.round(options.region.x),
         y: Math.round(options.region.y),

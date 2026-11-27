@@ -9,6 +9,11 @@
 // Usage:
 //   orange-fuji-recorder --out PATH [--display ID] [--region x,y,w,h]
 //                       [--fps N] [--no-audio] [--bitrate N]
+//                       [--cursor normal|hidden|large]
+//
+// `--cursor hidden` omits the pointer from the capture. `--cursor large`
+// omits the system pointer and composites a larger synthetic one at 60 fps so
+// it keeps moving even when the rest of the screen is static.
 //
 // Protocol (stdout, one JSON object per line):
 //   {"event":"ready","width":W,"height":H,"fps":F,"audio":true}
@@ -20,6 +25,8 @@
 
 import Foundation
 import CoreGraphics
+import CoreMedia
+import QuartzCore
 import ScreenCaptureKit
 import AVFoundation
 
@@ -32,6 +39,7 @@ struct Args {
     var fps: Int32 = 60
     var audio: Bool = true
     var bitrate: Int64 = 0 // 0 = auto
+    var cursor: String = "normal" // normal | hidden | large
 }
 
 func fail(_ message: String) -> Never {
@@ -65,6 +73,9 @@ func parseArgs() -> Args {
         case "--bitrate":
             guard let v = it.next(), let b = Int64(v), b > 0 else { fail("invalid --bitrate") }
             args.bitrate = b
+        case "--cursor":
+            guard let v = it.next(), ["normal", "hidden", "large"].contains(v) else { fail("invalid --cursor") }
+            args.cursor = v
         default:
             fail("unknown argument \(arg)")
         }
@@ -92,6 +103,15 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     var sawVideo = false
     var stopped = false
     let lock = NSLock()
+
+    // Cursor compositing state (only used when args.cursor == "large").
+    let videoQueue = DispatchQueue(label: "of.video")
+    var pointPixelScale: CGFloat = 1
+    var displayFrame: CGRect = .zero
+    var captureRect: CGRect = .zero
+    var latestFrame: CVPixelBuffer?
+    var sessionStartHost: CFTimeInterval?
+    var largeCursorTimer: DispatchSourceTimer?
 
     init(args: Args) { self.args = args }
 
@@ -144,7 +164,11 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
             }
             config.minimumFrameInterval = CMTime(value: 1, timescale: self.args.fps)
             config.queueDepth = 12
-            config.showsCursor = true
+            config.showsCursor = self.args.cursor == "normal"
+            config.pixelFormat = kCVPixelFormatType_32BGRA
+            self.pointPixelScale = scale
+            self.displayFrame = display.frame
+            self.captureRect = rect
             var audioEnabled = false
             if #available(macOS 13.0, *) {
                 config.capturesAudio = self.args.audio
@@ -200,7 +224,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
             let stream = SCStream(filter: filter, configuration: config, delegate: self)
             do {
-                try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: DispatchQueue(label: "of.video"))
+                try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: self.videoQueue)
             } catch {
                 fail("addStreamOutput(video) failed: \(error.localizedDescription)")
             }
@@ -234,6 +258,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
             emit(["event": "stopped", "file": args.out, "duration": 0.0])
             exit(0)
         }
+        largeCursorTimer?.cancel()
+        largeCursorTimer = nil
         stream.stopCapture { _ in
             try? stream.removeStreamOutput(self, type: .screen)
             if self.audioInput != nil {
@@ -259,6 +285,147 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         }
     }
 
+    // MARK: Cursor compositing (large cursor mode)
+
+    func cursorPixelPosition() -> CGPoint? {
+        guard let event = CGEvent(source: nil) else { return nil }
+        let localX = event.location.x - displayFrame.origin.x - captureRect.origin.x
+        let localY = event.location.y - displayFrame.origin.y - captureRect.origin.y
+        guard localX >= 0, localY >= 0,
+              localX <= captureRect.width, localY <= captureRect.height else { return nil }
+        return CGPoint(x: localX * pointPixelScale, y: localY * pointPixelScale)
+    }
+
+    func copyPixelBuffer(_ source: CVPixelBuffer) -> CVPixelBuffer? {
+        let width = CVPixelBufferGetWidth(source)
+        let height = CVPixelBufferGetHeight(source)
+        let format = CVPixelBufferGetPixelFormatType(source)
+        var destination: CVPixelBuffer?
+        let attrs = [kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary] as CFDictionary
+        guard CVPixelBufferCreate(kCFAllocatorDefault, width, height, format, attrs, &destination) == kCVReturnSuccess,
+              let destination else { return nil }
+
+        CVPixelBufferLockBaseAddress(source, .readOnly)
+        CVPixelBufferLockBaseAddress(destination, [])
+        defer {
+            CVPixelBufferUnlockBaseAddress(destination, [])
+            CVPixelBufferUnlockBaseAddress(source, .readOnly)
+        }
+        guard let src = CVPixelBufferGetBaseAddress(source),
+              let dst = CVPixelBufferGetBaseAddress(destination) else { return nil }
+        let srcStride = CVPixelBufferGetBytesPerRow(source)
+        let dstStride = CVPixelBufferGetBytesPerRow(destination)
+        let rowBytes = min(srcStride, dstStride)
+        for row in 0..<height {
+            memcpy(dst.advanced(by: row * dstStride), src.advanced(by: row * srcStride), rowBytes)
+        }
+        return destination
+    }
+
+    func drawCursor(into buffer: CVPixelBuffer, at point: CGPoint, scale: CGFloat) {
+        CVPixelBufferLockBaseAddress(buffer, [])
+        defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+        guard let base = CVPixelBufferGetBaseAddress(buffer) else { return }
+        let width = CVPixelBufferGetWidth(buffer)
+        let height = CVPixelBufferGetHeight(buffer)
+        let stride = CVPixelBufferGetBytesPerRow(buffer)
+        let bitmapInfo = CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+        guard let ctx = CGContext(
+            data: base,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: stride,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: bitmapInfo
+        ) else { return }
+
+        // CVPixelBuffers are top-down; flip the context so the path below uses
+        // the same top-left origin as the synthetic cursor on the canvas.
+        ctx.translateBy(x: 0, y: CGFloat(height))
+        ctx.scaleBy(x: 1, y: -1)
+        ctx.saveGState()
+        ctx.translateBy(x: point.x, y: point.y)
+        ctx.scaleBy(x: scale, y: scale)
+
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: 0, y: 0))
+        path.addLine(to: CGPoint(x: 0, y: 20.5))
+        path.addLine(to: CGPoint(x: 5.2, y: 15.9))
+        path.addLine(to: CGPoint(x: 8.7, y: 23.5))
+        path.addLine(to: CGPoint(x: 12.3, y: 21.8))
+        path.addLine(to: CGPoint(x: 8.9, y: 14.4))
+        path.addLine(to: CGPoint(x: 15.1, y: 14.4))
+        path.closeSubpath()
+
+        ctx.setShadow(offset: CGSize(width: 1, height: 1), blur: 2.5,
+                      color: CGColor(red: 0, green: 0, blue: 0, alpha: 0.35))
+        ctx.addPath(path)
+        // Match the macOS pointer: black fill with a white outline.
+        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+        ctx.fillPath()
+
+        ctx.setShadow(offset: .zero, blur: 0, color: nil)
+        ctx.addPath(path)
+        ctx.setStrokeColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.setLineWidth(1.35)
+        ctx.strokePath()
+        ctx.restoreGState()
+    }
+
+    func makeSampleBuffer(from buffer: CVPixelBuffer, pts: CMTime, duration: CMTime) -> CMSampleBuffer? {
+        var format: CMFormatDescription?
+        guard CMVideoFormatDescriptionCreateForImageBuffer(
+            allocator: kCFAllocatorDefault,
+            imageBuffer: buffer,
+            formatDescriptionOut: &format
+        ) == noErr, let format else { return nil }
+        var timing = CMSampleTimingInfo(duration: duration, presentationTimeStamp: pts, decodeTimeStamp: .invalid)
+        var sample: CMSampleBuffer?
+        guard CMSampleBufferCreateReadyWithImageBuffer(
+            allocator: kCFAllocatorDefault,
+            imageBuffer: buffer,
+            formatDescription: format,
+            sampleTiming: &timing,
+            sampleBufferOut: &sample
+        ) == noErr else { return nil }
+        return sample
+    }
+
+    func startLargeCursorTimer() {
+        guard args.cursor == "large", largeCursorTimer == nil else { return }
+        let interval = 1.0 / Double(max(1, args.fps))
+        let timer = DispatchSource.makeTimerSource(queue: videoQueue)
+        timer.schedule(deadline: .now() + interval, repeating: interval, leeway: .milliseconds(1))
+        timer.setEventHandler { [weak self] in self?.appendLargeCursorFrame() }
+        timer.resume()
+        largeCursorTimer = timer
+    }
+
+    func appendLargeCursorFrame() {
+        guard !stopped,
+              let writer,
+              writer.status == .writing,
+              let videoInput,
+              videoInput.isReadyForMoreMediaData,
+              let latest = latestFrame,
+              let startPTS = sessionStartPTS,
+              let startHost = sessionStartHost else { return }
+
+        let elapsed = CACurrentMediaTime() - startHost
+        let pts = CMTimeAdd(startPTS, CMTime(seconds: elapsed, preferredTimescale: 1_000_000_000))
+        guard let frame = copyPixelBuffer(latest) else { return }
+        if let position = cursorPixelPosition() {
+            drawCursor(into: frame, at: position, scale: pointPixelScale * 1.8)
+        }
+        guard let sample = makeSampleBuffer(from: frame, pts: pts, duration: CMTime(value: 1, timescale: args.fps)) else {
+            return
+        }
+        if !videoInput.append(sample) {
+            emit(["event": "error", "message": "append(video) failed: \(String(describing: writer.error?.localizedDescription))"])
+        }
+    }
+
     // MARK: SCStreamOutput
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
@@ -275,14 +442,22 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
                 let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
                 writer.startSession(atSourceTime: pts)
                 sessionStartPTS = pts
+                sessionStartHost = CACurrentMediaTime()
             }
-            if writer.status == .writing {
-                if !sawVideo {
-                    sawVideo = true
+            guard writer.status == .writing else { return }
+            if args.cursor == "large" {
+                sawVideo = true
+                if let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+                    latestFrame = copyPixelBuffer(imageBuffer)
                 }
-                if !videoInput.append(sampleBuffer) {
-                    emit(["event": "error", "message": "append(video) failed: \(String(describing: writer.error?.localizedDescription))"])
-                }
+                startLargeCursorTimer()
+                return
+            }
+            if !sawVideo {
+                sawVideo = true
+            }
+            if !videoInput.append(sampleBuffer) {
+                emit(["event": "error", "message": "append(video) failed: \(String(describing: writer.error?.localizedDescription))"])
             }
         case .audio:
             if #available(macOS 13.0, *) {

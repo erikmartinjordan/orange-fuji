@@ -7,6 +7,7 @@ function sliderValueToLabel(v) {
 
 const recordingFormatSetting = document.querySelector('#recording-format-setting');
 const recordingAutozoomSetting = document.querySelector('#recording-autozoom-setting');
+const recordingCursorSetting = document.querySelector('#recording-cursor-setting');
 const hideDesktopIconsSetting = document.querySelector('#hide-desktop-icons-setting');
 const captureOrangeFujiSetting = document.querySelector('#capture-orangefuji-setting');
 const telemetrySetting = document.querySelector('#telemetry-setting');
@@ -45,6 +46,7 @@ const preferencesTabsPill = document.querySelector('.preferences-tabs-pill');
 const settings = {
   format: 'mp4',
   autoZoom: true,
+  cursor: 'normal',
   hideDesktopIcons: true,
   captureOrangeFuji: false,
   autoHideDelay: 3,
@@ -102,6 +104,10 @@ function clampAutoHideDelay(value) {
   return Math.min(Math.max(Math.round(Number(value) || 0), 0), DISPLAY_LABELS.length - 1);
 }
 
+function normalizeCursorMode(value) {
+  return value === 'hidden' || value === 'large' ? value : 'normal';
+}
+
 function renderAutoHideDelay(previousValue = settings.autoHideDelay) {
   if (!autoHideDelaySetting || !autoHideDelaySettingValue) return;
   const nextValue = clampAutoHideDelay(settings.autoHideDelay);
@@ -132,6 +138,7 @@ async function loadSettings() {
       const parsed = JSON.parse(raw);
       settings.format = parsed?.format === 'gif' ? 'gif' : 'mp4';
       settings.autoZoom = parsed?.autoZoom !== false;
+      settings.cursor = normalizeCursorMode(parsed?.cursor);
       settings.hideDesktopIcons = parsed?.hideDesktopIcons !== false;
       settings.captureOrangeFuji = parsed?.captureOrangeFuji === true;
       settings.autoHideDelay = typeof parsed?.autoHideDelay === 'number' ? clampAutoHideDelay(parsed.autoHideDelay) : 3;
@@ -147,6 +154,7 @@ async function loadSettings() {
 
   recordingFormatSetting.value = settings.format;
   recordingAutozoomSetting.checked = settings.autoZoom;
+  if (recordingCursorSetting) recordingCursorSetting.value = settings.cursor;
   hideDesktopIconsSetting.checked = settings.hideDesktopIcons;
   captureOrangeFujiSetting.checked = settings.captureOrangeFuji;
   if (telemetrySetting) telemetrySetting.checked = settings.telemetryEnabled;
@@ -347,6 +355,12 @@ recordingFormatSetting.addEventListener('change', () => {
 recordingAutozoomSetting.addEventListener('change', () => {
   recordingAutozoomSetting.classList.add('is-init');
   settings.autoZoom = Boolean(recordingAutozoomSetting.checked);
+  saveSettings();
+});
+
+recordingCursorSetting?.addEventListener('change', () => {
+  recordingCursorSetting.classList.add('is-init');
+  settings.cursor = normalizeCursorMode(recordingCursorSetting.value);
   saveSettings();
 });
 

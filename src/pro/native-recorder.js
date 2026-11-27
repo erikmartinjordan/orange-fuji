@@ -88,6 +88,7 @@ function startRecording(options = {}) {
   const args = ['--out', outPath, '--fps', String(Number.isFinite(options.fps) ? options.fps : 60)];
   if (Number.isFinite(options.displayId)) args.push('--display', String(options.displayId));
   if (options.muted === true) args.push('--no-audio');
+  if (options.cursor === 'hidden' || options.cursor === 'large') args.push('--cursor', options.cursor);
   if (Number.isFinite(options.bitrate) && options.bitrate > 0) args.push('--bitrate', String(options.bitrate));
   if (regionIsValid(options.region)) {
     args.push('--region', [

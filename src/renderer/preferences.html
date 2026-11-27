@@ -102,16 +102,29 @@
           </label>
           <label>
             <span class="preferences-copy">
+              <span class="preference-title">Mouse cursor</span>
+              <span class="preference-description">Show, hide or enlarge the pointer in region recordings. Custom sizes disable autozoom.</span>
+            </span>
+            <select id="recording-cursor-setting">
+              <option value="normal">Normal</option>
+              <option value="hidden">Hidden</option>
+              <option value="large">Large</option>
+            </select>
+          </label>
+          <label>
+            <span class="preferences-copy">
               <span class="preference-title">Region autozoom</span>
               <span class="preference-description">Smoothly zoom into region recordings.</span>
             </span>
             <input type="checkbox" id="recording-autozoom-setting" checked>
           </label>
+        </div>
+
+        <div class="preferences-group" aria-label="Capture content">
           <label>
             <span class="preferences-copy">
               <span class="preference-title">Hide desktop icons</span>
-              <span class="preference-description">Keep the desktop clean while capturing.</span>
-              <span class="preference-description">Skipped for fullscreen captures.</span>
+              <span class="preference-description">Keep the desktop clean while capturing. Skipped for fullscreen captures.</span>
             </span>
             <input type="checkbox" id="hide-desktop-icons-setting" checked>
           </label>

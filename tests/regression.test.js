@@ -10,6 +10,8 @@ const preloadSource = read('src/preload.js');
 const mainSource = read('src/main.js');
 const rendererSource = read('src/renderer/renderer.js');
 const recordingSource = read('src/pro/recording.js');
+const nativeRecorderSource = read('src/pro/native-recorder.js');
+const recorderHelperSource = read('src/bin/orange-fuji-recorder.swift');
 const stylesSource = read('src/renderer/styles.css');
 const landingSource = read('index.html');
 const indexSource = read('src/renderer/index.html');
@@ -503,8 +505,41 @@ test('Recording Features', () => {
   );
 
   assert.ok(
-    /zoomPipeline = createAutoZoomStream\(rawStream, autoZoomRegion, \{\s*autoZoom: enableAutoZoom,\s*\}\)/.test(preloadSource),
+    /zoomPipeline = createAutoZoomStream\(rawStream, autoZoomRegion, \{\s*autoZoom: enableAutoZoom,\s*cursor: options\?\.cursor,\s*\}\)/.test(preloadSource),
     'recording startup must create the Ken Burns pipeline with autozoom driven by the user setting',
+  );
+
+  assert.ok(
+    /const cursorMode = options\.cursor === 'hidden' \|\| options\.cursor === 'large' \? options\.cursor : 'normal'/.test(preloadSource) &&
+    /const drawSyntheticCursor = cursorMode !== 'hidden' && shouldDrawSyntheticCursor\(sourceStream\)/.test(preloadSource) &&
+    /const cursorSizeMultiplier = cursorMode === 'large' \? [\d.]+ : 1/.test(preloadSource) &&
+    /const cursorBaseScale = clamp\(\(pixelScaleX \+ pixelScaleY\) \/ 2, 1, 3\) \* cursorSizeMultiplier/.test(preloadSource),
+    'canvas pipeline must support hiding and enlarging the synthetic cursor',
+  );
+
+  assert.ok(
+    /const wantsCustomCursor = cursorMode !== 'normal'/.test(preloadSource) &&
+    /if \(wantsCustomCursor\) payload\.cursor = cursorMode;/.test(preloadSource) &&
+    /args\.push\('--cursor', options\.cursor\)/.test(nativeRecorderSource) &&
+    /startOptions\.cursor = options\.cursor/.test(mainSource),
+    'custom cursor modes must be forwarded to the native ScreenCaptureKit recorder',
+  );
+
+  assert.ok(
+    /config\.showsCursor = self\.args\.cursor == "normal"/.test(recorderHelperSource) &&
+    /func drawCursor\(into buffer: CVPixelBuffer, at point: CGPoint, scale: CGFloat\)/.test(recorderHelperSource) &&
+    /pointPixelScale \* 1\.8/.test(recorderHelperSource) &&
+    /ctx\.setFillColor\(CGColor\(red: 0, green: 0, blue: 0, alpha: 1\)\)/.test(recorderHelperSource) &&
+    /ctx\.setStrokeColor\(CGColor\(red: 1, green: 1, blue: 1, alpha: 1\)\)/.test(recorderHelperSource) &&
+    /func startLargeCursorTimer\(\)/.test(recorderHelperSource),
+    'native helper must hide the system cursor and composite a larger black macOS-style cursor',
+  );
+
+  assert.ok(
+    /cursor:\s*state\.recordingSettings\.cursor/.test(rendererSource) &&
+    /id="recording-cursor-setting"/.test(indexSource) &&
+    /id="recording-cursor-setting"/.test(preferencesSource),
+    'the mouse cursor option must be persistable and exposed in both settings surfaces',
   );
 
   assert.ok(
@@ -518,8 +553,8 @@ test('Recording Features', () => {
   );
 
   assert.ok(
-    /if \(options\?\.autoZoom !== false && source\.autoZoom !== false\) return null;/.test(preloadSource),
-    'autozoom recordings must stay on the canvas pipeline because ScreenCaptureKit starves static frames',
+    /if \(!wantsCustomCursor && options\?\.autoZoom !== false && source\.autoZoom !== false\) return null;/.test(preloadSource),
+    'autozoom recordings must stay on the canvas pipeline because ScreenCaptureKit starves static frames, unless a custom cursor mode needs the native helper',
   );
 
   assert.ok(

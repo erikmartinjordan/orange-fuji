@@ -64,7 +64,7 @@ const state = {
   recordingCropDragStart: null,
   recordingCropOrigRect: null,
   recordingPreview: null,
-  recordingSettings: { format: 'mp4', autoZoom: true, autoHideDelay: 3, captureOrangeFuji: false },
+  recordingSettings: { format: 'mp4', autoZoom: true, cursor: 'normal', autoHideDelay: 3, captureOrangeFuji: false },
   captureSettings: { hideDesktopIcons: true },
   magicWand: null,
   magicWandActive: false,
@@ -75,6 +75,10 @@ const state = {
 };
 
 const AUTO_HIDE_DELAYS = [500, 1000, 2000, 3000, 5000, 10000, 15000, 30000, Infinity];
+
+function normalizeCursorMode(value) {
+  return value === 'hidden' || value === 'large' ? value : 'normal';
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // DOM Elements
@@ -110,6 +114,7 @@ const elements = {
   preferencesDialog: $('#preferences-dialog'),
   recordingFormatSetting: $('#recording-format-setting'),
   recordingAutozoomSetting: $('#recording-autozoom-setting'),
+  recordingCursorSetting: $('#recording-cursor-setting'),
   hideDesktopIconsSetting: $('#hide-desktop-icons-setting'),
   captureOrangeFujiSetting: $('#capture-orangefuji-setting'),
   btnCaptureRegion: $('#btn-capture-region'),
@@ -277,6 +282,10 @@ function bindToolbar() {
   });
   on(elements.recordingAutozoomSetting, 'change', () => {
     state.recordingSettings.autoZoom = Boolean(elements.recordingAutozoomSetting.checked);
+    saveRecordingSettings();
+  });
+  on(elements.recordingCursorSetting, 'change', () => {
+    state.recordingSettings.cursor = normalizeCursorMode(elements.recordingCursorSetting.value);
     saveRecordingSettings();
   });
   on(elements.hideDesktopIconsSetting, 'change', () => {
@@ -885,6 +894,7 @@ async function startRecordingWithFormat(format = 'mp4', mode = 'region') {
       format: normalizedFormat,
       mode,
       autoZoom: mode === 'region' ? state.recordingSettings.autoZoom : false,
+      cursor: state.recordingSettings.cursor,
       hideDesktopIcons: state.captureSettings.hideDesktopIcons,
       captureOrangeFuji: state.recordingSettings.captureOrangeFuji,
     });
@@ -918,6 +928,7 @@ function loadRecordingSettings() {
       const parsed = JSON.parse(raw);
       state.recordingSettings.format = parsed?.format === 'gif' ? 'gif' : 'mp4';
       state.recordingSettings.autoZoom = parsed?.autoZoom !== false;
+      state.recordingSettings.cursor = normalizeCursorMode(parsed?.cursor);
       state.recordingSettings.autoHideDelay = typeof parsed?.autoHideDelay === 'number' ? Math.min(Math.max(Math.round(parsed.autoHideDelay), 0), AUTO_HIDE_DELAYS.length - 1) : 3;
       state.captureSettings.hideDesktopIcons = parsed?.hideDesktopIcons !== false;
       state.recordingSettings.captureOrangeFuji = parsed?.captureOrangeFuji === true;
@@ -925,6 +936,7 @@ function loadRecordingSettings() {
   } catch (_) {}
   if (elements.recordingFormatSetting) elements.recordingFormatSetting.value = state.recordingSettings.format;
   if (elements.recordingAutozoomSetting) elements.recordingAutozoomSetting.checked = state.recordingSettings.autoZoom;
+  if (elements.recordingCursorSetting) elements.recordingCursorSetting.value = state.recordingSettings.cursor;
   if (elements.hideDesktopIconsSetting) elements.hideDesktopIconsSetting.checked = state.captureSettings.hideDesktopIcons;
   if (elements.captureOrangeFujiSetting) elements.captureOrangeFujiSetting.checked = state.recordingSettings.captureOrangeFuji;
 }

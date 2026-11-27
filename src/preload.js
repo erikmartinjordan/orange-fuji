@@ -319,7 +319,9 @@ function createAutoZoomStream(sourceStream, region, options = {}) {
   let videoDimensionsKnown = false;
   const fps = 60;
   const enableAutoZoom = options.autoZoom !== false;
-  const drawSyntheticCursor = shouldDrawSyntheticCursor(sourceStream);
+  const cursorMode = options.cursor === 'hidden' || options.cursor === 'large' ? options.cursor : 'normal';
+  const drawSyntheticCursor = cursorMode !== 'hidden' && shouldDrawSyntheticCursor(sourceStream);
+  const cursorSizeMultiplier = cursorMode === 'large' ? 1.8 : 1;
 
   const zoomLevel = clamp(1.65 + ((srcRegion.width - 1280) / 4096), 1.55, 1.90);
 
@@ -355,7 +357,7 @@ function createAutoZoomStream(sourceStream, region, options = {}) {
   const CURSOR_EASE_SPEED = 11;
   const CURSOR_SNAP_DISTANCE = 520 * scaleFactor;
   const CURSOR_BASE_SIZE = 20;
-  const cursorBaseScale = clamp((pixelScaleX + pixelScaleY) / 2, 1, 3);
+  const cursorBaseScale = clamp((pixelScaleX + pixelScaleY) / 2, 1, 3) * cursorSizeMultiplier;
   const cursorSmoother = createCursorSmoother({
     initialX: regionCenterX,
     initialY: regionCenterY,
@@ -708,13 +710,17 @@ function alignRegionToStreamPixels(region, stream) {
 // null when the native engine is unavailable (caller uses MediaRecorder).
 async function tryStartNativeRecording(source, options) {
   if (process.platform !== 'darwin') return null;
-  if ((options?.format ?? 'mp4') === 'gif') return null;
+  const cursorMode = options?.cursor === 'hidden' || options?.cursor === 'large' ? options.cursor : 'normal';
+  const wantsCustomCursor = cursorMode !== 'normal';
+  if (!wantsCustomCursor && (options?.format ?? 'mp4') === 'gif') return null;
   if (source.mode !== 'region' || !source.region) return null;
   // ScreenCaptureKit only emits frames when the screen changes. That starves
   // the autozoom camera whenever the screen is static (which is exactly when
   // it zooms in and holds), so autozoom recordings stay on the canvas pipeline,
-  // where every frame is rendered at a steady rate with a synthetic cursor.
-  if (options?.autoZoom !== false && source.autoZoom !== false) return null;
+  // where every frame is rendered at a steady rate. Custom cursor modes need
+  // ScreenCaptureKit's `showsCursor` control, so those recordings trade the
+  // autozoom camera for a configurable pointer.
+  if (!wantsCustomCursor && options?.autoZoom !== false && source.autoZoom !== false) return null;
   let supported = false;
   try {
     supported = await ipcRenderer.invoke('pro-native-recording-supported');
@@ -728,6 +734,7 @@ async function tryStartNativeRecording(source, options) {
     hideDesktopIcons: options?.hideDesktopIcons !== false,
     captureOrangeFuji: options?.captureOrangeFuji === true,
   };
+  if (wantsCustomCursor) payload.cursor = cursorMode;
   if (Number.isFinite(options?.fps)) payload.fps = options.fps;
   if (source.mode === 'region' && source.region) {
     // Region coords are display-relative logical points; the helper maps
@@ -822,6 +829,7 @@ async function startRecording(options = {}) {
     if (autoZoomRegion) {
       zoomPipeline = createAutoZoomStream(rawStream, autoZoomRegion, {
         autoZoom: enableAutoZoom,
+        cursor: options?.cursor,
       });
       proRecordingStream = await zoomPipeline.ready;
       proRecordingRawStream = rawStream;
